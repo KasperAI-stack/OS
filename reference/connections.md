@@ -12,16 +12,17 @@ MCP connectors are authorized per Claude account via **claude.ai → Settings �
 | Microsoft planner (Activepieces) | `personal-assistant` | Connected | Actually a workflow/automation builder (`ap_*`), not the native MS Planner task app |
 | Meta Ads MCP | `marketing-specialist` | Connected | Campaigns, ad sets, ads, insights, audiences, catalogs |
 | Canva | `art-director` | Connected | Design generation/editing, brand templates |
-| Windsor.ai | `cfo` (partial) | Connected | Can read Google Sheets as a data source if a sheets connector is set up inside Windsor |
+| Windsor.ai | `cfo` (fallback) | Connected | Fallback only — budgets live in SharePoint Excel, read via Microsoft 365 instead |
 | Brandfetch | shared | Connected | Brand asset/logo lookup |
 | Firecrawl (x2) | shared | Connected | Web search/scrape/research |
 | monday.com | unassigned | Connected | Not currently wired into any agent — flag if it should be |
 | claude.ai Frontegg marketplace | unknown | **Needs auth** | Purpose unclear — check what this connector is for, or ignore if unused |
-| Adkit MCP | `marketing-specialist` | **Not connected** | |
-| Higgsfield MCP | `art-director` | **Not connected** | AI image/video generation |
+| Adkit MCP | `marketing-specialist` | **No account yet** | Not an active to-do — Kasper doesn't use Adkit currently. Revisit if that changes |
+| Higgsfield MCP | `art-director` | **No account yet** | Not an active to-do — Kasper doesn't use Higgsfield currently. Revisit if that changes |
 | Drip MCP | `email-specialist` | **Not connected** | |
 | HubSpot MCP | `email-specialist` | **Not connected** | |
-| Google Sheets (dedicated) | `cfo` | **Not connected / may not exist as a connector** | Fallback: Windsor.ai sheets source, or move budgets to SharePoint Excel |
+
+Budget source resolved: marketing budgets live in **Excel files in SharePoint**, read/written via the already-connected Microsoft 365 MCP — no dedicated Sheets connector needed. `cfo` agent updated accordingly.
 
 ## CLI tools (installed and authenticated locally)
 

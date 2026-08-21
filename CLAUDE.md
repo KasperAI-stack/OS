@@ -7,12 +7,12 @@ Kasper's agentic workspace for personal admin and marketing operations. Work her
 | Agent | Domain | MCP tools | Status |
 |---|---|---|---|
 | `personal-assistant` | Outlook calendar/email, task & weekly status tracking | Microsoft 365, Microsoft planner (Activepieces) | Connected |
-| `marketing-specialist` | Paid media / Meta Ads | Meta Ads MCP, Adkit | Adkit **not connected** |
+| `marketing-specialist` | Paid media / Meta Ads | Meta Ads MCP | Connected. Adkit not in use — no account yet |
 | `email-specialist` | Email marketing / CRM | Drip, HubSpot | **Neither connected** |
-| `art-director` | Creative / design | Canva, Higgsfield | Higgsfield **not connected** |
-| `cfo` | Budget tracking | Google Sheets / Excel (no dedicated MCP) | **No connector yet** — see `cfo.md` for interim workarounds |
+| `art-director` | Creative / design | Canva | Connected. Higgsfield not in use — no account yet |
+| `cfo` | Budget tracking | Microsoft 365 (Excel in SharePoint) | Connected |
 
-Missing connectors are added by Kasper via claude.ai connector settings — Claude cannot authorize them from here. Until connected, the relevant agent should say so rather than fabricate results.
+Missing connectors are added by Kasper via claude.ai connector settings — Claude cannot authorize them from here. Until connected, the relevant agent should say so rather than fabricate results. Adkit and Higgsfield are a special case: no account exists yet, so they're not an active to-do — don't propose them as steps in a task.
 
 When invoking an agent explicitly, use its name (e.g. "use the marketing-specialist to..."). Otherwise pick the agent whose domain matches the request.
 
