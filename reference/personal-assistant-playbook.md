@@ -23,6 +23,22 @@ All IDs below were pulled live via `custom_api_call` against Microsoft Graph. **
 | **Opstart** | `wXglhfkk8E63Im3xNhXj6ZYACtC7` | Email, Meta, Website, Performance, SEO, Google ads, Diverse | **Correction:** this is not a simple personal to-do board — buckets are organized by marketing channel. Still treated as low-priority/background per Kasper's original framing, but don't assume the old 5-stage-pipeline shape if actually reading it. |
 | **Årshjul** (active) | `09uz648nC0KQ9oYfUOVPhZYAAOft` | 11 month buckets (Jan–Aug, Nov, Dec separate; Jun/Jul merged into one bucket) | **Use this one.** Created 2026-08-19, holds the real launch items (Vinsmagning, website relaunch, logo launch, CRM launch, lead campaign launch, etc.) — matches the intended "12-month initiative wheel" role. |
 
+## Marketing HQ and Paid Ads — task-level findings (2026-08-21)
+
+**Marketing HQ** (40 tasks currently):
+- Almost everything (~28 tasks) sits unsorted in "To do" — it functions as a backlog dump, not a flow through the 4 stages.
+- **"Done" and "Events" buckets are empty.** Completed tasks (`percentComplete: 100`) stay wherever they already were (seen in Planned, Doing, and Web) instead of being moved to Done. **Don't rely on bucket = "Done" to detect completion here — use `percentComplete`/`completedDateTime` instead.**
+- `priority` is 5 (Medium, the default) on essentially every task — it doesn't discriminate anything in this board. Deadline is doing all the real prioritization work in practice, not the priority field.
+- Duplicate tasks (same title, different task IDs — likely accidental double-creation): "Byg agent - Find skills og MCP'er" (×2), "GTM - event registrering" (×2), "Mere fokus på hotellerne" (×2, sitting in two different buckets). Worth Kasper cleaning up.
+- As of 2026-08-21: due today — "Content Strategi!", "Plan for strategigennemgang". Overdue — "Plan for: Skru op for ADS!!!! August, september og oktober" (13/8), "Email skabeloner" (10/8), "Sitemap og 'byg selv' struktur" (12/8). Upcoming — "Print annonce herning folkeblad" (24/8).
+
+**Paid Ads** (24 tasks currently):
+- **No task in this board has a due date set** — it's purely pipeline-stage driven (which bucket a card sits in), not deadline-driven. The daily "due today/overdue" ranking logic simply won't surface anything from Paid Ads; treat it as a separate, bucket-position-based check (what's in Active, what's in Stuck) rather than folding it into the date-based ranking.
+- Active-bucket cards do carry checklists as the playbook expected (e.g. "2027" 4/4, "Foredrag Viborg" 4/4).
+- Category tags decoded via the plan's `categoryDescriptions`: `category1` = "Awerness" *(sic, typo in the actual Planner data)*, `category2` = "Lead gen", `category3` = "Gul" (unused/generic), `category4` = "Sales".
+- **All 5 cards currently in Stuck are tagged "Lead gen"** — confirms the playbook's note precisely.
+- Done bucket is used correctly here (unlike Marketing HQ) — 1 completed task filed there.
+
 ## Data-quality issues found 2026-08-21 — resolve with Kasper before trusting automation fully
 
 1. **Duplicate "Årshjul" plan.** A second plan also named "Årshjul" exists — plan ID `4BtoadsZj060Cs-fl8npfZYAA8ov`, created 2026-08-13 (older), contains 1 bucket ("September") and **zero tasks**. It's almost certainly an abandoned duplicate. Recommend Kasper deletes it in the Planner UI (deletion isn't exposed as a safe action via this MCP). Until deleted, the skill hardcodes the *other* plan ID above — don't let a future run re-resolve "Årshjul" by name and pick the wrong one.
@@ -31,6 +47,7 @@ All IDs below were pulled live via `custom_api_call` against Microsoft Graph. **
    - Årshjul (`09uz648...`) task **"Vinsmagning"** → due **2026-11-18**, sits in the "December" bucket (bucket assignment itself looks stale/wrong too).
    - Events (`6evlpc74...`) task **"Vinsmagning / Horsens and friends? / Hotel"** → due **2026-11-11**.
    - These read as the same real-world event with two different dates recorded in two places. Ask Kasper which date is correct, then update both tasks to match.
+4. **Duplicate tasks in Marketing HQ.** Three pairs of same-titled tasks with different IDs: "Byg agent - Find skills og MCP'er", "GTM - event registrering", "Mere fokus på hotellerne" (this last pair even sits in two different buckets). Likely accidental double-creation — flag for Kasper to merge/delete rather than silently deduplicating in the dashboard.
 
 ## Prioritization logic ("what should I work on today")
 
@@ -41,6 +58,8 @@ Combine high priority + close deadline. Rank:
 3. Due today
 4. High priority without a near deadline
 5. Everything else — mention briefly as background/backlog only, never as "work on today"
+
+**Caveat confirmed 2026-08-21:** the `priority` field is not a useful signal in practice — it's 5 (Medium, the default) on nearly every task across boards, so step 2/4 above rarely fires. Deadline (steps 1 and 3) is doing almost all of the real prioritization work today. Don't over-weight the priority field until Kasper actually starts using it. Also: Paid Ads has no due dates on any task at all — it can't participate in date-based ranking; treat it separately by bucket position (what's in Active with an unfinished checklist, what's sitting in Stuck) rather than trying to rank it against dated tasks from other boards.
 
 ## Calendar (Outlook)
 
