@@ -4,7 +4,7 @@ Last verified against live Planner data: 2026-08-21
 
 # Personal assistant playbook — Africa Tours marketing
 
-Durable domain knowledge for the `personal-assistant` agent and the `africatours-planner-assistant` skill. This file is the source of truth for board structure and open data-quality issues — update it whenever something here turns out to be wrong or changes live in Planner.
+Durable domain knowledge for the `personal-assistant` agent and the `personal-assistant-dashboard` skill. This file is the source of truth for board structure and open data-quality issues — update it whenever something here turns out to be wrong or changes live in Planner.
 
 ## Role
 
