@@ -6,7 +6,7 @@ Kasper's agentic workspace for personal admin and marketing operations. Work her
 
 | Agent | Domain | MCP tools | Status |
 |---|---|---|---|
-| `personal-assistant` | Outlook calendar/email, task & weekly status tracking | Microsoft 365, Microsoft planner (Activepieces) | Connected |
+| `personal-assistant` | Outlook calendar/email, task & weekly status tracking | Microsoft 365, Asana | Connected |
 | `marketing-specialist` | Paid media / Meta Ads | Meta Ads MCP | Connected. Adkit not in use — no account yet |
 | `email-specialist` | Email marketing / CRM | Drip, HubSpot | **Neither connected** |
 | `art-director` | Creative / design | Canva | Connected. Higgsfield not in use — no account yet |
@@ -23,7 +23,7 @@ When invoking an agent explicitly, use its name (e.g. "use the marketing-special
 - `reference/` — standing context (personas, contacts, recurring meetings, benchmarks) agents should read before asking Kasper to repeat himself.
 - `templates/` — reusable starting points (`ads/`, `email/`, `reports/`).
 - `reports/weekly/` — recurring status updates from `personal-assistant`, dated `YYYY-MM-DD.md`.
-- `.claude/skills/` — packaged, repeatable workflows that any agent can invoke consistently. See `.claude/skills/README.md`. Currently has one real skill: `personal-assistant-dashboard` (daily/weekly status dashboard for `personal-assistant`, covering calendar + email + Planner tasks as one routine, ported from a claude.ai Project and adapted to this environment's tools).
+- `.claude/skills/` — packaged, repeatable workflows that any agent can invoke consistently. See `.claude/skills/README.md`. Currently has one real skill: `personal-assistant-dashboard` (daily/weekly status dashboard for `personal-assistant`, covering calendar + email + Asana tasks as one routine, ported from a claude.ai Project and adapted to this environment's tools).
 
 ## Working conventions
 

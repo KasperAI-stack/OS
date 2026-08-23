@@ -1,53 +1,60 @@
 ---
-Last verified against live Planner data: 2026-08-21
+Last verified against live Asana data: 2026-08-23
 ---
 
 # Personal assistant playbook — Africa Tours marketing
 
-Durable domain knowledge for the `personal-assistant` agent and the `personal-assistant-dashboard` skill. This file is the source of truth for board structure and open data-quality issues — update it whenever something here turns out to be wrong or changes live in Planner.
+Durable domain knowledge for the `personal-assistant` agent and the `personal-assistant-dashboard` skill. This file is the source of truth for board structure and open data-quality issues — update it whenever something here turns out to be wrong or changes live in Asana.
 
 ## Role
 
-Daily status (mentally targeted at ~07:00) and weekly review (Monday, ~08:00) covering: today's Planner priorities, today's calendar, unanswered email. See the skill for the executable procedure and delivery mechanics.
+Daily status (mentally targeted at ~07:00) and weekly review (Monday, ~08:00) covering: today's Asana priorities, today's calendar, unanswered email. See the skill for the executable procedure and delivery mechanics.
 
-## The Planner boards — confirmed structure (verified 2026-08-21)
+## Migration note (2026-08-23)
 
-All IDs below were pulled live via `custom_api_call` against Microsoft Graph. **Use these IDs directly rather than re-resolving names with `findAPlan`** — several plan names collide (see Data-quality issues below), so name lookup is not reliable here.
+These boards originally lived in Microsoft Planner, read via a flaky Activepieces connector (recurring Entra token-expiry failures). Kasper moved task tracking to Asana instead. The 6 boards below were rebuilt in Asana as projects with matching sections. Task data for **Paid Ads and Årshjul** was migrated from live Planner screenshots on 2026-08-23. **Marketing HQ, Events, Email, and Opstart are structural skeletons only — sections exist, no tasks migrated yet;** Kasper is filling those in manually. Don't report those four as "empty"/"on track" in a dashboard — say migration is still pending.
 
-| Board | Plan ID | Buckets (as found) | Notes |
-|---|---|---|---|
-| **Marketing HQ** | `5mXZ3vtbx0uNHhPR1SIhNpYAEkt7` | To do, Planned, Doing, Done, Events, Web | Operational catch-all — today's concrete tasks usually live here. One more bucket ("Web") than the original assumption of 5. |
-| **Paid Ads** | `7Vi_lzsu7USHuayimxLeP5YABzVw` | Sandbox, Produciton *(sic — real bucket name is misspelled)*, Active *(trailing space in real name)*, Done, Stuck | Flag Stuck prominently in weekly review. |
-| **Events** | `6evlpc74B06M7_RQ5qRzU5YAFJ4p` | Sandbox, Brainstorming, Planlagt, Afholdte, Stuck | Matches original assumption exactly. |
-| **Email** | `e85jp4yjI0iQypVRb7ozPJYAB9WY` | Brainstorm, Planlagt, Producerer, Upcoming, Shipped, Stuck | Confirmed — was previously unverified. Own pipeline, distinct naming from other boards. |
-| **Opstart** | `wXglhfkk8E63Im3xNhXj6ZYACtC7` | Email, Meta, Website, Performance, SEO, Google ads, Diverse | **Correction:** this is not a simple personal to-do board — buckets are organized by marketing channel. Still treated as low-priority/background per Kasper's original framing, but don't assume the old 5-stage-pipeline shape if actually reading it. |
-| **Årshjul** (active) | `09uz648nC0KQ9oYfUOVPhZYAAOft` | 11 month buckets (Jan–Aug, Nov, Dec separate; Jun/Jul merged into one bucket) | **Use this one.** Created 2026-08-19, holds the real launch items (Vinsmagning, website relaunch, logo launch, CRM launch, lead campaign launch, etc.) — matches the intended "12-month initiative wheel" role. |
+Workspace GID: `1217755854232758` (africatours.dk)
 
-## Marketing HQ and Paid Ads — task-level findings (2026-08-21)
+## The Asana boards — confirmed structure (as of 2026-08-23)
 
-**Marketing HQ** (40 tasks currently):
-- Almost everything (~28 tasks) sits unsorted in "To do" — it functions as a backlog dump, not a flow through the 4 stages.
-- **"Done" and "Events" buckets are empty.** Completed tasks (`percentComplete: 100`) stay wherever they already were (seen in Planned, Doing, and Web) instead of being moved to Done. **Don't rely on bucket = "Done" to detect completion here — use `percentComplete`/`completedDateTime` instead.**
-- `priority` is 5 (Medium, the default) on essentially every task — it doesn't discriminate anything in this board. Deadline is doing all the real prioritization work in practice, not the priority field.
-- Duplicate tasks (same title, different task IDs — likely accidental double-creation): "Byg agent - Find skills og MCP'er" (×2), "GTM - event registrering" (×2), "Mere fokus på hotellerne" (×2, sitting in two different buckets). Worth Kasper cleaning up.
-- As of 2026-08-21: due today — "Content Strategi!", "Plan for strategigennemgang". Overdue — "Plan for: Skru op for ADS!!!! August, september og oktober" (13/8), "Email skabeloner" (10/8), "Sitemap og 'byg selv' struktur" (12/8). Upcoming — "Print annonce herning folkeblad" (24/8).
+Use these GIDs directly — don't re-resolve by name.
 
-**Paid Ads** (24 tasks currently):
-- **No task in this board has a due date set** — it's purely pipeline-stage driven (which bucket a card sits in), not deadline-driven. The daily "due today/overdue" ranking logic simply won't surface anything from Paid Ads; treat it as a separate, bucket-position-based check (what's in Active, what's in Stuck) rather than folding it into the date-based ranking.
-- Active-bucket cards do carry checklists as the playbook expected (e.g. "2027" 4/4, "Foredrag Viborg" 4/4).
-- Category tags decoded via the plan's `categoryDescriptions`: `category1` = "Awerness" *(sic, typo in the actual Planner data)*, `category2` = "Lead gen", `category3` = "Gul" (unused/generic), `category4` = "Sales".
-- **All 5 cards currently in Stuck are tagged "Lead gen"** — confirms the playbook's note precisely.
-- Done bucket is used correctly here (unlike Marketing HQ) — 1 completed task filed there.
+| Board | Project GID | Sections (GIDs) |
+|---|---|---|
+| **Marketing HQ** | `1217755828419858` | To do `1217755855315307`, Planned `1217755978022451`, Doing `1217755978044335`, Done `1217755855315371`, Events `1217755828421723`, Web `1217755855315243` |
+| **Paid Ads** | `1217755828402211` | Sandbox `1217756055023433`, Produciton *(sic — kept from the original Planner bucket name)* `1217755978042996`, Active `1217755978044848`, Done `1217755855340916`, Stuck `1217755855340852` |
+| **Events** | `1217755855341813` | Sandbox `1217755876804548`, Brainstorming `1217756030538210`, Planlagt `1217755876804481`, Afholdte `1217755876804254`, Stuck `1217755978014868` |
+| **Email** | `1217755978072754` | Brainstorm `1217755876756061`, Planlagt `1217755876753121`, Producerer `1217755876814076`, Upcoming `1217755876805170`, Shipped `1217755978073718`, Stuck `1217756055132416` |
+| **Opstart** | `1217756055078273` | Email `1217755978044853`, Meta `1217756030564819`, Website `1217756030564755`, Performance `1217755876804328`, SEO `1217756055159863`, Google ads `1217756030550686`, Diverse `1217756030564691` |
+| **Årshjul** | `1217756030580068` | Untitled *(empty, Asana's auto-created first section — safe to ignore/delete)* `1217756030580092`, Januar `1217755978096559`, Februar `1217755978096495`, Marts `1217755978096623`, April `1217756030582118`, Maj `1217756055167740` *(unconfirmed live — not contradicted, just not seen in a screenshot)*, Jun/Jul `1217755978064202` *(unconfirmed live)*, August `1217756030582022`, September `1217756057587243`, Oktober `1217756069542211`, November `1217756055171854`, December `1217755855357367` |
 
-## Data-quality issues found 2026-08-21 — resolve with Kasper before trusting automation fully
+## Paid Ads and Årshjul — task-level data (migrated 2026-08-23)
 
-1. **Duplicate "Årshjul" plan.** A second plan also named "Årshjul" exists — plan ID `4BtoadsZj060Cs-fl8npfZYAA8ov`, created 2026-08-13 (older), contains 1 bucket ("September") and **zero tasks**. It's almost certainly an abandoned duplicate. Recommend Kasper deletes it in the Planner UI (deletion isn't exposed as a safe action via this MCP). Until deleted, the skill hardcodes the *other* plan ID above — don't let a future run re-resolve "Årshjul" by name and pick the wrong one.
-2. **Unaccounted-for plan: "Årsplan".** Plan ID `EbzggKJBKUGip04Hu-n_LpYAF-1I`, not mentioned anywhere in the original playbook. 12 month buckets, 9 tasks that look like general ops/project work (website 2.0 build, CRM rollout, ad production) rather than launch milestones. Ask Kasper: is this a legacy board to ignore, or should it be folded into weekly review alongside Årshjul?
-3. **Vinsmagning date conflict — now pinned down exactly, still needs Kasper's call:**
-   - Årshjul (`09uz648...`) task **"Vinsmagning"** → due **2026-11-18**, sits in the "December" bucket (bucket assignment itself looks stale/wrong too).
-   - Events (`6evlpc74...`) task **"Vinsmagning / Horsens and friends? / Hotel"** → due **2026-11-11**.
-   - These read as the same real-world event with two different dates recorded in two places. Ask Kasper which date is correct, then update both tasks to match.
-4. **Duplicate tasks in Marketing HQ.** Three pairs of same-titled tasks with different IDs: "Byg agent - Find skills og MCP'er", "GTM - event registrering", "Mere fokus på hotellerne" (this last pair even sits in two different buckets). Likely accidental double-creation — flag for Kasper to merge/delete rather than silently deduplicating in the dashboard.
+**Paid Ads** — 21 tasks migrated from a live Planner screenshot:
+- **Sandbox** (11): Grupperejser and Book møde med rådgiver (statisk annonce) were flagged "prioriteret" (!) in Planner — noted in each task's `notes`. Five are tagged "Awerness" *(sic)*: Scrapbook, Engagskamera, Calling Africa, Gæt vinen, Vores ansattes bedste minder. Plus: Anledninger (Bryllup, fødselsdage), Top 10 seværdigheder i X, Testimonial, Blindranking.
+- **Produciton** (3): Speciffke rejser ala vinkort *(sic)*, Specifikke rejser ala Strava, A day in my life / POV.
+- **Active** (2): "2027" (subtasks: Kamerarulle, Bucketliste, Byg selv, ??) and "Foredrag Viborg" (had a 0/4 checklist in Planner whose items weren't visible in the source screenshot — subtasks not migrated, needs manual follow-up from Kasper).
+- **Stuck** (5): all tagged "Lead gen" — Vind denne plakat; 10 myter om Afrika / misforstpelser (som vi afmystificerer ved foredraget); 'Doorstep' 'MTV crip'; "Du har 1 minut til at overbevise os om at deltage i vores foredrag"; Vind denne coffee table book.
+- **Done**: not migrated — the one completed task was collapsed/unnamed in the source screenshot.
+- Category tags ("Awerness"/"Lead gen") are stored as a `Tag: X` line in each task's `notes` field — no native Asana custom field set up for this yet.
+
+**Årshjul** — 9 tasks migrated:
+- September: Lead kampagne lancering (due 2026-09-16)
+- Oktober: Byg tilbuds giver-agent (due 2026-10-14), Ambassadør-team test (due 2026-10-06), Logo lancering?? (due 2026-10-15)
+- December *(section)*: CRM lancering (due 2026-11-30), Vinsmagning (due 2026-11-18 — see data-quality note below)
+- Januar: Tryk af egne rejsebøger (due 2027-01-14)
+- Februar: Spot i JP/Politikken med rejsebog (due 2027-02-19)
+- Marts: Hjemmeside lancering?? (due 2027-03-27)
+- August, November, April: no tasks visible in the source screenshots — not confirmed empty, may still have unmigrated content.
+
+## Data-quality issues found — resolve with Kasper before trusting automation fully
+
+1. **Vinsmagning date/bucket mismatch — confirmed, still needs Kasper's call.** Årshjul's "Vinsmagning" task sits in the December section but is due 2026-11-18. The old Planner Events board also had a "Vinsmagning / Horsens and friends? / Hotel" task due 2026-11-11 — these read as the same real-world event with two different dates recorded. Ask Kasper which date is correct.
+2. **Marketing HQ, Events, Email, and Opstart have no tasks in Asana yet.** Kasper is migrating these manually from Planner. Treat empty as "not migrated", never as "nothing due".
+3. **Paid Ads "Foredrag Viborg" checklist (0/4 in Planner) wasn't migrated** — the 4 item names weren't visible in the source screenshot.
+4. **Årshjul has an extra empty "Untitled section"** (Asana auto-creates a first section on project creation) — cosmetic only, safe for Kasper to delete in the UI.
+5. Planner-era issues from before the migration (a duplicate empty "Årshjul" plan, an unclear "Årsplan" plan, duplicate tasks in the old Marketing HQ) applied to the retired Planner boards and don't carry over automatically — they'll resurface here only if Kasper reintroduces them while migrating manually.
 
 ## Prioritization logic ("what should I work on today")
 
@@ -59,7 +66,7 @@ Combine high priority + close deadline. Rank:
 4. High priority without a near deadline
 5. Everything else — mention briefly as background/backlog only, never as "work on today"
 
-**Caveat confirmed 2026-08-21:** the `priority` field is not a useful signal in practice — it's 5 (Medium, the default) on nearly every task across boards, so step 2/4 above rarely fires. Deadline (steps 1 and 3) is doing almost all of the real prioritization work today. Don't over-weight the priority field until Kasper actually starts using it. Also: Paid Ads has no due dates on any task at all — it can't participate in date-based ranking; treat it separately by bucket position (what's in Active with an unfinished checklist, what's sitting in Stuck) rather than trying to rank it against dated tasks from other boards.
+**Caveat carried over from the Planner era:** a generic "priority" field wasn't a useful signal there — deadline did almost all the real prioritization work. Assume the same is true in Asana until Kasper actually starts setting task priority deliberately. Paid Ads specifically has no due dates on any task — it can't participate in date-based ranking; treat it separately by section position (what's in Active with an unfinished checklist, what's sitting in Stuck) rather than trying to rank it against dated tasks from other boards.
 
 ## Calendar (Outlook)
 
@@ -79,13 +86,13 @@ This is an approximation, not thread analysis — don't call that out in the das
 
 ## Dashboard content
 
-**Daily** (in order): connection-failure banner (if any) → today's calendar (flag double-bookings) → unanswered mail → today's Planner priorities (3–6 items, board + deadline, per the ranking above) → "needs attention" (overdue tasks, Stuck cards, anything needing a decision).
+**Daily** (in order): connection-failure banner (if any) → today's calendar (flag double-bookings) → unanswered mail → today's Asana priorities (3–6 items, board + deadline, per the ranking above) → "needs attention" (overdue tasks, Stuck items, anything needing a decision).
 
-**Weekly** (Monday): done last week (moved to Done/Afholdte since last Monday) → still missing from last week (expected but not done) → attention points (Stuck cards, overdue items, cross-board inconsistencies like the Vinsmagning date conflict) → focus for the coming week (upcoming deadlines from Årshjul + other boards, next 7 days).
+**Weekly** (Monday): done last week (completed in Asana since last Monday) → still missing from last week (expected but not done) → attention points (Stuck items, overdue items, cross-board inconsistencies like the Vinsmagning date conflict) → focus for the coming week (upcoming deadlines from Årshjul + other boards, next 7 days).
 
 ## Open items still needing Kasper's input
 
 - Which "Vinsmagning" date is correct — 11/11 or 18/11 (see Data-quality issues above)
-- Whether the "Årsplan" board (separate from Årshjul) should be part of weekly review
-- Delete or repurpose the empty duplicate "Årshjul" plan
-- First full daily/weekly test run to sanity-check the dashboard output before trusting the scheduled version
+- Finish manually migrating Marketing HQ, Events, Email, and Opstart task data from Planner into Asana
+- Delete the empty "Untitled section" in Årshjul (cosmetic)
+- First full daily/weekly scheduled run to sanity-check the dashboard output now that it's automated
