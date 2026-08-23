@@ -31,8 +31,20 @@ CLI tools are set up directly in this session (Bash/PowerShell) since they don't
 | Tool | Purpose | Status |
 |---|---|---|
 | GitHub CLI (`gh`) | Repo management, pushed this workspace to `africakasper/claude-marketing-os` | Installed & authenticated (account: africakasper) |
+| Node.js (LTS) | Runtime dependency for Work IQ CLI | Installed (v24.19.0) |
+| Microsoft Work IQ CLI (`workiq`, `@microsoft/workiq`) | Natural-language querying of M365 data (email, calendar, docs, Teams, **Planner**, people) via CLI or local MCP server (`workiq mcp`) | **Installed but not usable yet** — see below |
 
-No other CLI tools requested yet.
+### Work IQ CLI — not yet activated
+
+Installed 2026-08-23 at Kasper's request, hoping it could replace the flaky Activepieces Planner connector. **It is not a drop-in fix and needs real setup before it does anything:**
+
+1. `workiq accept-eula` — EULA not yet accepted.
+2. Requires a **usage-based billing plan in Copilot Studio**, tied to an Azure subscription + resource group. This is paid (Copilot Credits, consumption-based) — needs Kasper (or whoever manages the Africa Tours Azure/M365 billing) to set this up.
+3. Requires **Microsoft Entra tenant admin consent** for the Work IQ application. If Kasper isn't a tenant admin, IT needs to grant this.
+4. Auth is delegated Entra ID (OBO flow) — **the same tenant Conditional Access / token-lifetime policy that causes the Activepieces Planner connector to expire ("Lifetime validation failed") likely applies here too.** Switching to Work IQ probably won't fix the "fejler tit" problem — that's a tenant-level policy issue, not a defect in the specific connector.
+5. Work IQ is a natural-language reasoning tool (`workiq ask`, MCP `search` tool) over M365 data — not a structured CRUD API. It's not a like-for-like replacement for the `custom_api_call` approach the `personal-assistant-dashboard` skill uses to read exact bucket/task IDs and fields. Even once activated, it may complement rather than replace the current Planner access method.
+
+**Next step is Kasper's, not Claude's:** confirm with IT/Azure admin whether Africa Tours' tenant has (or should get) Copilot Studio usage-based billing and can grant the admin consent. Until then this stays installed but dormant.
 
 ## Process for adding a new connector
 
