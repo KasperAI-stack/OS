@@ -23,7 +23,7 @@ When invoking an agent explicitly, use its name (e.g. "use the marketing-special
 - `reference/` — standing context (personas, contacts, recurring meetings, benchmarks) agents should read before asking Kasper to repeat himself.
 - `templates/` — reusable starting points (`ads/`, `email/`, `reports/`).
 - `reports/weekly/` — recurring status updates from `personal-assistant`, dated `YYYY-MM-DD.md`.
-- `.claude/skills/` — packaged, repeatable workflows that any agent can invoke consistently. See `.claude/skills/README.md`. Currently has one real skill: `personal-assistant-dashboard` (daily/weekly status dashboard for `personal-assistant`, covering calendar + email + Asana tasks as one routine, ported from a claude.ai Project and adapted to this environment's tools).
+- `.claude/skills/` — packaged, repeatable workflows that any agent can invoke consistently. See `.claude/skills/README.md`. Two real skills so far, both ported from claude.ai Project drafts and adapted to this environment's tools: `personal-assistant-dashboard` (daily/weekly status dashboard for `personal-assistant`, covering calendar + email + Asana tasks as one routine) and `meta-ads-weekly` (weekly Meta Ads performance dashboard for `marketing-specialist`, proposals-only per `reference/marketing-specialist-playbook.md`).
 
 ## Working conventions
 
