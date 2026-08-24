@@ -40,6 +40,16 @@ Write the HTML to a scratch file, then publish with the **Artifact** tool using 
 
 Report the artifact URL back to Kasper in the chat response. If this run is happening inside a scheduled/background context, the URL still needs to reach him somehow (chat message on completion) — there's no equivalent of `SendUserFile` here, the Artifact link is the delivery mechanism.
 
+## 6. Also upload to SharePoint
+
+The Artifact link is easy to lose track of between runs — mirror the `meta-ads-weekly` skill's approach and also save the HTML to a SharePoint folder Kasper can browse normally (typically synced to his OneDrive/File Explorer), so all dashboards accumulate in one accessible place instead of living only as chat links.
+
+1. `mcp__Microsoft-365__sharepoint_folder_search` for a folder named "Personlig status" under the same Marketing site used by `meta-ads-weekly` (sibling to "Ugenlig rapportering"). If it doesn't exist yet, create it with `sharepoint_create_folder`.
+2. Upload the same HTML written for the Artifact with `mcp__Microsoft-365__sharepoint_upload_file`, using a dated filename so history accumulates rather than overwrites — e.g. `daglig-status-YYYY-MM-DD.html` / `ugentlig-status-YYYY-MM-DD.html`.
+3. Report both links back to Kasper (Artifact URL + SharePoint webUrl), same pattern as the Meta Ads briefing.
+
+If the SharePoint upload fails, don't let it block delivery — the Artifact publish in step 5 already succeeded and is the primary deliverable; just note the SharePoint upload failed rather than fabricating a link.
+
 ## Automation
 
 Scheduled as two cloud routines via the `schedule` skill (`RemoteTrigger` — a cloud agent runs each fire, not this local session):
