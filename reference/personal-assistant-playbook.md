@@ -1,5 +1,5 @@
 ---
-Last verified against live Asana data: 2026-08-23
+Last verified against live Asana data: 2026-09-02
 ---
 
 # Personal assistant playbook — Africa Tours marketing
@@ -10,9 +10,13 @@ Durable domain knowledge for the `personal-assistant` agent and the `personal-as
 
 Daily status (mentally targeted at ~07:00) and weekly review (Monday, ~08:00) covering: today's Asana priorities, today's calendar, unanswered email. See the skill for the executable procedure and delivery mechanics.
 
-## Migration note (2026-08-23)
+## Migration note (2026-08-23, updated 2026-09-02)
 
-These boards originally lived in Microsoft Planner, read via a flaky Activepieces connector (recurring Entra token-expiry failures). Kasper moved task tracking to Asana instead. The 6 boards below were rebuilt in Asana as projects with matching sections. Task data for **Paid Ads and Årshjul** was migrated from live Planner screenshots on 2026-08-23. **Marketing HQ, Events, Email, and Opstart are structural skeletons only — sections exist, no tasks migrated yet;** Kasper is filling those in manually. Don't report those four as "empty"/"on track" in a dashboard — say migration is still pending.
+These boards originally lived in Microsoft Planner, read via a flaky Activepieces connector (recurring Entra token-expiry failures). Kasper moved task tracking to Asana instead. The 6 boards below were rebuilt in Asana as projects with matching sections. Task data for **Paid Ads and Årshjul** was migrated from live Planner screenshots on 2026-08-23.
+
+**Update 2026-09-02:** Kasper has since manually migrated real tasks into **Marketing HQ**, **Events**, and **Email** — these three are no longer empty skeletons and should be read/reported normally (see their live data below). **Opstart is still an empty structural skeleton** (0 tasks as of 2026-09-02) — keep treating only Opstart as "migration pending", not the other three.
+
+Also note: Paid Ads now has a handful of tasks with real due dates (e.g. "Foredrag: video" due 2026-09-03, "Lead gen genaktivering" due 2026-08-26, "Specifikke rejser ala Strava" due 2026-08-28) — the earlier assumption that Paid Ads has *no* due dates at all is no longer fully accurate; check per-task rather than assuming.
 
 Workspace GID: `1217755854232758` (africatours.dk)
 
@@ -50,8 +54,8 @@ Use these GIDs directly — don't re-resolve by name.
 
 ## Data-quality issues found — resolve with Kasper before trusting automation fully
 
-1. **Vinsmagning date/bucket mismatch — confirmed, still needs Kasper's call.** Årshjul's "Vinsmagning" task sits in the December section but is due 2026-11-18. The old Planner Events board also had a "Vinsmagning / Horsens and friends? / Hotel" task due 2026-11-11 — these read as the same real-world event with two different dates recorded. Ask Kasper which date is correct.
-2. **Marketing HQ, Events, Email, and Opstart have no tasks in Asana yet.** Kasper is migrating these manually from Planner. Treat empty as "not migrated", never as "nothing due".
+1. **Vinsmagning date/bucket mismatch — confirmed, still needs Kasper's call, now a third date in the mix.** Årshjul's "Vinsmagning" task sits in the December section but is due 2026-11-18. The old Planner Events board note recorded a "Vinsmagning / Horsens and friends? / Hotel" task due 2026-11-11. As of 2026-09-02, the now-live Asana **Events** board's "Vinsmagning / Horsens and friends? / Hotel" task (Planlagt section) shows a *third* due date: 2027-01-20. All three appear to reference the same real-world event. Ask Kasper which date is correct — don't silently pick one or merge them.
+2. **Opstart has no tasks in Asana yet (as of 2026-09-02).** Kasper is migrating this manually from Planner. Treat empty as "not migrated", never as "nothing due". Marketing HQ, Events, and Email were also in this state as of 2026-08-23 but have since been filled in — see the migration note above.
 3. **Paid Ads "Foredrag Viborg" checklist (0/4 in Planner) wasn't migrated** — the 4 item names weren't visible in the source screenshot.
 4. **Årshjul has an extra empty "Untitled section"** (Asana auto-creates a first section on project creation) — cosmetic only, safe for Kasper to delete in the UI.
 5. Planner-era issues from before the migration (a duplicate empty "Årshjul" plan, an unclear "Årsplan" plan, duplicate tasks in the old Marketing HQ) applied to the retired Planner boards and don't carry over automatically — they'll resurface here only if Kasper reintroduces them while migrating manually.
