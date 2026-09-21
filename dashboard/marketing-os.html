@@ -1,0 +1,794 @@
+<meta charset="utf-8">
+
+<!-- ==========================================================================
+     DATA — det eneste sted i filen, der skal redigeres i det daglige.
+     Kontrakten står i dashboard/README.md. Kort version:
+
+       * ÉN OPGAVE = ÉN LINJE. Rediger altid ved at finde opgavens id.
+       * status skal være præcis én af:
+           "Ikke startet" | "I gang" | "Blokeret" | "Færdig" | "Droppet"
+       * start/end er MÅNEDER  ("ÅÅÅÅ-MM")   — tidslinjens udstrækning
+       * sprint er en MÅNED    ("ÅÅÅÅ-MM")   — hvilken sprint opgaven er lagt i
+       * due er en rigtig DATO ("ÅÅÅÅ-MM-DD") eller tom
+       * opdatér meta.updated ved hver ændring
+
+     Skriver du noget ugyldigt, fanger valideringen det og viser et banner
+     øverst på siden i stedet for at fejle i stilhed.
+     ========================================================================== -->
+<script>
+var DATA = {
+
+  meta: {
+    updated: "2026-09-21",
+    note: "Sået fra Asana-øjebliksbilledet i reference/personal-assistant-playbook.md (23-08-2026). Det indeholdt kun deadlines — ingen statusser — så alt står som „Ikke startet“. Statusser og sprintmål mangler Kaspers første gennemgang."
+  },
+
+  /* ===== PROJEKTER ===== rækkefølgen her er rækkefølgen i sidebaren ===== */
+  projects: [
+    {id:"atr20",      name:"Africa Tours 2.0", tagline:"Brand-relaunch, logo, bøger og PR"},
+    {id:"hjemmeside", name:"Hjemmeside",       tagline:"Nyt site — struktur, indhold, lancering"},
+    {id:"crm",        name:"CRM",              tagline:"Datamodel, automatisering, go-live"}
+  ],
+
+  /* ===== SPRINTS ===== én sprint = ét projekt + én kalendermåned ===== */
+  sprints: [
+    {project:"atr20",      month:"2026-09", goal:"Lead-kampagnen i luften"},
+    {project:"atr20",      month:"2026-10", goal:"Logo landet og ambassadør-testen kørt"},
+    {project:"atr20",      month:"2026-11", goal:"Vinsmagningen afviklet"},
+    {project:"atr20",      month:"2027-01", goal:"Egne rejsebøger i tryk"},
+    {project:"atr20",      month:"2027-02", goal:"Rejsebogen ud i JP og Politiken"},
+    {project:"crm",        month:"2026-10", goal:"Tilbudsgiver-agenten bygget og testet"},
+    {project:"crm",        month:"2026-11", goal:"CRM i luften inden 30/11"},
+    {project:"hjemmeside", month:"2027-03", goal:"Nyt site live"}
+  ],
+
+  /* ===== OPGAVER ===== ÉN OPGAVE = ÉN LINJE ===== */
+  tasks: [
+    {id:"atr20-leadkampagne", project:"atr20",      sprint:"2026-09", start:"2026-09", end:"2026-09", status:"Ikke startet", title:"Lead kampagne lancering",              owner:"Kasper", due:"2026-09-16", note:"Deadline overskredet. Reel status ukendt — skal bekræftes."},
+    {id:"atr20-ambassadoer",  project:"atr20",      sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Ambassadør-team test",                 owner:"Kasper", due:"2026-10-06", note:""},
+    {id:"atr20-logo",         project:"atr20",      sprint:"2026-10", start:"2026-09", end:"2026-10", status:"Ikke startet", title:"Logo lancering",                       owner:"Kasper", due:"2026-10-15", note:"Stod som „Logo lancering??“ i Årshjul — datoen er usikker."},
+    {id:"atr20-vinsmagning",  project:"atr20",      sprint:"2026-11", start:"2026-11", end:"2026-11", status:"Ikke startet", title:"Vinsmagning",                          owner:"Kasper", due:"2026-11-18", note:"Datokonflikt: 18/11 i Årshjul vs. 11/11 i gamle Events. Skal afklares."},
+    {id:"atr20-rejseboeger",  project:"atr20",      sprint:"2027-01", start:"2026-11", end:"2027-01", status:"Ikke startet", title:"Tryk af egne rejsebøger",              owner:"Kasper", due:"2027-01-14", note:""},
+    {id:"atr20-jp-politiken", project:"atr20",      sprint:"2027-02", start:"2027-01", end:"2027-02", status:"Ikke startet", title:"Spot i JP/Politiken med rejsebog",     owner:"Kasper", due:"2027-02-19", note:"Afhænger af at rejsebøgerne er trykt."},
+    {id:"crm-tilbudsagent",   project:"crm",        sprint:"2026-10", start:"2026-09", end:"2026-10", status:"Ikke startet", title:"Byg tilbudsgiver-agent",               owner:"Kasper", due:"2026-10-14", note:"Lagt under CRM som antagelse — lå uden projekt i Årshjul. Flyt hvis den hører til Africa Tours 2.0."},
+    {id:"crm-lancering",      project:"crm",        sprint:"2026-11", start:"2026-10", end:"2026-11", status:"Ikke startet", title:"CRM lancering",                        owner:"Kasper", due:"2026-11-30", note:"Lå i Årshjuls december-sektion, men forfalder 30/11."},
+    {id:"web-lancering",      project:"hjemmeside", sprint:"2027-03", start:"2026-12", end:"2027-03", status:"Ikke startet", title:"Hjemmeside lancering",                 owner:"Kasper", due:"2027-03-27", note:"Stod som „Hjemmeside lancering??“ — datoen er et mål, ikke en aftale."}
+  ]
+
+};
+</script>
+<!-- ===================== SLUT PÅ DATA — kode herunder ===================== -->
+
+<title>Marketing OS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- ===== BRANDFONT — udskift her =====
+     Cormorant Garamond er stand-in for brandfonten "The Seasons" (betalt,
+     ikke i repoet). The Seasons står først i alle fontstakke nedenfor, så den
+     overtager af sig selv, hvis den installeres lokalt. Skal den indlejres i
+     filen, erstattes linket herunder af en @font-face med en base64-woff2.
+     Se brand/guidelines.md. ===================================== -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* Farver og typografi: se brand/guidelines.md. */
+
+:root {
+  color-scheme: light;
+  --bg: #F1EFEA;
+  --surface: #FFFFFF;
+  --surface-2: #FBF9F5;
+  --ink: #494F43;
+  --ink-2: #656B5C;
+  --muted: #8C9081;
+  --border: rgba(73,79,67,0.14);
+  --border-strong: rgba(73,79,67,0.28);
+  --cream: #FDF0D5;
+  --accent: #F39422;
+  --accent-soft: rgba(243,148,34,0.14);
+  --sidebar-bg: #494F43;
+  --sidebar-fg: #FDF0D5;
+  --sidebar-muted: rgba(253,240,213,0.58);
+  --st-ikke-startet: #C2A172;
+  --st-i-gang: #F39422;
+  --st-blokeret: #B4552F;
+  --st-faerdig: #777955;
+  --st-droppet: rgba(73,79,67,0.40);
+  --st-ukendt: #FF00FF;
+  --lane: rgba(73,79,67,0.035);
+  --shadow: 0 1px 2px rgba(73,79,67,0.05), 0 10px 28px -16px rgba(73,79,67,0.22);
+  --gantt-label: 232px;
+  --gantt-col: 76px;
+  --gantt-row: 34px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #14160F;
+    --surface: #1D2018;
+    --surface-2: #22261C;
+    --ink: #F0EDE2;
+    --ink-2: #C6C3B4;
+    --muted: #8E9182;
+    --border: rgba(240,237,226,0.13);
+    --border-strong: rgba(240,237,226,0.24);
+    --accent: #F5A945;
+    --accent-soft: rgba(245,169,69,0.16);
+    --sidebar-bg: #0F110B;
+    --sidebar-fg: #FDF0D5;
+    --sidebar-muted: rgba(253,240,213,0.52);
+    --st-ikke-startet: #A98E66;
+    --st-i-gang: #F5A945;
+    --st-blokeret: #D97B52;
+    --st-faerdig: #9BA073;
+    --st-droppet: rgba(240,237,226,0.38);
+    --st-ukendt: #FF00FF;
+    --lane: rgba(240,237,226,0.04);
+    --shadow: 0 1px 2px rgba(0,0,0,0.35), 0 14px 34px -18px rgba(0,0,0,0.7);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #14160F;
+  --surface: #1D2018;
+  --surface-2: #22261C;
+  --ink: #F0EDE2;
+  --ink-2: #C6C3B4;
+  --muted: #8E9182;
+  --border: rgba(240,237,226,0.13);
+  --border-strong: rgba(240,237,226,0.24);
+  --accent: #F5A945;
+  --accent-soft: rgba(245,169,69,0.16);
+  --sidebar-bg: #0F110B;
+  --sidebar-fg: #FDF0D5;
+  --sidebar-muted: rgba(253,240,213,0.52);
+  --st-ikke-startet: #A98E66;
+  --st-i-gang: #F5A945;
+  --st-blokeret: #D97B52;
+  --st-faerdig: #9BA073;
+  --st-droppet: rgba(240,237,226,0.38);
+  --st-ukendt: #FF00FF;
+  --lane: rgba(240,237,226,0.04);
+  --shadow: 0 1px 2px rgba(0,0,0,0.35), 0 14px 34px -18px rgba(0,0,0,0.7);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 {
+  font-family: "The Seasons", "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+  font-weight: 600;
+  margin: 0;
+  text-wrap: balance;
+  letter-spacing: 0.01em;
+}
+p { margin: 0; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------- Skal ---------- */
+.shell { display: flex; align-items: flex-start; min-height: 100vh; }
+
+.sidebar {
+  width: 240px;
+  flex: 0 0 240px;
+  align-self: stretch;
+  background: var(--sidebar-bg);
+  color: var(--sidebar-fg);
+  padding: 26px 0 24px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+.brandmark {
+  font-family: "The Seasons", "Cormorant Garamond", Georgia, serif;
+  font-size: 26px;
+  line-height: 1.1;
+  padding: 0 22px 22px;
+  color: var(--sidebar-fg);
+}
+.brandmark span { display: block; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; font-family: system-ui, sans-serif; color: var(--sidebar-muted); margin-top: 6px; }
+
+.nav-label { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--sidebar-muted); padding: 0 22px 8px; }
+.proj {
+  display: flex; align-items: flex-start; gap: 10px;
+  width: 100%; text-align: left;
+  background: none; border: 0; border-left: 3px solid transparent;
+  color: var(--sidebar-fg); font: inherit;
+  padding: 10px 20px 10px 19px; cursor: pointer;
+}
+.proj:hover { background: rgba(253,240,213,0.07); }
+.proj[aria-current="true"] { background: rgba(253,240,213,0.11); border-left-color: var(--accent); }
+.proj .dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; flex: 0 0 9px; }
+.proj .pname { font-size: 14px; }
+.proj .pmeta { font-size: 11.5px; color: var(--sidebar-muted); }
+.sidebar-foot { margin-top: 26px; padding: 16px 22px 0; border-top: 1px solid rgba(253,240,213,0.14); font-size: 11.5px; color: var(--sidebar-muted); }
+
+.main { flex: 1 1 auto; min-width: 0; padding: 30px 34px 90px; }
+.main-inner { max-width: 1120px; }
+
+/* ---------- Banner ---------- */
+.banner { border-radius: 10px; padding: 13px 16px; margin-bottom: 20px; font-size: 13.5px; border: 1px solid; }
+.banner h3 { font-family: inherit; font-size: 13.5px; font-weight: 700; margin-bottom: 4px; }
+.banner ul { margin: 6px 0 0; padding-left: 18px; }
+.banner-warn { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
+.banner-info { background: var(--surface-2); border-color: var(--border-strong); color: var(--ink-2); }
+
+/* ---------- Projekt-header ---------- */
+.phead { display: flex; align-items: flex-start; gap: 18px; margin-bottom: 14px; }
+.phead h1 { font-size: 34px; line-height: 1.12; }
+.phead .tagline { color: var(--ink-2); font-size: 14px; margin-top: 4px; }
+.theme-btn {
+  margin-left: auto; flex: 0 0 auto;
+  background: var(--surface); color: var(--ink-2);
+  border: 1px solid var(--border-strong); border-radius: 999px;
+  padding: 7px 14px; font: inherit; font-size: 13px; cursor: pointer;
+}
+.theme-btn:hover { border-color: var(--accent); color: var(--ink); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 999px; padding: 5px 13px 5px 10px; font-size: 13px; color: var(--ink-2);
+}
+.chip b { color: var(--ink); font-weight: 600; }
+.chip .dot { width: 8px; height: 8px; border-radius: 50%; }
+.chip.alarm { border-color: var(--st-blokeret); }
+
+/* ---------- Jump-nav ---------- */
+.jump { display: flex; gap: 8px; flex-wrap: wrap; position: sticky; top: 0; z-index: 20;
+        background: var(--bg); padding: 10px 0 12px; margin-bottom: 4px; border-bottom: 1px solid var(--border); }
+.jump a { font-size: 13px; text-decoration: none; color: var(--ink-2);
+          border: 1px solid var(--border); border-radius: 999px; padding: 5px 14px; background: var(--surface); }
+.jump a:hover { border-color: var(--accent); color: var(--ink); }
+
+/* ---------- Sektioner og kort ---------- */
+section { margin-top: 34px; scroll-margin-top: 62px; }
+.sec-label { font-size: 10.5px; letter-spacing: 0.17em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
+.card-pad { padding: 20px 22px; }
+
+.sprint-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.sprint-head h2 { font-size: 25px; }
+.tag { font-size: 10.5px; letter-spacing: 0.13em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border-strong); color: var(--ink-2); }
+.tag.now { background: var(--accent); border-color: var(--accent); color: #33270F; font-weight: 600; }
+.goal { border-left: 3px solid var(--accent); padding: 2px 0 2px 14px; margin: 14px 0 18px;
+        font-family: "The Seasons", "Cormorant Garamond", Georgia, serif; font-size: 20px; line-height: 1.35; color: var(--ink); }
+.goal.empty { border-left-color: var(--border-strong); color: var(--muted); font-style: italic; font-size: 16px; }
+
+.meter { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 4px; }
+.meter-track { flex: 1 1 220px; height: 8px; border-radius: 999px; background: var(--lane); overflow: hidden; min-width: 160px; }
+.meter-fill { height: 100%; background: var(--st-faerdig); border-radius: 999px; }
+.meter-txt { font-size: 13px; color: var(--ink-2); }
+
+/* ---------- Kanban ---------- */
+.kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 20px; }
+.col-head { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-2); margin-bottom: 9px; padding-bottom: 7px; border-bottom: 1px solid var(--border); }
+.col-head .dot { width: 8px; height: 8px; border-radius: 50%; }
+.col-head .cnt { margin-left: auto; color: var(--muted); }
+.tcard { background: var(--surface-2); border: 1px solid var(--border); border-left: 3px solid var(--border-strong); border-radius: 8px; padding: 10px 12px; margin-bottom: 9px; }
+.tcard .tt { font-size: 13.5px; line-height: 1.35; }
+.tcard .tm { font-size: 11.5px; color: var(--muted); margin-top: 5px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.tcard .tnote { font-size: 11.5px; color: var(--ink-2); margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border); }
+.due { display: inline-flex; align-items: center; gap: 4px; }
+.due.over { color: var(--st-blokeret); font-weight: 600; }
+.col-empty { font-size: 12px; color: var(--muted); font-style: italic; padding: 4px 0 8px; }
+
+/* ---------- Historik ---------- */
+details.hist { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); margin-bottom: 9px; }
+details.hist summary { cursor: pointer; padding: 12px 16px; font-size: 13.5px; color: var(--ink-2); list-style: none; display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+details.hist summary::-webkit-details-marker { display: none; }
+details.hist summary::before { content: "\25B8"; color: var(--muted); }
+details.hist[open] summary::before { content: "\25BE"; }
+details.hist summary b { color: var(--ink); font-weight: 600; }
+details.hist summary .g { color: var(--muted); font-style: italic; }
+details.hist .hist-body { padding: 0 16px 14px 34px; }
+.hrow { display: flex; gap: 10px; align-items: baseline; padding: 6px 0; border-top: 1px solid var(--border); font-size: 13px; }
+.hrow .dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px; }
+.hrow .hd { margin-left: auto; color: var(--muted); font-size: 12px; }
+
+/* ---------- Gantt ---------- */
+.gantt-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); }
+.gantt { display: grid; position: relative; width: max-content; min-width: 100%; }
+.g-cell { font-size: 11.5px; color: var(--ink-2); text-align: center; padding: 9px 4px; border-left: 1px solid var(--border); background: var(--surface-2); }
+.g-cell.year { border-left: 1px solid var(--border-strong); }
+.g-cell .yr { display: block; font-size: 10px; color: var(--muted); }
+.g-corner { position: sticky; left: 0; z-index: 3; background: var(--surface-2); border-bottom: 1px solid var(--border);
+            font-size: 10.5px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--muted); padding: 11px 14px; }
+.g-head { border-bottom: 1px solid var(--border); }
+.g-label {
+  position: sticky; left: 0; z-index: 2; background: var(--surface);
+  padding: 0 14px; height: var(--gantt-row); display: flex; align-items: center; gap: 8px;
+  font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  border-right: 1px solid var(--border); border-top: 1px solid var(--border);
+}
+.g-label .dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px; }
+.g-label .txt { overflow: hidden; text-overflow: ellipsis; }
+.g-lane { border-top: 1px solid var(--border); }
+.g-lane.alt { background: var(--lane); }
+.g-bar {
+  align-self: center; height: 17px; border-radius: 5px; margin: 0 3px;
+  position: relative; z-index: 1; cursor: default;
+}
+.g-bar.st-ikke-startet { background: var(--st-ikke-startet); }
+.g-bar.st-i-gang       { background: var(--st-i-gang); }
+.g-bar.st-faerdig      { background: var(--st-faerdig); }
+.g-bar.st-blokeret     { background: repeating-linear-gradient(45deg, var(--st-blokeret) 0 6px, rgba(255,255,255,0.30) 6px 11px); }
+.g-bar.st-droppet      { background: transparent; border: 1.5px dashed var(--st-droppet); }
+.g-bar.st-ukendt       { background: #FF00FF; }
+.g-diamond { position: absolute; top: 50%; width: 9px; height: 9px; background: var(--ink); border: 1.5px solid var(--surface);
+             transform: translate(-50%, -50%) rotate(45deg); }
+.g-diamond.over { background: var(--st-blokeret); }
+.g-today { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); z-index: 4; pointer-events: none; }
+.g-today::before { content: "I DAG"; position: absolute; top: 2px; left: 4px; font-size: 9px; letter-spacing: 0.1em;
+                   color: #33270F; background: var(--accent); padding: 1px 5px; border-radius: 3px; white-space: nowrap; }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; font-size: 12px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 14px; height: 9px; border-radius: 3px; display: inline-block; }
+
+/* ---------- Tom-tilstand ---------- */
+.empty { background: var(--surface); border: 1px dashed var(--border-strong); border-radius: 12px;
+         padding: 30px 24px; text-align: center; color: var(--ink-2); }
+.empty p:first-child { font-size: 15px; color: var(--ink); margin-bottom: 6px; }
+.empty code { background: var(--surface-2); border: 1px solid var(--border); border-radius: 5px; padding: 2px 7px; font-size: 12.5px; }
+
+footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+
+/* ---------- Smalle skærme ---------- */
+@media (max-width: 1000px) { .kanban { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 760px) {
+  .shell { flex-direction: column; }
+  .sidebar { width: 100%; flex: none; height: auto; position: static; padding-bottom: 14px; }
+  .brandmark { padding-bottom: 14px; }
+  .sidebar-foot { margin-top: 14px; }
+  .main { padding: 22px 18px 70px; }
+  .kanban { grid-template-columns: 1fr; }
+  .phead h1 { font-size: 27px; }
+}
+
+/* ---------- Print ---------- */
+@media print {
+  :root { --bg: #fff; --surface: #fff; }
+  .sidebar, .jump, .theme-btn { display: none !important; }
+  .main { padding: 0; }
+  .gantt-scroll { overflow: visible; border: 0; box-shadow: none; }
+  .card { box-shadow: none; break-inside: avoid; }
+  details.hist { break-inside: avoid; }
+  * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  @page { size: landscape; margin: 12mm; }
+}
+</style>
+
+<div class="shell">
+  <nav class="sidebar">
+    <div class="brandmark">Marketing OS<span>Africa Tours</span></div>
+    <div class="nav-label">Projekter</div>
+    <div id="projlist"></div>
+    <div class="sidebar-foot" id="sidefoot"></div>
+  </nav>
+  <main class="main"><div class="main-inner" id="main"></div></main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ====================== Hjælpefunktioner ====================== */
+
+  var MONTH_SHORT = ["jan.","feb.","mar.","apr.","maj","jun.","jul.","aug.","sep.","okt.","nov.","dec."];
+  var MONTH_LONG  = ["Januar","Februar","Marts","April","Maj","Juni","Juli","August","September","Oktober","November","December"];
+
+  // Månedsaritmetik sker altid i heltal — Date røres aldrig for spænd,
+  // så en tidszone ikke kan skubbe "2026-11" til oktober.
+  function mi(s) { return Number(s.slice(0, 4)) * 12 + Number(s.slice(5, 7)) - 1; }
+  function miLabel(i, long) {
+    var y = Math.floor(i / 12), m = i % 12;
+    return (long ? MONTH_LONG[m] + " " + y : MONTH_SHORT[m]);
+  }
+  function isMonth(s) { return typeof s === "string" && /^\d{4}-\d{2}$/.test(s) && Number(s.slice(5,7)) >= 1 && Number(s.slice(5,7)) <= 12; }
+  function isDate(s)  { return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s); }
+  function daysIn(y, m) { return new Date(y, m + 1, 0).getDate(); }
+  function fmtDate(iso) {
+    if (!isDate(iso)) return "";
+    return Number(iso.slice(8, 10)) + ". " + MONTH_SHORT[Number(iso.slice(5, 7)) - 1] + " " + iso.slice(0, 4);
+  }
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  var NOW = new Date();
+  var TODAY_MI = NOW.getFullYear() * 12 + NOW.getMonth();
+  var TODAY_ISO = NOW.getFullYear() + "-" + String(NOW.getMonth() + 1).padStart(2, "0") + "-" + String(NOW.getDate()).padStart(2, "0");
+
+  var STATUS = {
+    "ikke startet": { key: "ikke-startet", label: "Ikke startet", css: "st-ikke-startet" },
+    "i gang":       { key: "i-gang",       label: "I gang",       css: "st-i-gang" },
+    "blokeret":     { key: "blokeret",     label: "Blokeret",     css: "st-blokeret" },
+    "færdig":       { key: "faerdig",      label: "Færdig",       css: "st-faerdig" },
+    "faerdig":      { key: "faerdig",      label: "Færdig",       css: "st-faerdig" },
+    "droppet":      { key: "droppet",      label: "Droppet",      css: "st-droppet" }
+  };
+  var BOARD = ["ikke-startet", "i-gang", "blokeret", "faerdig"];
+  var LABEL = { "ikke-startet": "Ikke startet", "i-gang": "I gang", "blokeret": "Blokeret", "faerdig": "Færdig", "droppet": "Droppet" };
+
+  function stat(t) {
+    return STATUS[String(t.status || "").toLowerCase().trim()] ||
+           { key: "ukendt", label: String(t.status || "(tom)"), css: "st-ukendt" };
+  }
+  function span(t) {
+    // start/end falder tilbage til sprint-måneden, hvis de mangler
+    var s = isMonth(t.start) ? t.start : (isMonth(t.sprint) ? t.sprint : null);
+    var e = isMonth(t.end) ? t.end : s;
+    if (!s) return null;
+    var a = mi(s), b = mi(e);
+    return { a: a, b: Math.max(a, b) };
+  }
+  function overdue(t) {
+    var k = stat(t).key;
+    return isDate(t.due) && t.due < TODAY_ISO && k !== "faerdig" && k !== "droppet";
+  }
+
+  /* ====================== Validering ======================
+     Flade data fejler i stilhed — en tastefejl giver en usynlig bjælke,
+     ikke en fejlmeddelelse. Derfor fanges problemerne her og vises. */
+
+  // Returnerer rå tekst — escaping sker ét sted, ved udskrivningen i render().
+  function validate() {
+    var problems = [], seen = {}, i, t;
+    var projIds = {}, sprintKeys = {};
+
+    for (i = 0; i < DATA.projects.length; i++) projIds[DATA.projects[i].id] = true;
+    for (i = 0; i < DATA.sprints.length; i++) sprintKeys[DATA.sprints[i].project + "|" + DATA.sprints[i].month] = true;
+
+    for (i = 0; i < DATA.sprints.length; i++) {
+      if (!projIds[DATA.sprints[i].project]) problems.push("Sprint " + DATA.sprints[i].month + " peger på et ukendt projekt: " + DATA.sprints[i].project);
+      if (!isMonth(DATA.sprints[i].month)) problems.push("Sprint i " + DATA.sprints[i].project + " har ugyldig måned: " + DATA.sprints[i].month);
+    }
+
+    for (i = 0; i < DATA.tasks.length; i++) {
+      t = DATA.tasks[i];
+      var id = t.id || "(uden id)";
+      if (!t.id) problems.push("En opgave mangler id: " + t.title);
+      else if (seen[t.id]) problems.push("Dublet-id: " + id + " findes mere end én gang");
+      seen[t.id] = true;
+
+      if (stat(t).key === "ukendt") problems.push(id + ": ukendt status „" + String(t.status == null ? "" : t.status) + "“ — vises i magenta");
+      if (!projIds[t.project]) problems.push(id + ": ukendt projekt " + t.project + " — opgaven er usynlig overalt");
+      if (t.sprint && !sprintKeys[t.project + "|" + t.sprint]) problems.push(id + ": sprint " + t.sprint + " findes ikke for projektet — vises i tidslinjen, men i ingen sprint");
+      if (t.start && !isMonth(t.start)) problems.push(id + ": start er ikke ÅÅÅÅ-MM (" + t.start + ")");
+      if (t.end && !isMonth(t.end)) problems.push(id + ": end er ikke ÅÅÅÅ-MM (" + t.end + ")");
+      if (t.due && !isDate(t.due)) problems.push(id + ": due er ikke ÅÅÅÅ-MM-DD (" + t.due + ")");
+      if (isMonth(t.start) && isMonth(t.end) && mi(t.end) < mi(t.start)) problems.push(id + ": end (" + t.end + ") ligger før start (" + t.start + ")");
+      if (!span(t)) problems.push(id + ": hverken start eller sprint er en gyldig måned — kan ikke placeres på tidslinjen");
+    }
+    return problems;
+  }
+
+  /* ====================== Sidebar ====================== */
+
+  function healthDot(tasks) {
+    var i, k, anyOpen = false, anyGoing = false;
+    for (i = 0; i < tasks.length; i++) {
+      k = stat(tasks[i]).key;
+      if (k === "blokeret" || overdue(tasks[i])) return "var(--st-blokeret)";
+      if (k === "i-gang") anyGoing = true;
+      if (k !== "faerdig" && k !== "droppet") anyOpen = true;
+    }
+    if (anyGoing) return "var(--st-i-gang)";
+    if (!anyOpen && tasks.length) return "var(--st-faerdig)";
+    return "var(--st-ikke-startet)";
+  }
+
+  function tasksOf(pid) {
+    return DATA.tasks.filter(function (t) { return t.project === pid; });
+  }
+
+  function renderSidebar(active) {
+    var html = "";
+    DATA.projects.forEach(function (p) {
+      var ts = tasksOf(p.id);
+      var open = ts.filter(function (t) { var k = stat(t).key; return k !== "faerdig" && k !== "droppet"; }).length;
+      html += '<button class="proj" data-id="' + esc(p.id) + '" aria-current="' + (p.id === active) + '">' +
+                '<span class="dot" style="background:' + healthDot(ts) + '"></span>' +
+                '<span><span class="pname">' + esc(p.name) + '</span><br>' +
+                '<span class="pmeta num">' + (ts.length ? open + " åbne · " + ts.length + " i alt" : "ingen opgaver") + '</span></span>' +
+              '</button>';
+    });
+    document.getElementById("projlist").innerHTML = html;
+    document.getElementById("sidefoot").innerHTML =
+      "Opdateret<br><b class=\"num\">" + esc(DATA.meta.updated || "—") + "</b><br><br>Redigeres af Claude Code.";
+
+    Array.prototype.forEach.call(document.querySelectorAll(".proj"), function (b) {
+      b.addEventListener("click", function () {
+        location.hash = b.getAttribute("data-id");
+      });
+    });
+  }
+
+  /* ====================== Sprintvisning ====================== */
+
+  function pickSprint(sprints) {
+    // aktuel måned → ellers næste fremtidige → ellers seneste forgangne
+    var cur = null, next = null, past = null, i, m;
+    for (i = 0; i < sprints.length; i++) {
+      if (!isMonth(sprints[i].month)) continue;
+      m = mi(sprints[i].month);
+      if (m === TODAY_MI) cur = sprints[i];
+      else if (m > TODAY_MI) { if (!next || m < mi(next.month)) next = sprints[i]; }
+      else { if (!past || m > mi(past.month)) past = sprints[i]; }
+    }
+    if (cur) return { s: cur, tag: "Aktuel", now: true };
+    if (next) return { s: next, tag: "Kommende", now: false };
+    if (past) return { s: past, tag: "Seneste", now: false };
+    return null;
+  }
+
+  function taskCard(t) {
+    var st = stat(t), od = overdue(t);
+    var meta = [];
+    if (t.owner) meta.push(esc(t.owner));
+    if (isDate(t.due)) meta.push('<span class="due' + (od ? " over" : "") + '">' + (od ? "⚠ " : "") + fmtDate(t.due) + "</span>");
+    return '<div class="tcard" style="border-left-color:var(--' + st.css + ')">' +
+             '<div class="tt">' + esc(t.title) + "</div>" +
+             (meta.length ? '<div class="tm">' + meta.join(" · ") + "</div>" : "") +
+             (t.note ? '<div class="tnote">' + esc(t.note) + "</div>" : "") +
+           "</div>";
+  }
+
+  function renderSprint(p) {
+    var sprints = DATA.sprints.filter(function (s) { return s.project === p.id; });
+    var pick = pickSprint(sprints);
+
+    if (!pick) {
+      return '<section id="sprint"><div class="sec-label">Sprint</div>' +
+             '<div class="empty"><p>Ingen sprints oprettet for ' + esc(p.name) + " endnu.</p>" +
+             "<p>Bed Claude om fx <code>opret en oktober-sprint for " + esc(p.name) + "</code>.</p></div></section>";
+    }
+
+    var s = pick.s;
+    var ts = tasksOf(p.id).filter(function (t) { return t.sprint === s.month; });
+    var counted = ts.filter(function (t) { return stat(t).key !== "droppet"; });
+    var done = counted.filter(function (t) { return stat(t).key === "faerdig"; }).length;
+    var pct = counted.length ? Math.round(done / counted.length * 100) : 0;
+    var blocked = ts.filter(function (t) { return stat(t).key === "blokeret"; }).length;
+    var od = ts.filter(overdue).length;
+
+    var head = '<div class="sprint-head"><h2>' + esc(p.name) + " — " + miLabel(mi(s.month), true) + "</h2>" +
+               '<span class="tag' + (pick.now ? " now" : "") + '">' + pick.tag + "</span></div>";
+
+    var goal = s.goal
+      ? '<p class="goal">' + esc(s.goal) + "</p>"
+      : '<p class="goal empty">Intet sprintmål skrevet endnu.</p>';
+
+    var bits = [];
+    if (counted.length) bits.push('<span class="meter-txt num">' + done + " af " + counted.length + " færdige</span>");
+    if (pick.now) bits.push('<span class="meter-txt num">' + (daysIn(NOW.getFullYear(), NOW.getMonth()) - NOW.getDate()) + " dage tilbage af måneden</span>");
+    if (blocked) bits.push('<span class="chip alarm"><span class="dot" style="background:var(--st-blokeret)"></span><b>' + blocked + "</b> blokeret</span>");
+    if (od) bits.push('<span class="chip alarm"><span class="dot" style="background:var(--st-blokeret)"></span><b>' + od + "</b> over deadline</span>");
+
+    var meter = counted.length
+      ? '<div class="meter"><div class="meter-track"><div class="meter-fill" style="width:' + pct + '%"></div></div>' + bits.join("") + "</div>"
+      : (bits.length ? '<div class="meter">' + bits.join("") + "</div>" : "");
+
+    var body;
+    if (!ts.length) {
+      body = '<div class="col-empty" style="font-size:13.5px">Ingen opgaver lagt i sprinten endnu.</div>';
+    } else {
+      body = '<div class="kanban">';
+      BOARD.forEach(function (k) {
+        var col = ts.filter(function (t) { return stat(t).key === k; });
+        body += '<div><div class="col-head"><span class="dot" style="background:var(--st-' + k + ')"></span>' +
+                LABEL[k] + '<span class="cnt num">' + col.length + "</span></div>" +
+                (col.length ? col.map(taskCard).join("") : '<div class="col-empty">—</div>') + "</div>";
+      });
+      body += "</div>";
+    }
+
+    return '<section id="sprint"><div class="sec-label">Sprint</div>' +
+           '<div class="card card-pad">' + head + goal + meter + body + "</div></section>";
+  }
+
+  /* ====================== Historik ====================== */
+
+  function renderHistory(p) {
+    var pick = pickSprint(DATA.sprints.filter(function (s) { return s.project === p.id; }));
+    var shown = pick ? pick.s.month : null;
+    var rest = DATA.sprints
+      .filter(function (s) { return s.project === p.id && s.month !== shown && isMonth(s.month); })
+      .sort(function (a, b) { return mi(b.month) - mi(a.month); });
+
+    if (!rest.length) return "";
+
+    var html = '<section id="historik"><div class="sec-label">Øvrige sprints</div>';
+    rest.forEach(function (s) {
+      var ts = tasksOf(p.id).filter(function (t) { return t.sprint === s.month; });
+      var counted = ts.filter(function (t) { return stat(t).key !== "droppet"; });
+      var done = counted.filter(function (t) { return stat(t).key === "faerdig"; }).length;
+      html += '<details class="hist"><summary><b>' + miLabel(mi(s.month), true) + "</b>" +
+              '<span class="num">' + done + "/" + counted.length + " færdige</span>" +
+              (s.goal ? '<span class="g">„' + esc(s.goal) + "“</span>" : "") + "</summary>" +
+              '<div class="hist-body">' +
+              (ts.length ? ts.map(function (t) {
+                var st = stat(t);
+                return '<div class="hrow"><span class="dot" style="background:var(--' + st.css + ')"></span>' +
+                       "<span>" + esc(t.title) + "</span>" +
+                       '<span class="hd">' + st.label + (isDate(t.due) ? " · " + fmtDate(t.due) : "") + "</span></div>";
+              }).join("") : '<div class="col-empty">Ingen opgaver i denne sprint.</div>') +
+              "</div></details>";
+    });
+    return html + "</section>";
+  }
+
+  /* ====================== Gantt ====================== */
+
+  function renderGantt(p) {
+    var ts = tasksOf(p.id).filter(function (t) { return span(t) !== null; });
+
+    if (!ts.length) {
+      // repeat(0, …) er ugyldig CSS og ville vælte hele siden — så gitteret
+      // bygges slet ikke, når der intet er at tegne.
+      return '<section id="tidslinje"><div class="sec-label">Tidslinje</div>' +
+             '<div class="empty"><p>Ingen opgaver at tegne for ' + esc(p.name) + ".</p>" +
+             "<p>Bed Claude om fx <code>tilføj opgave „Wireframes“ til " + esc(p.name) + " i november</code>.</p></div></section>";
+    }
+
+    var lo = Infinity, hi = -Infinity;
+    ts.forEach(function (t) { var s = span(t); if (s.a < lo) lo = s.a; if (s.b > hi) hi = s.b; });
+    lo = Math.min(lo, TODAY_MI - 1);
+    hi = Math.max(hi, TODAY_MI + 5);
+    var cols = hi - lo + 1;
+
+    // Sidste kolonne er fleksibel, så stribningen fylder kortet ud på brede
+    // skærme. Den klapper sammen til 0, når månederne fylder mere end bredden.
+    var html = '<div class="gantt" style="grid-template-columns: var(--gantt-label) repeat(' + cols + ', var(--gantt-col)) minmax(0, 1fr);">';
+
+    // Header
+    html += '<div class="g-corner g-head" style="grid-row:1;grid-column:1">Opgave</div>';
+    for (var c = 0; c < cols; c++) {
+      var idx = lo + c, m = idx % 12, y = Math.floor(idx / 12);
+      html += '<div class="g-cell g-head' + (m === 0 ? " year" : "") + '" style="grid-row:1;grid-column:' + (c + 2) + '">' +
+              MONTH_SHORT[m] + (m === 0 ? '<span class="yr num">' + y + "</span>" : "") + "</div>";
+    }
+    html += '<div class="g-cell g-head" style="grid-row:1;grid-column:' + (cols + 2) + '"></div>';
+
+    // Rækker
+    ts.forEach(function (t, r) {
+      var s = span(t), st = stat(t), row = r + 2;
+      var title = t.title + (t.note ? " — " + t.note : "") + (isDate(t.due) ? " (deadline " + fmtDate(t.due) + ")" : "");
+
+      html += '<div class="g-lane' + (r % 2 ? " alt" : "") + '" style="grid-row:' + row + ';grid-column:2 / -1"></div>';
+      html += '<div class="g-label" style="grid-row:' + row + ';grid-column:1" title="' + esc(title) + '">' +
+              '<span class="dot" style="background:var(--' + st.css + ')"></span>' +
+              '<span class="txt">' + esc(t.title) + "</span></div>";
+
+      // Deadline-diamant placeres relativt inde i bjælken, så den følger med ved zoom
+      var dia = "";
+      if (isDate(t.due)) {
+        var dMi = mi(t.due.slice(0, 7));
+        var frac = (Number(t.due.slice(8, 10)) - 1) / daysIn(Number(t.due.slice(0, 4)), Number(t.due.slice(5, 7)) - 1);
+        var pos = (dMi - s.a + frac) / (s.b - s.a + 1) * 100;
+        if (pos >= 0 && pos <= 100) {
+          dia = '<span class="g-diamond' + (overdue(t) ? " over" : "") + '" style="left:' + pos.toFixed(2) + '%"></span>';
+        }
+      }
+
+      html += '<div class="g-bar ' + st.css + '" style="grid-row:' + row + ';grid-column:' + (s.a - lo + 2) + " / " + (s.b - lo + 3) + '" title="' + esc(title) + '">' + dia + "</div>";
+    });
+
+    // I dag-linjen. Fast kolonnebredde gør positionen beregnelig i ren CSS.
+    if (TODAY_MI >= lo && TODAY_MI <= hi) {
+      var f = (NOW.getDate() - 1) / daysIn(NOW.getFullYear(), NOW.getMonth());
+      html += '<div class="g-today" style="left: calc(var(--gantt-label) + ' + (TODAY_MI - lo + f).toFixed(3) + ' * var(--gantt-col))"></div>';
+    }
+
+    html += "</div>";
+
+    var legend = '<div class="legend">' + BOARD.concat(["droppet"]).map(function (k) {
+      return '<span><i class="g-bar ' + (k === "droppet" ? "st-droppet" : "st-" + k) + '" style="margin:0;height:9px"></i>' + LABEL[k] + "</span>";
+    }).join("") + '<span><i style="width:9px;height:9px;background:var(--ink);transform:rotate(45deg)"></i>Deadline</span></div>';
+
+    return '<section id="tidslinje"><div class="sec-label">Tidslinje</div>' +
+           '<div class="gantt-scroll" id="gscroll">' + html + "</div>" + legend + "</section>";
+  }
+
+  /* ====================== Samlet rendering ====================== */
+
+  function render(pid) {
+    var p = null;
+    for (var i = 0; i < DATA.projects.length; i++) if (DATA.projects[i].id === pid) p = DATA.projects[i];
+    if (!p) p = DATA.projects[0];
+    if (!p) { document.getElementById("main").innerHTML = '<div class="empty"><p>Ingen projekter oprettet endnu.</p></div>'; return; }
+
+    renderSidebar(p.id);
+    document.title = p.name + " — Marketing OS";
+
+    var ts = tasksOf(p.id);
+    var counts = {};
+    ts.forEach(function (t) { var k = stat(t).key; counts[k] = (counts[k] || 0) + 1; });
+
+    var chips = "";
+    BOARD.concat(["droppet", "ukendt"]).forEach(function (k) {
+      if (!counts[k]) return;
+      chips += '<span class="chip' + (k === "blokeret" || k === "ukendt" ? " alarm" : "") + '">' +
+               '<span class="dot" style="background:' + (k === "ukendt" ? "#FF00FF" : "var(--st-" + k + ")") + '"></span>' +
+               "<b>" + counts[k] + "</b> " + (LABEL[k] || "ukendt status") + "</span>";
+    });
+    var odAll = ts.filter(overdue).length;
+    if (odAll) chips += '<span class="chip alarm"><span class="dot" style="background:var(--st-blokeret)"></span><b>' + odAll + "</b> over deadline</span>";
+
+    var banners = "";
+    var problems = validate();
+    if (problems.length) {
+      banners += '<div class="banner banner-warn"><h3>⚠ ' + problems.length + " problem" + (problems.length > 1 ? "er" : "") +
+                 " i datablokken</h3><ul><li>" + problems.map(esc).join("</li><li>") + "</li></ul></div>";
+    }
+    if (DATA.meta.note) {
+      banners += '<div class="banner banner-info">' + esc(DATA.meta.note) + "</div>";
+    }
+
+    document.getElementById("main").innerHTML =
+      banners +
+      '<div class="phead"><div><h1>' + esc(p.name) + "</h1>" +
+        (p.tagline ? '<p class="tagline">' + esc(p.tagline) + "</p>" : "") + "</div>" +
+        '<button class="theme-btn" id="themebtn" type="button"></button></div>' +
+      '<div class="chips">' + (chips || '<span class="chip">Ingen opgaver endnu</span>') + "</div>" +
+      '<nav class="jump"><a href="#sprint">Sprint</a><a href="#historik">Øvrige sprints</a><a href="#tidslinje">Tidslinje</a></nav>' +
+      renderSprint(p) +
+      renderHistory(p) +
+      renderGantt(p) +
+      "<footer>Marketing OS · Africa Tours · data opdateret " + esc(DATA.meta.updated || "—") +
+      " · vedligeholdes af Claude Code i <span class=\"num\">dashboard/marketing-os.html</span></footer>";
+
+    wireTheme();
+
+    // Rul tidslinjen så indeværende måned ligger tæt på venstre kant
+    var gs = document.getElementById("gscroll");
+    if (gs) {
+      var line = gs.querySelector(".g-today");
+      if (line) gs.scrollLeft = Math.max(0, line.offsetLeft - 340);
+    }
+  }
+
+  /* ====================== Tema ====================== */
+
+  function currentTheme() {
+    var set = document.documentElement.getAttribute("data-theme");
+    if (set) return set;
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  function wireTheme() {
+    var btn = document.getElementById("themebtn");
+    if (!btn) return;
+    btn.textContent = currentTheme() === "dark" ? "☀ Lyst tema" : "☾ Mørkt tema";
+    btn.addEventListener("click", function () {
+      document.documentElement.setAttribute("data-theme", currentTheme() === "dark" ? "light" : "dark");
+      btn.textContent = currentTheme() === "dark" ? "☀ Lyst tema" : "☾ Mørkt tema";
+    });
+  }
+
+  /* ====================== Start ====================== */
+
+  function fromHash() { return (location.hash || "").replace(/^#/, ""); }
+  window.addEventListener("hashchange", function () { render(fromHash()); });
+
+  try {
+    render(fromHash());
+  } catch (err) {
+    document.getElementById("main").innerHTML =
+      '<div class="banner banner-warn"><h3>⚠ Dashboardet kunne ikke tegnes</h3>' +
+      "<p>" + esc(err && err.message ? err.message : String(err)) +
+      "</p><p style=\"margin-top:8px\">Det skyldes næsten altid en fejl i DATA-blokken øverst i filen. Bed Claude om at rette den.</p></div>";
+  }
+})();
+</script>
