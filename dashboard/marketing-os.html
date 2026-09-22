@@ -19,14 +19,21 @@
 var DATA = {
 
   meta: {
-    updated: "2026-09-21",
-    note: "Sået fra Asana-øjebliksbilledet i reference/personal-assistant-playbook.md (23-08-2026). Det indeholdt kun deadlines — ingen statusser — så alt står som „Ikke startet“. Statusser og sprintmål mangler Kaspers første gennemgang."
+    updated: "2026-09-22",
+    note: "Africa Tours 2.0 og CRM er sået fra Asana-øjebliksbilledet (23-08-2026), der kun indeholdt deadlines — derfor står alt dér som „Ikke startet“. Hjemmeside følger tidsplanen af 22-09-2026, hvor kun Sprint 1 (oktober) er detaljeret; sprint 2–6 er oprettet som tomme skaller og mangler indhold."
+  },
+
+  /* ===== EPICS ===== valgfri gruppering. Nøglen sættes i opgavens epic-felt ===== */
+  epics: {
+    E1:"Fundament & hosting", E2:"Datamodel & HubDB", E3:"Design & templates",
+    E4:"HubSpot forms & CRM", E5:"Byg din rejse-widget", E6:"Automatiseret tilbudsgivning",
+    E7:"Indhold: 65 rejser", E8:"SEO, redirects & tracking", E9:"QA, performance & lancering"
   },
 
   /* ===== PROJEKTER ===== rækkefølgen her er rækkefølgen i sidebaren ===== */
   projects: [
     {id:"atr20",      name:"Africa Tours 2.0", tagline:"Brand-relaunch, logo, bøger og PR"},
-    {id:"hjemmeside", name:"Hjemmeside",       tagline:"Nyt site — struktur, indhold, lancering"},
+    {id:"hjemmeside", name:"Hjemmeside",       tagline:"Africatours.dk 2.0 på HubSpot CMS — 65 produktsider, 9 sidetyper, tilbudsflow. Deadline 31. marts 2027"},
     {id:"crm",        name:"CRM",              tagline:"Datamodel, automatisering, go-live"}
   ],
 
@@ -39,7 +46,12 @@ var DATA = {
     {project:"atr20",      month:"2027-02", goal:"Rejsebogen ud i JP og Politiken"},
     {project:"crm",        month:"2026-10", goal:"Tilbudsgiver-agenten bygget og testet"},
     {project:"crm",        month:"2026-11", goal:"CRM i luften inden 30/11"},
-    {project:"hjemmeside", month:"2027-03", goal:"Nyt site live"}
+    {project:"hjemmeside", month:"2026-10", goal:"Grundlaget er på plads, så udvikling og indhold kan køre parallelt fra november"},
+    {project:"hjemmeside", month:"2026-11", goal:""},
+    {project:"hjemmeside", month:"2026-12", goal:""},
+    {project:"hjemmeside", month:"2027-01", goal:""},
+    {project:"hjemmeside", month:"2027-02", goal:""},
+    {project:"hjemmeside", month:"2027-03", goal:"Go-live i uge 12 (22.–26. marts), buffer til 31. marts"}
   ],
 
   /* ===== OPGAVER ===== ÉN OPGAVE = ÉN LINJE ===== */
@@ -52,7 +64,23 @@ var DATA = {
     {id:"atr20-jp-politiken", project:"atr20",      sprint:"2027-02", start:"2027-01", end:"2027-02", status:"Ikke startet", title:"Spot i JP/Politiken med rejsebog",     owner:"Kasper", due:"2027-02-19", note:"Afhænger af at rejsebøgerne er trykt."},
     {id:"crm-tilbudsagent",   project:"crm",        sprint:"2026-10", start:"2026-09", end:"2026-10", status:"Ikke startet", title:"Byg tilbudsgiver-agent",               owner:"Kasper", due:"2026-10-14", note:"Lagt under CRM som antagelse — lå uden projekt i Årshjul. Flyt hvis den hører til Africa Tours 2.0."},
     {id:"crm-lancering",      project:"crm",        sprint:"2026-11", start:"2026-10", end:"2026-11", status:"Ikke startet", title:"CRM lancering",                        owner:"Kasper", due:"2026-11-30", note:"Lå i Årshjuls december-sektion, men forfalder 30/11."},
-    {id:"web-lancering",      project:"hjemmeside", sprint:"2027-03", start:"2026-12", end:"2027-03", status:"Ikke startet", title:"Hjemmeside lancering",                 owner:"Kasper", due:"2027-03-27", note:"Stod som „Hjemmeside lancering??“ — datoen er et mål, ikke en aftale."}
+    {id:"web-lancering",      project:"hjemmeside", sprint:"2027-03", start:"2027-03", end:"2027-03", status:"Ikke startet", title:"Go-live africatours.dk 2.0",           owner:"Kasper",   due:"2027-03-31", epic:"E9", note:"Planlagt go-live uge 12 (22.–26. marts) med buffer til hård deadline 31. marts."},
+
+    /* --- Hjemmeside, Sprint 1 (oktober 2026) — fra tidsplanen af 22-09-2026 --- */
+    {id:"web-e1-licens",      project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Bekræft Content Hub-licens og aktivér CMS", owner:"Kasper",   due:"", epic:"E1", note:"Blokerer alt udviklingsarbejde — bør tages først i sprinten."},
+    {id:"web-e1-sandbox",     project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Dev-sandbox, GitHub-repo, HubSpot CLI, Cursor", owner:"Udvikler", due:"", epic:"E1", note:"TEK-07."},
+    {id:"web-e1-aftale",      project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Konsulentaftale: udviklingsplan og support", owner:"Kasper",   due:"", epic:"E1", note:"TEK-08. Dækker også domæneflytning."},
+    {id:"web-e1-dns",         project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Plan for DNS-flytning til HubSpot",     owner:"Udvikler", due:"", epic:"E1", note:"SSL og subdomæner med; mail forbliver uændret."},
+    {id:"web-e1-nyhedsbrev",  project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Beslut: nyhedsbrev videreføres eller flyttes til HubSpot", owner:"Kasper", due:"", epic:"E1", note:"TEK-06. Rører Drip — afklar med email-specialist."},
+    {id:"web-e2-tabeller",    project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Design HubDB-tabeller",                owner:"Udvikler", due:"", epic:"E2", note:"Lande (maks 12), Rejsepakker, Kategorier (maks 8), Afrejsedatoer (ledig/få pladser/udsolgt/afmeldt), Grupperejser."},
+    {id:"web-e2-relationer",  project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Mange-til-mange pakke ↔ kategorier",   owner:"Udvikler", due:"", epic:"E2", note:"DB-03. Plus rækkefølge og synlighed på lande."},
+    {id:"web-e2-priser",      project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Workflow til masseopdatering af priser", owner:"Udvikler", due:"", epic:"E2", note:"DB-01, DB-02. Via CSV eller AI-agent."},
+    {id:"web-e2-datadeling",  project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Beslut fælles datakilde for widget og tilbudsflow", owner:"Udvikler", due:"", epic:"E2", note:"DB-05. Afgør designet af både E5 og E6 — bør ligge før november."},
+    {id:"web-e3-uikit",       project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Designsystem og UI-kit",               owner:"Design",   due:"", epic:"E3", note:"Billede-først kort, feed-layout, produktside med faktaboks."},
+    {id:"web-e3-wireframes",  project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Wireframes: 9 sidetyper + widgetflow",  owner:"Design",   due:"", epic:"E3", note:"Mobile-first."},
+    {id:"web-e7-katalog",     project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Lås produktkatalog",                   owner:"Indhold",  due:"", epic:"E7", note:"12 lande × 5 rejser + 5 grupperejser = 65 sider. Navne, varighed, tags."},
+    {id:"web-e7-kategorier",  project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Fastlæg de 8 kategorier",              owner:"Indhold",  due:"", epic:"E7", note:""},
+    {id:"web-e7-skabelon",    project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Indholdsskabelon pr. rejse",           owner:"Indhold",  due:"", epic:"E7", note:"Overblik, dag-for-dag, seværdigheder, indkvartering, praktisk, inkl./ekskl. — listen var afkortet i tidsplanen og skal bekræftes."}
   ]
 
 };
@@ -98,7 +126,7 @@ var DATA = {
   --st-ukendt: #FF00FF;
   --lane: rgba(73,79,67,0.035);
   --shadow: 0 1px 2px rgba(73,79,67,0.05), 0 10px 28px -16px rgba(73,79,67,0.22);
-  --gantt-label: 232px;
+  --gantt-label: 272px;
   --gantt-col: 76px;
   --gantt-row: 34px;
 }
@@ -279,6 +307,8 @@ section { margin-top: 34px; scroll-margin-top: 62px; }
 .tcard .tt { font-size: 13.5px; line-height: 1.35; }
 .tcard .tm { font-size: 11.5px; color: var(--muted); margin-top: 5px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .tcard .tnote { font-size: 11.5px; color: var(--ink-2); margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border); }
+.ep { font-size: 10px; letter-spacing: 0.06em; font-weight: 600; color: var(--ink-2);
+      background: var(--lane); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; flex: 0 0 auto; }
 .due { display: inline-flex; align-items: center; gap: 4px; }
 .due.over { color: var(--st-blokeret); font-weight: 600; }
 .col-empty { font-size: 12px; color: var(--muted); font-style: italic; padding: 4px 0 8px; }
@@ -434,6 +464,12 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
     var a = mi(s), b = mi(e);
     return { a: a, b: Math.max(a, b) };
   }
+  // Epics er valgfri. Nøglen (fx "E2") vises som mærke, det fulde navn som tooltip.
+  function epicName(t) {
+    if (!t.epic) return "";
+    var n = DATA.epics && DATA.epics[t.epic];
+    return n ? t.epic + " — " + n : t.epic;
+  }
   function overdue(t) {
     var k = stat(t).key;
     return isDate(t.due) && t.due < TODAY_ISO && k !== "faerdig" && k !== "droppet";
@@ -537,6 +573,7 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
   function taskCard(t) {
     var st = stat(t), od = overdue(t);
     var meta = [];
+    if (t.epic) meta.push('<span class="ep" title="' + esc(epicName(t)) + '">' + esc(t.epic) + "</span>");
     if (t.owner) meta.push(esc(t.owner));
     if (isDate(t.due)) meta.push('<span class="due' + (od ? " over" : "") + '">' + (od ? "⚠ " : "") + fmtDate(t.due) + "</span>");
     return '<div class="tcard" style="border-left-color:var(--' + st.css + ')">' +
@@ -665,11 +702,13 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
     // Rækker
     ts.forEach(function (t, r) {
       var s = span(t), st = stat(t), row = r + 2;
-      var title = t.title + (t.note ? " — " + t.note : "") + (isDate(t.due) ? " (deadline " + fmtDate(t.due) + ")" : "");
+      var title = (t.epic ? epicName(t) + "\n" : "") + t.title +
+                  (t.note ? " — " + t.note : "") + (isDate(t.due) ? " (deadline " + fmtDate(t.due) + ")" : "");
 
       html += '<div class="g-lane' + (r % 2 ? " alt" : "") + '" style="grid-row:' + row + ';grid-column:2 / -1"></div>';
       html += '<div class="g-label" style="grid-row:' + row + ';grid-column:1" title="' + esc(title) + '">' +
               '<span class="dot" style="background:var(--' + st.css + ')"></span>' +
+              (t.epic ? '<span class="ep">' + esc(t.epic) + "</span>" : "") +
               '<span class="txt">' + esc(t.title) + "</span></div>";
 
       // Deadline-diamant placeres relativt inde i bjælken, så den følger med ved zoom

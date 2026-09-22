@@ -26,7 +26,10 @@ Al data ligger i `<script>`-blokken **øverst i filen**, før CSS'en. Tre flade 
 | `title` | fri tekst | |
 | `owner` | fri tekst | |
 | `due` | `"ÅÅÅÅ-MM-DD"` eller `""` | Den eneste rigtige dato. Tegner en diamant på bjælken og markerer overskredet deadline |
+| `epic` | en nøgle fra `epics`, fx `"E2"` | Valgfri. Vises som lille mærke; det fulde navn kommer frem som tooltip |
 | `note` | fri tekst | Vises på opgavekortet og som tooltip på tidslinjen |
+
+`epics` er et valgfrit opslag øverst i datablokken (`{E1:"Fundament & hosting", …}`). Projekter uden epics udelader bare feltet — intet går i stykker.
 
 ### Statusser — skal skrives præcis sådan her
 
