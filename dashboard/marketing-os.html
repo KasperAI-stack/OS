@@ -1,91 +1,17 @@
 <meta charset="utf-8">
 
-<!-- ==========================================================================
-     DATA — det eneste sted i filen, der skal redigeres i det daglige.
-     Kontrakten står i dashboard/README.md. Kort version:
+<!-- =========================================================================
+     MARKETING OS — kode.
 
-       * ÉN OPGAVE = ÉN LINJE. Rediger altid ved at finde opgavens id.
-       * status skal være præcis én af:
-           "Ikke startet" | "I gang" | "Blokeret" | "Færdig" | "Droppet"
-       * start/end er MÅNEDER  ("ÅÅÅÅ-MM")   — tidslinjens udstrækning
-       * sprint er en MÅNED    ("ÅÅÅÅ-MM")   — hvilken sprint opgaven er lagt i
-       * due er en rigtig DATO ("ÅÅÅÅ-MM-DD") eller tom
-       * opdatér meta.updated ved hver ændring
+     Indholdet ligger i marketing-os-data.js ved siden af denne fil. Et
+     klassisk <script src> bruges med vilje: en file://-side må ikke fetche
+     en nabofil (CORS blokerer det), men må godt indlæse den som script.
+     Det er dét, der gør det muligt at skille kode fra data og stadig åbne
+     dashboardet med et dobbeltklik.
 
-     Skriver du noget ugyldigt, fanger valideringen det og viser et banner
-     øverst på siden i stedet for at fejle i stilhed.
-     ========================================================================== -->
-<script>
-var DATA = {
-
-  meta: {
-    updated: "2026-09-22",
-    note: "Africa Tours 2.0 og CRM er sået fra Asana-øjebliksbilledet (23-08-2026), der kun indeholdt deadlines — derfor står alt dér som „Ikke startet“. Hjemmeside følger tidsplanen af 22-09-2026, hvor kun Sprint 1 (oktober) er detaljeret; sprint 2–6 er oprettet som tomme skaller og mangler indhold."
-  },
-
-  /* ===== EPICS ===== valgfri gruppering. Nøglen sættes i opgavens epic-felt ===== */
-  epics: {
-    E1:"Fundament & hosting", E2:"Datamodel & HubDB", E3:"Design & templates",
-    E4:"HubSpot forms & CRM", E5:"Byg din rejse-widget", E6:"Automatiseret tilbudsgivning",
-    E7:"Indhold: 65 rejser", E8:"SEO, redirects & tracking", E9:"QA, performance & lancering"
-  },
-
-  /* ===== PROJEKTER ===== rækkefølgen her er rækkefølgen i sidebaren ===== */
-  projects: [
-    {id:"atr20",      name:"Africa Tours 2.0", tagline:"Brand-relaunch, logo, bøger og PR"},
-    {id:"hjemmeside", name:"Hjemmeside",       tagline:"Africatours.dk 2.0 på HubSpot CMS — 65 produktsider, 9 sidetyper, tilbudsflow. Deadline 31. marts 2027"},
-    {id:"crm",        name:"CRM",              tagline:"Datamodel, automatisering, go-live"}
-  ],
-
-  /* ===== SPRINTS ===== én sprint = ét projekt + én kalendermåned ===== */
-  sprints: [
-    {project:"atr20",      month:"2026-09", goal:"Lead-kampagnen i luften"},
-    {project:"atr20",      month:"2026-10", goal:"Logo landet og ambassadør-testen kørt"},
-    {project:"atr20",      month:"2026-11", goal:"Vinsmagningen afviklet"},
-    {project:"atr20",      month:"2027-01", goal:"Egne rejsebøger i tryk"},
-    {project:"atr20",      month:"2027-02", goal:"Rejsebogen ud i JP og Politiken"},
-    {project:"crm",        month:"2026-10", goal:"Tilbudsgiver-agenten bygget og testet"},
-    {project:"crm",        month:"2026-11", goal:"CRM i luften inden 30/11"},
-    {project:"hjemmeside", month:"2026-10", goal:"Grundlaget er på plads, så udvikling og indhold kan køre parallelt fra november"},
-    {project:"hjemmeside", month:"2026-11", goal:""},
-    {project:"hjemmeside", month:"2026-12", goal:""},
-    {project:"hjemmeside", month:"2027-01", goal:""},
-    {project:"hjemmeside", month:"2027-02", goal:""},
-    {project:"hjemmeside", month:"2027-03", goal:"Go-live i uge 12 (22.–26. marts), buffer til 31. marts"}
-  ],
-
-  /* ===== OPGAVER ===== ÉN OPGAVE = ÉN LINJE ===== */
-  tasks: [
-    {id:"atr20-leadkampagne", project:"atr20",      sprint:"2026-09", start:"2026-09", end:"2026-09", status:"Ikke startet", title:"Lead kampagne lancering",              owner:"Kasper", due:"2026-09-16", note:"Deadline overskredet. Reel status ukendt — skal bekræftes."},
-    {id:"atr20-ambassadoer",  project:"atr20",      sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Ambassadør-team test",                 owner:"Kasper", due:"2026-10-06", note:""},
-    {id:"atr20-logo",         project:"atr20",      sprint:"2026-10", start:"2026-09", end:"2026-10", status:"Ikke startet", title:"Logo lancering",                       owner:"Kasper", due:"2026-10-15", note:"Stod som „Logo lancering??“ i Årshjul — datoen er usikker."},
-    {id:"atr20-vinsmagning",  project:"atr20",      sprint:"2026-11", start:"2026-11", end:"2026-11", status:"Ikke startet", title:"Vinsmagning",                          owner:"Kasper", due:"2026-11-18", note:"Datokonflikt: 18/11 i Årshjul vs. 11/11 i gamle Events. Skal afklares."},
-    {id:"atr20-rejseboeger",  project:"atr20",      sprint:"2027-01", start:"2026-11", end:"2027-01", status:"Ikke startet", title:"Tryk af egne rejsebøger",              owner:"Kasper", due:"2027-01-14", note:""},
-    {id:"atr20-jp-politiken", project:"atr20",      sprint:"2027-02", start:"2027-01", end:"2027-02", status:"Ikke startet", title:"Spot i JP/Politiken med rejsebog",     owner:"Kasper", due:"2027-02-19", note:"Afhænger af at rejsebøgerne er trykt."},
-    {id:"crm-tilbudsagent",   project:"crm",        sprint:"2026-10", start:"2026-09", end:"2026-10", status:"Ikke startet", title:"Byg tilbudsgiver-agent",               owner:"Kasper", due:"2026-10-14", note:"Lagt under CRM som antagelse — lå uden projekt i Årshjul. Flyt hvis den hører til Africa Tours 2.0."},
-    {id:"crm-lancering",      project:"crm",        sprint:"2026-11", start:"2026-10", end:"2026-11", status:"Ikke startet", title:"CRM lancering",                        owner:"Kasper", due:"2026-11-30", note:"Lå i Årshjuls december-sektion, men forfalder 30/11."},
-    {id:"web-lancering",      project:"hjemmeside", sprint:"2027-03", start:"2027-03", end:"2027-03", status:"Ikke startet", title:"Go-live africatours.dk 2.0",           owner:"Kasper",   due:"2027-03-31", epic:"E9", note:"Planlagt go-live uge 12 (22.–26. marts) med buffer til hård deadline 31. marts."},
-
-    /* --- Hjemmeside, Sprint 1 (oktober 2026) — fra tidsplanen af 22-09-2026 --- */
-    {id:"web-e1-licens",      project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Bekræft Content Hub-licens og aktivér CMS", owner:"Kasper",   due:"", epic:"E1", note:"Blokerer alt udviklingsarbejde — bør tages først i sprinten."},
-    {id:"web-e1-sandbox",     project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Dev-sandbox, GitHub-repo, HubSpot CLI, Cursor", owner:"Udvikler", due:"", epic:"E1", note:"TEK-07."},
-    {id:"web-e1-aftale",      project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Konsulentaftale: udviklingsplan og support", owner:"Kasper",   due:"", epic:"E1", note:"TEK-08. Dækker også domæneflytning."},
-    {id:"web-e1-dns",         project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Plan for DNS-flytning til HubSpot",     owner:"Udvikler", due:"", epic:"E1", note:"SSL og subdomæner med; mail forbliver uændret."},
-    {id:"web-e1-nyhedsbrev",  project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Beslut: nyhedsbrev videreføres eller flyttes til HubSpot", owner:"Kasper", due:"", epic:"E1", note:"TEK-06. Rører Drip — afklar med email-specialist."},
-    {id:"web-e2-tabeller",    project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Design HubDB-tabeller",                owner:"Udvikler", due:"", epic:"E2", note:"Lande (maks 12), Rejsepakker, Kategorier (maks 8), Afrejsedatoer (ledig/få pladser/udsolgt/afmeldt), Grupperejser."},
-    {id:"web-e2-relationer",  project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Mange-til-mange pakke ↔ kategorier",   owner:"Udvikler", due:"", epic:"E2", note:"DB-03. Plus rækkefølge og synlighed på lande."},
-    {id:"web-e2-priser",      project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Workflow til masseopdatering af priser", owner:"Udvikler", due:"", epic:"E2", note:"DB-01, DB-02. Via CSV eller AI-agent."},
-    {id:"web-e2-datadeling",  project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Beslut fælles datakilde for widget og tilbudsflow", owner:"Udvikler", due:"", epic:"E2", note:"DB-05. Afgør designet af både E5 og E6 — bør ligge før november."},
-    {id:"web-e3-uikit",       project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Designsystem og UI-kit",               owner:"Design",   due:"", epic:"E3", note:"Billede-først kort, feed-layout, produktside med faktaboks."},
-    {id:"web-e3-wireframes",  project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Wireframes: 9 sidetyper + widgetflow",  owner:"Design",   due:"", epic:"E3", note:"Mobile-first."},
-    {id:"web-e7-katalog",     project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Lås produktkatalog",                   owner:"Indhold",  due:"", epic:"E7", note:"12 lande × 5 rejser + 5 grupperejser = 65 sider. Navne, varighed, tags."},
-    {id:"web-e7-kategorier",  project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Fastlæg de 8 kategorier",              owner:"Indhold",  due:"", epic:"E7", note:""},
-    {id:"web-e7-skabelon",    project:"hjemmeside", sprint:"2026-10", start:"2026-10", end:"2026-10", status:"Ikke startet", title:"Indholdsskabelon pr. rejse",           owner:"Indhold",  due:"", epic:"E7", note:"Overblik, dag-for-dag, seværdigheder, indkvartering, praktisk, inkl./ekskl. — listen var afkortet i tidsplanen og skal bekræftes."}
-  ]
-
-};
-</script>
-<!-- ===================== SLUT PÅ DATA — kode herunder ===================== -->
+     Datafilen ligger uden for git — den er data, ikke kode.
+     ========================================================================= -->
+<script src="marketing-os-data.js"></script>
 
 <title>Marketing OS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -385,10 +311,63 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
   .phead h1 { font-size: 27px; }
 }
 
+/* ---------- Knapper ---------- */
+.btn { font: inherit; font-size: 13px; padding: 7px 14px; border-radius: 999px; cursor: pointer;
+       background: var(--surface); color: var(--ink-2); border: 1px solid var(--border-strong); white-space: nowrap; }
+.btn:hover { border-color: var(--accent); color: var(--ink); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #33270F; font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.primary.ghost { background: var(--surface); border-color: var(--border-strong); color: var(--muted); font-weight: 400; }
+.btn.primary.ghost:hover { color: var(--ink); border-color: var(--accent); }
+.btn.danger { border-color: var(--st-blokeret); color: var(--st-blokeret); }
+.btn.danger:hover { background: var(--st-blokeret); color: var(--cream); }
+.icon-btn { font: inherit; font-size: 14px; line-height: 1; background: none; border: 0; cursor: pointer;
+            color: var(--muted); padding: 3px 6px; border-radius: 6px; vertical-align: middle; }
+.icon-btn:hover { color: var(--accent); background: var(--accent-soft); }
+.pacts { margin-left: auto; display: flex; gap: 8px; align-items: center; flex: 0 0 auto; }
+.unsaved { color: var(--accent); font-weight: 600; }
+
+.proj.add { color: var(--sidebar-muted); align-items: center; }
+.proj.add:hover { color: var(--sidebar-fg); }
+.proj.add .plus { width: 9px; text-align: center; font-size: 15px; line-height: 1; flex: 0 0 9px; }
+
+.tcard[data-act], .hrow[data-act], .g-label[data-act] { cursor: pointer; }
+.tcard[data-act]:hover { border-color: var(--accent); }
+.tcard[data-act]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hrow[data-act]:hover, .g-label[data-act]:hover { color: var(--accent); }
+
+/* ---------- Dialog ---------- */
+#editor { border: 1px solid var(--border-strong); border-radius: 14px; background: var(--surface); color: var(--ink);
+          padding: 0; width: min(560px, calc(100vw - 32px)); box-shadow: 0 24px 60px -20px rgba(0,0,0,0.4); }
+#editor::backdrop { background: rgba(28,30,22,0.5); }
+#editor form { padding: 22px 24px 20px; }
+#editor h3 { font-size: 22px; margin-bottom: 16px; }
+.frow { display: block; margin-bottom: 13px; }
+.flab { display: block; font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+.fhint { display: block; font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+#editor input, #editor select, #editor textarea {
+  font: inherit; font-size: 14px; width: 100%; padding: 8px 10px; border-radius: 8px;
+  border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--ink);
+}
+#editor textarea { resize: vertical; line-height: 1.45; }
+#editor input:focus, #editor select:focus, #editor textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
+.fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+.dbtns { display: flex; gap: 9px; align-items: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+
+/* ---------- Statusbesked ---------- */
+.flash { position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 14px); z-index: 60;
+         background: var(--sidebar-bg); color: var(--sidebar-fg); font-size: 13.5px;
+         padding: 11px 20px; border-radius: 999px; box-shadow: var(--shadow);
+         opacity: 0; pointer-events: none; transition: opacity .18s, transform .18s; max-width: min(520px, 92vw); text-align: center; }
+.flash.show { opacity: 1; transform: translate(-50%, 0); }
+.flash.bad { background: var(--st-blokeret); color: #fff; }
+
+@media (max-width: 560px) { .fgrid { grid-template-columns: 1fr; } }
+
 /* ---------- Print ---------- */
 @media print {
   :root { --bg: #fff; --surface: #fff; }
-  .sidebar, .jump, .theme-btn { display: none !important; }
+  .sidebar, .jump, .theme-btn, .btn, .icon-btn, .flash, #editor { display: none !important; }
   .main { padding: 0; }
   .gantt-scroll { overflow: visible; border: 0; box-shadow: none; }
   .card { box-shadow: none; break-inside: avoid; }
@@ -407,6 +386,8 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
   </nav>
   <main class="main"><div class="main-inner" id="main"></div></main>
 </div>
+<dialog id="editor"></dialog>
+<div id="flash" class="flash"></div>
 
 <script>
 (function () {
@@ -535,21 +516,19 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
     DATA.projects.forEach(function (p) {
       var ts = tasksOf(p.id);
       var open = ts.filter(function (t) { var k = stat(t).key; return k !== "faerdig" && k !== "droppet"; }).length;
-      html += '<button class="proj" data-id="' + esc(p.id) + '" aria-current="' + (p.id === active) + '">' +
+      html += '<button class="proj" data-act="proj" data-id="' + esc(p.id) + '" aria-current="' + (p.id === active) + '">' +
                 '<span class="dot" style="background:' + healthDot(ts) + '"></span>' +
                 '<span><span class="pname">' + esc(p.name) + '</span><br>' +
                 '<span class="pmeta num">' + (ts.length ? open + " åbne · " + ts.length + " i alt" : "ingen opgaver") + '</span></span>' +
               '</button>';
     });
+    html += '<button class="proj add" data-act="newproj" type="button"><span class="plus">+</span>' +
+            '<span class="pname">Nyt projekt</span></button>';
     document.getElementById("projlist").innerHTML = html;
     document.getElementById("sidefoot").innerHTML =
-      "Opdateret<br><b class=\"num\">" + esc(DATA.meta.updated || "—") + "</b><br><br>Redigeres af Claude Code.";
-
-    Array.prototype.forEach.call(document.querySelectorAll(".proj"), function (b) {
-      b.addEventListener("click", function () {
-        location.hash = b.getAttribute("data-id");
-      });
-    });
+      "Opdateret<br><b class=\"num\">" + esc(DATA.meta.updated || "—") + "</b>" +
+      (dirty ? '<br><span class="unsaved">● ugemte ændringer</span>' : "") +
+      "<br><br>" + (SERVER ? "Kører på localhost — gemmer lydløst." : "Åbnet som fil — Gem spørger én gang pr. session.");
   }
 
   /* ====================== Sprintvisning ====================== */
@@ -576,7 +555,7 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
     if (t.epic) meta.push('<span class="ep" title="' + esc(epicName(t)) + '">' + esc(t.epic) + "</span>");
     if (t.owner) meta.push(esc(t.owner));
     if (isDate(t.due)) meta.push('<span class="due' + (od ? " over" : "") + '">' + (od ? "⚠ " : "") + fmtDate(t.due) + "</span>");
-    return '<div class="tcard" style="border-left-color:var(--' + st.css + ')">' +
+    return '<div class="tcard" data-act="task" data-id="' + esc(t.id) + '" tabindex="0" style="border-left-color:var(--' + st.css + ')">' +
              '<div class="tt">' + esc(t.title) + "</div>" +
              (meta.length ? '<div class="tm">' + meta.join(" · ") + "</div>" : "") +
              (t.note ? '<div class="tnote">' + esc(t.note) + "</div>" : "") +
@@ -590,7 +569,7 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
     if (!pick) {
       return '<section id="sprint"><div class="sec-label">Sprint</div>' +
              '<div class="empty"><p>Ingen sprints oprettet for ' + esc(p.name) + " endnu.</p>" +
-             "<p>Bed Claude om fx <code>opret en oktober-sprint for " + esc(p.name) + "</code>.</p></div></section>";
+             '<p><button class="btn primary" data-act="newsprint" type="button">Opret den første sprint</button></p></div></section>';
     }
 
     var s = pick.s;
@@ -602,7 +581,11 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
     var od = ts.filter(overdue).length;
 
     var head = '<div class="sprint-head"><h2>' + esc(p.name) + " — " + miLabel(mi(s.month), true) + "</h2>" +
-               '<span class="tag' + (pick.now ? " now" : "") + '">' + pick.tag + "</span></div>";
+               '<span class="tag' + (pick.now ? " now" : "") + '">' + pick.tag + "</span>" +
+               '<button class="icon-btn" data-act="editsprint" data-month="' + esc(s.month) + '" type="button" title="Rediger sprint">✎</button>' +
+               '<span style="flex:1"></span>' +
+               '<button class="btn" data-act="newtask" data-month="' + esc(s.month) + '" type="button">+ Ny opgave</button>' +
+               '<button class="btn" data-act="newsprint" type="button">+ Ny sprint</button></div>';
 
     var goal = s.goal
       ? '<p class="goal">' + esc(s.goal) + "</p>"
@@ -620,7 +603,8 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
 
     var body;
     if (!ts.length) {
-      body = '<div class="col-empty" style="font-size:13.5px">Ingen opgaver lagt i sprinten endnu.</div>';
+      body = '<div class="col-empty" style="font-size:13.5px">Ingen opgaver lagt i sprinten endnu. ' +
+             '<button class="btn" data-act="newtask" data-month="' + esc(s.month) + '" type="button">+ Tilføj den første</button></div>';
     } else {
       body = '<div class="kanban">';
       BOARD.forEach(function (k) {
@@ -658,7 +642,7 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
               '<div class="hist-body">' +
               (ts.length ? ts.map(function (t) {
                 var st = stat(t);
-                return '<div class="hrow"><span class="dot" style="background:var(--' + st.css + ')"></span>' +
+                return '<div class="hrow" data-act="task" data-id="' + esc(t.id) + '"><span class="dot" style="background:var(--' + st.css + ')"></span>' +
                        "<span>" + esc(t.title) + "</span>" +
                        '<span class="hd">' + st.label + (isDate(t.due) ? " · " + fmtDate(t.due) : "") + "</span></div>";
               }).join("") : '<div class="col-empty">Ingen opgaver i denne sprint.</div>') +
@@ -677,7 +661,7 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
       // bygges slet ikke, når der intet er at tegne.
       return '<section id="tidslinje"><div class="sec-label">Tidslinje</div>' +
              '<div class="empty"><p>Ingen opgaver at tegne for ' + esc(p.name) + ".</p>" +
-             "<p>Bed Claude om fx <code>tilføj opgave „Wireframes“ til " + esc(p.name) + " i november</code>.</p></div></section>";
+             '<p><button class="btn primary" data-act="newtask" type="button">Tilføj den første opgave</button></p></div></section>';
     }
 
     var lo = Infinity, hi = -Infinity;
@@ -706,7 +690,7 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
                   (t.note ? " — " + t.note : "") + (isDate(t.due) ? " (deadline " + fmtDate(t.due) + ")" : "");
 
       html += '<div class="g-lane' + (r % 2 ? " alt" : "") + '" style="grid-row:' + row + ';grid-column:2 / -1"></div>';
-      html += '<div class="g-label" style="grid-row:' + row + ';grid-column:1" title="' + esc(title) + '">' +
+      html += '<div class="g-label" data-act="task" data-id="' + esc(t.id) + '" style="grid-row:' + row + ';grid-column:1" title="' + esc(title) + '">' +
               '<span class="dot" style="background:var(--' + st.css + ')"></span>' +
               (t.epic ? '<span class="ep">' + esc(t.epic) + "</span>" : "") +
               '<span class="txt">' + esc(t.title) + "</span></div>";
@@ -741,14 +725,384 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
            '<div class="gantt-scroll" id="gscroll">' + html + "</div>" + legend + "</section>";
   }
 
+  /* ====================== Serializer ======================
+     Skriver DATA tilbage i præcis samme læsbare form: én opgave pr. linje,
+     justerede kolonner. Det er dét, der holder browser-redigeringer og
+     Claude Codes kirurgiske redigeringer forenelige — og git-diffene læselige.
+     Værdier går gennem JSON.stringify, så anførselstegn escapes korrekt. */
+
+  var TASK_FIELDS = ["id","project","sprint","start","end","status","title","owner","due","epic","note"];
+  var PROJ_FIELDS = ["id","name","tagline"];
+  var SPRINT_FIELDS = ["project","month","goal"];
+
+  function q(v) { return JSON.stringify(v == null ? "" : String(v)); }
+
+  function rows(list, fields, indent) {
+    var cells = list.map(function (o) {
+      return fields.map(function (f) { return f + ":" + q(o[f]); });
+    });
+    var width = fields.map(function (_, i) {
+      return Math.max.apply(null, cells.map(function (c) { return c[i].length; }).concat([0]));
+    });
+    return cells.map(function (c) {
+      return indent + "{" + c.map(function (cell, i) {
+        return i === fields.length - 1 ? cell : cell + ", " + new Array(width[i] - cell.length + 1).join(" ");
+      }).join("") + "}";
+    }).join(",\n");
+  }
+
+  function serialize(D) {
+    var epics = Object.keys(D.epics || {}).map(function (k) { return "    " + k + ":" + q(D.epics[k]); }).join(",\n");
+    return [
+      "/* =============================================================================",
+      "   MARKETING OS — DATA",
+      "",
+      "   Denne fil indeholder indholdet. Koden ligger i marketing-os.html.",
+      "   Filen skrives af dashboardet selv, når du trykker Gem, og kan også",
+      "   redigeres i hånden eller af Claude Code. Formatet skal holdes:",
+      "",
+      "     * ÉN OPGAVE = ÉN LINJE",
+      "     * status skal være præcis én af:",
+      "         \"Ikke startet\" | \"I gang\" | \"Blokeret\" | \"Færdig\" | \"Droppet\"",
+      "     * sprint / start / end er MÅNEDER  (\"ÅÅÅÅ-MM\")",
+      "     * due er en rigtig DATO (\"ÅÅÅÅ-MM-DD\") eller tom",
+      "",
+      "   Filen er bevidst holdt uden for git — den er data, ikke kode.",
+      "   OneDrive holder versionshistorik på den.",
+      "   ============================================================================= */",
+      "", "var DATA = {", "",
+      "  meta: {",
+      "    updated: " + q(D.meta.updated) + ",",
+      "    note: " + q(D.meta.note || ""),
+      "  },", "",
+      "  /* ===== EPICS ===== valgfri gruppering; nøglen sættes i opgavens epic-felt ===== */",
+      "  epics: {", epics, "  },", "",
+      "  /* ===== PROJEKTER ===== rækkefølgen her er rækkefølgen i sidebaren ===== */",
+      "  projects: [", rows(D.projects, PROJ_FIELDS, "    "), "  ],", "",
+      "  /* ===== SPRINTS ===== én sprint = ét projekt + én kalendermåned ===== */",
+      "  sprints: [", rows(D.sprints, SPRINT_FIELDS, "    "), "  ],", "",
+      "  /* ===== OPGAVER ===== ÉN OPGAVE = ÉN LINJE ===== */",
+      "  tasks: [", rows(D.tasks, TASK_FIELDS, "    "), "  ]", "", "};", ""
+    ].join("\n");
+  }
+
+  /* ====================== Gem ======================
+     To bagender, valgt af hvordan siden er åbnet:
+       http(s)  → lokal server, lydløs skrivning, kan også køre git
+       file://  → File System Access API; Windows spørger én gang pr. session
+     Kan browseren ingen af delene, falder den tilbage til at hente filen ned. */
+
+  var SERVER = location.protocol === "http:" || location.protocol === "https:";
+  var dirty = false;
+
+  function idb(fn) {
+    return new Promise(function (res, rej) {
+      var r = indexedDB.open("marketing-os", 1);
+      r.onupgradeneeded = function () { r.result.createObjectStore("kv"); };
+      r.onerror = function () { rej(r.error); };
+      r.onsuccess = function () {
+        var tx = r.result.transaction("kv", "readwrite");
+        var qy = fn(tx.objectStore("kv"));
+        qy.onsuccess = function () { res(qy.result); };
+        qy.onerror = function () { rej(qy.error); };
+      };
+    });
+  }
+
+  function getHandle() {
+    return idb(function (st) { return st.get("dataFile"); }).catch(function () { return null; })
+      .then(function (h) {
+        if (!h) return null;
+        return h.queryPermission({ mode: "readwrite" }).then(function (p) {
+          return p === "granted" ? h : h.requestPermission({ mode: "readwrite" }).then(function (p2) {
+            return p2 === "granted" ? h : null;
+          });
+        }).catch(function () { return null; });
+      })
+      .then(function (h) {
+        if (h) return h;
+        return window.showOpenFilePicker({
+          id: "marketingosdata",
+          types: [{ description: "Marketing OS datafil", accept: { "text/javascript": [".js"] } }],
+          multiple: false
+        }).then(function (picked) {
+          return idb(function (st) { return st.put(picked[0], "dataFile"); })
+            .catch(function () {})
+            .then(function () { return picked[0]; });
+        });
+      });
+  }
+
+  function downloadFallback(text) {
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: "text/javascript" }));
+    a.download = "marketing-os-data.js";
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+  }
+
+  function save() {
+    DATA.meta.updated = TODAY_ISO;
+    var text = serialize(DATA);
+    var done = function () { dirty = false; render(CURRENT); flash("Gemt"); };
+
+    if (SERVER) {
+      return fetch("save", { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: text })
+        .then(function (r) {
+          if (!r.ok) return r.text().then(function (t) { throw new Error(t || ("HTTP " + r.status)); });
+          done();
+        })
+        .catch(function (e) { flash("Kunne ikke gemme: " + e.message, true); });
+    }
+
+    if (typeof window.showOpenFilePicker !== "function") {
+      downloadFallback(text);
+      flash("Din browser kan ikke skrive direkte. Filen er hentet ned — læg den i dashboard-mappen.", true);
+      return Promise.resolve();
+    }
+
+    return getHandle()
+      .then(function (h) { return h.createWritable(); })
+      .then(function (w) { return w.write(text).then(function () { return w.close(); }); })
+      .then(done)
+      .catch(function (e) {
+        if (e && e.name === "AbortError") return;           // brugeren fortrød filvalget
+        flash("Kunne ikke gemme: " + (e && e.message ? e.message : e), true);
+      });
+  }
+
+  function flash(msg, bad) {
+    var el = document.getElementById("flash");
+    if (!el) return;
+    el.textContent = msg;
+    el.className = "flash show" + (bad ? " bad" : "");
+    clearTimeout(flash._t);
+    flash._t = setTimeout(function () { el.className = "flash"; }, bad ? 7000 : 2200);
+  }
+
+  function markDirty() { dirty = true; render(CURRENT); }
+
+  window.addEventListener("beforeunload", function (e) {
+    if (dirty) { e.preventDefault(); e.returnValue = ""; }
+  });
+
+  /* ====================== Redigering ====================== */
+
+  function slug(s, taken) {
+    var b = String(s).toLowerCase()
+      .replace(/æ/g, "ae").replace(/ø/g, "oe").replace(/å/g, "aa")
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 28) || "ny";
+    var id = b, n = 2;
+    while (taken.indexOf(id) >= 0) id = b + "-" + (n++);
+    return id;
+  }
+
+  var dlg = document.getElementById("editor");
+
+  function field(label, html, hint) {
+    return '<label class="frow"><span class="flab">' + label + "</span>" + html +
+           (hint ? '<span class="fhint">' + hint + "</span>" : "") + "</label>";
+  }
+  function opts(list, cur) {
+    return list.map(function (o) {
+      var v = typeof o === "string" ? o : o.v, t = typeof o === "string" ? o : o.t;
+      return '<option value="' + esc(v) + '"' + (v === cur ? " selected" : "") + ">" + esc(t) + "</option>";
+    }).join("");
+  }
+
+  function openDialog(title, body, onSave, onDelete) {
+    dlg.innerHTML =
+      '<form method="dialog"><h3>' + esc(title) + "</h3>" + body +
+      '<div class="dbtns">' +
+        (onDelete ? '<button type="button" class="btn danger" id="d-del">Slet</button>' : "") +
+        '<span style="flex:1"></span>' +
+        '<button type="button" class="btn" id="d-cancel">Annullér</button>' +
+        '<button type="button" class="btn primary" id="d-ok">Gem</button>' +
+      "</div></form>";
+    dlg.showModal();
+    var first = dlg.querySelector("input,select,textarea");
+    if (first) first.focus();
+
+    dlg.querySelector("#d-cancel").onclick = function () { dlg.close(); };
+    dlg.querySelector("#d-ok").onclick = function () {
+      var err = onSave();
+      if (err) { flash(err, true); return; }
+      dlg.close(); markDirty();
+    };
+    if (onDelete) dlg.querySelector("#d-del").onclick = function () {
+      var err = onDelete();
+      if (err) { flash(err, true); return; }
+      dlg.close(); markDirty();
+    };
+  }
+
+  function val(id) { var e = dlg.querySelector("#" + id); return e ? e.value.trim() : ""; }
+
+  function editTask(id, preset) {
+    var isNew = !id;
+    var t = isNew ? { id: "", project: preset.project, sprint: preset.sprint || "",
+                      start: preset.sprint || "", end: preset.sprint || "",
+                      status: "Ikke startet", title: "", owner: "", due: "", epic: "", note: "" }
+                  : DATA.tasks.filter(function (x) { return x.id === id; })[0];
+    if (!t) return;
+
+    var epicList = [{ v: "", t: "— ingen —" }].concat(Object.keys(DATA.epics || {}).map(function (k) {
+      return { v: k, t: k + " — " + DATA.epics[k] };
+    }));
+    var sprintList = [{ v: "", t: "— ingen sprint —" }].concat(
+      DATA.sprints.filter(function (s) { return s.project === t.project; })
+        .sort(function (a, b) { return mi(a.month) - mi(b.month); })
+        .map(function (s) { return { v: s.month, t: miLabel(mi(s.month), true) }; }));
+
+    openDialog(isNew ? "Ny opgave" : "Rediger opgave",
+      field("Titel", '<input id="f-title" type="text" value="' + esc(t.title) + '" maxlength="120">') +
+      '<div class="fgrid">' +
+        field("Status", '<select id="f-status">' + opts(["Ikke startet","I gang","Blokeret","Færdig","Droppet"], stat(t).label) + "</select>") +
+        field("Ejer", '<input id="f-owner" type="text" value="' + esc(t.owner) + '" maxlength="40">') +
+      "</div>" +
+      '<div class="fgrid">' +
+        field("Projekt", '<select id="f-project">' + opts(DATA.projects.map(function (p) { return { v: p.id, t: p.name }; }), t.project) + "</select>") +
+        field("Sprint", '<select id="f-sprint">' + opts(sprintList, t.sprint) + "</select>") +
+      "</div>" +
+      '<div class="fgrid">' +
+        field("Starter", '<input id="f-start" type="month" value="' + esc(t.start) + '">') +
+        field("Slutter", '<input id="f-end" type="month" value="' + esc(t.end) + '">') +
+      "</div>" +
+      '<div class="fgrid">' +
+        field("Deadline", '<input id="f-due" type="date" value="' + esc(t.due) + '">', "valgfri — tegner en diamant på tidslinjen") +
+        field("Epic", '<select id="f-epic">' + opts(epicList, t.epic) + "</select>") +
+      "</div>" +
+      field("Note", '<textarea id="f-note" rows="3" maxlength="400">' + esc(t.note) + "</textarea>"),
+
+      function () {
+        var title = val("f-title");
+        if (!title) return "Opgaven skal have en titel.";
+        var start = val("f-start"), end = val("f-end"), sprint = val("f-sprint");
+        if (!start && !sprint) return "Opgaven skal have enten en startmåned eller en sprint — ellers kan den ikke placeres på tidslinjen.";
+        if (start && end && mi(end) < mi(start)) return "Slutmåneden ligger før startmåneden.";
+        var o = isNew ? {} : t;
+        o.title = title; o.status = val("f-status"); o.owner = val("f-owner");
+        o.project = val("f-project"); o.sprint = sprint;
+        o.start = start; o.end = end; o.due = val("f-due");
+        o.epic = val("f-epic"); o.note = val("f-note");
+        if (isNew) {
+          o.id = slug(o.project.slice(0, 5) + "-" + title, DATA.tasks.map(function (x) { return x.id; }));
+          DATA.tasks.push(o);
+        }
+        return null;
+      },
+      isNew ? null : function () {
+        if (!confirm("Slet „" + t.title + "“? Det kan ikke fortrydes uden at gendanne filen.")) return "afbrudt";
+        DATA.tasks = DATA.tasks.filter(function (x) { return x.id !== t.id; });
+        return null;
+      });
+
+    // Skifter man projekt, skal sprintlisten følge med
+    var ps = dlg.querySelector("#f-project");
+    if (ps) ps.onchange = function () {
+      var list = [{ v: "", t: "— ingen sprint —" }].concat(
+        DATA.sprints.filter(function (s) { return s.project === ps.value; })
+          .sort(function (a, b) { return mi(a.month) - mi(b.month); })
+          .map(function (s) { return { v: s.month, t: miLabel(mi(s.month), true) }; }));
+      dlg.querySelector("#f-sprint").innerHTML = opts(list, "");
+    };
+  }
+
+  function editProject(id) {
+    var isNew = !id;
+    var p = isNew ? { id: "", name: "", tagline: "" }
+                  : DATA.projects.filter(function (x) { return x.id === id; })[0];
+    if (!p) return;
+    var n = isNew ? 0 : tasksOf(p.id).length;
+
+    openDialog(isNew ? "Nyt projekt" : "Rediger projekt",
+      field("Navn", '<input id="f-name" type="text" value="' + esc(p.name) + '" maxlength="60">') +
+      field("Undertekst", '<textarea id="f-tag" rows="2" maxlength="200">' + esc(p.tagline) + "</textarea>",
+            "vises under projektnavnet"),
+      function () {
+        var name = val("f-name");
+        if (!name) return "Projektet skal have et navn.";
+        if (isNew) {
+          var np = { id: slug(name, DATA.projects.map(function (x) { return x.id; })), name: name, tagline: val("f-tag") };
+          DATA.projects.push(np);
+          CURRENT = np.id;
+        } else { p.name = name; p.tagline = val("f-tag"); }
+        return null;
+      },
+      isNew ? null : function () {
+        if (n) return "„" + p.name + "“ har " + n + " opgave" + (n > 1 ? "r" : "") + ". Flyt eller slet dem først.";
+        if (!confirm("Slet projektet „" + p.name + "“?")) return "afbrudt";
+        DATA.projects = DATA.projects.filter(function (x) { return x.id !== p.id; });
+        DATA.sprints = DATA.sprints.filter(function (x) { return x.project !== p.id; });
+        CURRENT = DATA.projects.length ? DATA.projects[0].id : null;
+        return null;
+      });
+  }
+
+  function editSprint(project, month) {
+    var isNew = !month;
+    var s = isNew ? { project: project, month: "", goal: "" }
+                  : DATA.sprints.filter(function (x) { return x.project === project && x.month === month; })[0];
+    if (!s) return;
+    var n = isNew ? 0 : DATA.tasks.filter(function (t) { return t.project === project && t.sprint === month; }).length;
+
+    openDialog(isNew ? "Ny sprint" : "Rediger sprint",
+      field("Måned", '<input id="f-month" type="month" value="' + esc(s.month) + '">') +
+      field("Sprintmål", '<textarea id="f-goal" rows="2" maxlength="200">' + esc(s.goal) + "</textarea>",
+            "én sætning om hvad der skal være sandt, når måneden er slut"),
+      function () {
+        var m = val("f-month");
+        if (!m) return "Sprinten skal have en måned.";
+        var clash = DATA.sprints.filter(function (x) { return x.project === project && x.month === m && x !== s; });
+        if (clash.length) return "Der findes allerede en sprint for " + miLabel(mi(m), true) + ".";
+        if (!isNew && s.month !== m) {
+          DATA.tasks.forEach(function (t) { if (t.project === project && t.sprint === s.month) t.sprint = m; });
+        }
+        s.month = m; s.goal = val("f-goal");
+        if (isNew) DATA.sprints.push(s);
+        return null;
+      },
+      isNew ? null : function () {
+        if (n) return "Sprinten har " + n + " opgave" + (n > 1 ? "r" : "") + ". Flyt dem først.";
+        if (!confirm("Slet sprinten " + miLabel(mi(s.month), true) + "?")) return "afbrudt";
+        DATA.sprints = DATA.sprints.filter(function (x) { return x !== s; });
+        return null;
+      });
+  }
+
+  // Én delegeret lytter — knapper overlever enhver gentegning
+  document.addEventListener("click", function (e) {
+    var el = e.target.closest ? e.target.closest("[data-act]") : null;
+    if (!el) return;
+    var a = el.getAttribute("data-act");
+    if (a === "proj")       { location.hash = el.getAttribute("data-id"); }
+    else if (a === "task")      { editTask(el.getAttribute("data-id")); }
+    else if (a === "newtask")   { editTask(null, { project: CURRENT, sprint: el.getAttribute("data-month") || "" }); }
+    else if (a === "newproj")   { editProject(null); }
+    else if (a === "editproj")  { editProject(CURRENT); }
+    else if (a === "newsprint") { editSprint(CURRENT, null); }
+    else if (a === "editsprint"){ editSprint(CURRENT, el.getAttribute("data-month")); }
+    else if (a === "save")      { save(); }
+  });
+
   /* ====================== Samlet rendering ====================== */
+
+  var CURRENT = null;
 
   function render(pid) {
     var p = null;
     for (var i = 0; i < DATA.projects.length; i++) if (DATA.projects[i].id === pid) p = DATA.projects[i];
     if (!p) p = DATA.projects[0];
-    if (!p) { document.getElementById("main").innerHTML = '<div class="empty"><p>Ingen projekter oprettet endnu.</p></div>'; return; }
+    if (!p) {
+      CURRENT = null;
+      renderSidebar(null);
+      document.getElementById("main").innerHTML =
+        '<div class="empty"><p>Ingen projekter endnu.</p>' +
+        '<p><button class="btn primary" data-act="newproj" type="button">Opret det første projekt</button></p></div>';
+      return;
+    }
 
+    CURRENT = p.id;
     renderSidebar(p.id);
     document.title = p.name + " — Marketing OS";
 
@@ -778,9 +1132,14 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
 
     document.getElementById("main").innerHTML =
       banners +
-      '<div class="phead"><div><h1>' + esc(p.name) + "</h1>" +
+      '<div class="phead"><div><h1>' + esc(p.name) +
+        ' <button class="icon-btn" data-act="editproj" type="button" title="Rediger projekt">✎</button></h1>' +
         (p.tagline ? '<p class="tagline">' + esc(p.tagline) + "</p>" : "") + "</div>" +
-        '<button class="theme-btn" id="themebtn" type="button"></button></div>' +
+        '<div class="pacts">' +
+          '<button class="btn primary' + (dirty ? "" : " ghost") + '" data-act="save" type="button">' +
+            (dirty ? "● Gem ændringer" : "Gem") + "</button>" +
+          '<button class="theme-btn" id="themebtn" type="button"></button>' +
+        "</div></div>" +
       '<div class="chips">' + (chips || '<span class="chip">Ingen opgaver endnu</span>') + "</div>" +
       '<nav class="jump"><a href="#sprint">Sprint</a><a href="#historik">Øvrige sprints</a><a href="#tidslinje">Tidslinje</a></nav>' +
       renderSprint(p) +

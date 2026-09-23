@@ -1,37 +1,55 @@
 # Marketing OS — dashboard
 
-`marketing-os.html` er et Scrum-/projektoverblik over de store initiativer. Én selvstændig fil uden byggetrin, biblioteker eller server.
+Et Scrum-/projektoverblik over de store initiativer. Ingen byggetrin, ingen biblioteker, ingen afhængigheder ud over en browser.
 
-**Sådan åbnes den:** dobbeltklik filen i File Explorer. Den kører fra `file://` i Edge eller Chrome. OneDrive synkroniserer den til Microsoft 365, så versionshistorik og backup følger med.
+## Kode og data er adskilt
 
-**Sådan opdateres den:** ved at bede Claude Code om det — *"sæt crm-lancering til I gang"*, *"opret en december-sprint for Hjemmeside"*. Dashboardet er **read-only i browseren**; der er ingen knapper at redigere med. Efter en ændring: tryk **F5**. Hvis tidsstemplet i bunden ikke er skiftet, cacher browseren filen — tryk **Ctrl+Shift+R**.
+| Fil | Hvad | I git? |
+|---|---|---|
+| `marketing-os.html` | Al kode: layout, logik, redigering | **Ja** |
+| `marketing-os-data.js` | Alt indhold: projekter, sprints, opgaver | **Nej** — data, ikke kode |
+| `marketing-os-data.example.js` | Tom skabelon at starte fra | Ja |
+| `server.js` + `start-dashboard.cmd` | Valgfri lokal server | Ja |
 
----
+Datafilen er bevidst holdt uden for versionsstyring. Den versioneres i stedet af OneDrive — mister du den, så højreklik filen i File Explorer → **Versionshistorik**. Det er dit sikkerhedsnet, ikke git.
+
+Det tekniske greb, der gør opdelingen mulig: HTML-filen indlæser data med et klassisk `<script src>`. En `file://`-side må nemlig **ikke** `fetch`e en nabofil — men den må godt indlæse den som script. Derfor virker opdelingen også, når du bare dobbeltklikker filen.
+
+## To måder at køre den på
+
+**Dobbeltklik `marketing-os.html`** — virker altid, også uden Node. Du kan redigere alt, og når du trykker Gem, spørger Windows én gang pr. session, hvilken fil der må skrives. Vælg `marketing-os-data.js`. Derefter er gem lydløst resten af sessionen.
+
+**Dobbeltklik `start-dashboard.cmd`** — starter en lille lokal server og åbner `localhost:7777`. Gem sker lydløst uden dialoger. Serveren lytter kun på din egen maskine. Luk vinduet for at stoppe den.
+
+Siden mærker selv, hvilken tilstand den er i, og skriver det nederst i sidebaren.
+
+## Redigering
+
+- **Opgave** — klik på et kort, på en linje i historikken, eller på navnet i tidslinjen
+- **Ny opgave** — knappen i sprintens hoved
+- **Projekt** — blyanten ved projektnavnet; nyt projekt via **+ Nyt projekt** i sidebaren
+- **Sprint** — blyanten ved sprintens navn; ny via **+ Ny sprint**
+
+Ændringer lægger sig i hukommelsen, indtil du trykker **Gem ændringer** — knappen skifter farve, når der er noget ugemt, og browseren advarer, hvis du lukker fanen først.
+
+Sletning af et projekt eller en sprint blokeres, så længe der ligger opgaver i den. Flyt eller slet dem først.
 
 ## Datakontrakten
 
-Al data ligger i `<script>`-blokken **øverst i filen**, før CSS'en. Tre flade arrays: `projects`, `sprints`, `tasks`.
-
-**Den bærende regel: én opgave = én linje.** Redigeringer forankres altid på opgavens `id`, så de rammer præcis den linje og intet andet.
-
-### Felter på en opgave
+Tre flade arrays: `projects`, `sprints`, `tasks`. **Én opgave = én linje.** Det er dét, der gør, at både dashboardet og Claude Code kan redigere den samme fil uden at træde på hinanden — og at git-diffene forbliver læselige.
 
 | Felt | Format | Bemærkning |
 |---|---|---|
-| `id` | kort og unikt, fx `crm-lancering` | Håndtaget. Skift det aldrig — det er dét, man refererer til |
-| `project` | et `id` fra `projects` | Peger den på noget ukendt, bliver opgaven usynlig overalt |
+| `id` | kort og unikt | Håndtaget. Skift det aldrig |
+| `project` | et `id` fra `projects` | Peger den forkert, bliver opgaven usynlig |
 | `sprint` | `"ÅÅÅÅ-MM"` | Hvilken sprint opgaven er **committet** til |
-| `start` / `end` | `"ÅÅÅÅ-MM"` | Bjælkens udstrækning på tidslinjen. Udelades de, bruges `sprint` |
+| `start` / `end` | `"ÅÅÅÅ-MM"` | Bjælkens udstrækning. Tomme? Så bruges `sprint` |
 | `status` | se nedenfor | Skal matche præcist |
-| `title` | fri tekst | |
-| `owner` | fri tekst | |
-| `due` | `"ÅÅÅÅ-MM-DD"` eller `""` | Den eneste rigtige dato. Tegner en diamant på bjælken og markerer overskredet deadline |
-| `epic` | en nøgle fra `epics`, fx `"E2"` | Valgfri. Vises som lille mærke; det fulde navn kommer frem som tooltip |
-| `note` | fri tekst | Vises på opgavekortet og som tooltip på tidslinjen |
+| `title`, `owner`, `note` | fri tekst | |
+| `due` | `"ÅÅÅÅ-MM-DD"` eller tom | Den eneste rigtige dato. Tegner en diamant og markerer overskredet |
+| `epic` | nøgle fra `epics` | Valgfri. Lille mærke på kortet, fuldt navn som tooltip |
 
-`epics` er et valgfrit opslag øverst i datablokken (`{E1:"Fundament & hosting", …}`). Projekter uden epics udelader bare feltet — intet går i stykker.
-
-### Statusser — skal skrives præcis sådan her
+**Statusser — præcis disse fem:**
 
 ```
 "Ikke startet"   "I gang"   "Blokeret"   "Færdig"   "Droppet"
@@ -39,54 +57,31 @@ Al data ligger i `<script>`-blokken **øverst i filen**, før CSS'en. Tre flade 
 
 `Droppet` tælles ikke med i fremdriften, men bliver stående i historikken.
 
-### Hvorfor `sprint` og `start`/`end` er adskilt
+**Hvorfor `sprint` og `start`/`end` er adskilt:** `sprint` er en *forpligtelse* — "det her arbejder jeg på i oktober". `start`/`end` er en *tidslinje*. En opgave, der løber fem måneder, hører stadig kun til i én sprint.
 
-`sprint` er en **forpligtelse** — "det her arbejder jeg på i oktober". `start`/`end` er en **tidslinje** — hvornår opgaven løber. En opgave, der strækker sig over fem måneder, hører stadig kun til i én sprint. Slog man de to sammen, ville den dukke op i fem sprints i træk, og sprintvisningen ville miste sin mening.
+**Hvorfor måneder og ikke datoer:** en sprint *er* en måned, og tidslinjens kolonner *er* måneder. Månedsstrenge rører aldrig `Date`, så ingen tidszone kan skubbe november til oktober. `due` er undtagelsen, hvor dagen faktisk betyder noget.
 
-### Hvorfor måneder og ikke datoer
+## Når Claude redigerer filen
 
-En sprint *er* en måned, og tidslinjens kolonner *er* måneder — dagspræcision ville blive kasseret i visningen. Det gør også håndredigering sikrere: `"2026-11"` → `"2026-12"` kræver ikke at vide, om december har 30 eller 31 dage. Og månedsstrenge rører aldrig `Date`, så en tidszone kan ikke skubbe november til oktober. `due` er den ene undtagelse, hvor dagen faktisk betyder noget.
+Redigeringer forankres på opgavens `id`, så de rammer præcis én linje. Efter en ændring: **F5** i browseren. Står tidsstemplet i bunden stadig på det gamle, cacher browseren filen — så **Ctrl+Shift+R**.
 
----
-
-## Opskrifter
-
-**Ændr en status** — find linjen med opgavens `id`, ret `status`-feltet, opdatér `meta.updated`.
-
-**Tilføj en opgave** — indsæt én ny linje før `]`, der lukker `tasks`. Kopiér en eksisterende linje og ret felterne, så feltrækkefølgen holdes ensartet.
-
-**Opret en sprint** — tilføj `{project:"…", month:"ÅÅÅÅ-MM", goal:"…"}` til `sprints`. Et sprintmål er en sætning om, hvad der skal være sandt, når måneden er slut — ikke en opremsning af opgaverne.
-
-**Tilføj et projekt** — tilføj `{id:"…", name:"…", tagline:"…"}` til `projects`. Rækkefølgen i arrayet er rækkefølgen i sidebaren. Et projekt uden opgaver viser en tom tilstand, ikke en fejl.
-
-**Flyt en opgave** — ret `project` eller `sprint` på linjen. Intet skal flyttes fysisk i filen.
-
-**Opdatér altid `meta.updated`.** Den vises i sidebaren og i bunden og er den eneste måde at se, om browseren viser den nyeste version.
-
-`meta.note` tegner det grå banner øverst. Sæt den til `""`, når såningsforbeholdet ikke længere er relevant.
-
----
+Omvendt: har du redigeret i browseren uden at gemme, og beder Claude ændre noget, går dine ugemte ændringer tabt. Gem først.
 
 ## Valideringen
 
-Flade data fejler i stilhed — en stavefejl i en status giver en usynlig bjælke, ikke en fejlmeddelelse. Derfor tjekkes data ved hver indlæsning, og problemer vises som et orange banner øverst i stedet for at blive skjult:
+Flade data fejler i stilhed — en stavefejl i en status giver en usynlig bjælke, ikke en fejlmeddelelse. Derfor tjekkes alt ved indlæsning, og problemer vises som et orange banner:
 
 - ukendt status (bjælken tegnes **magenta**, så den ikke kan overses)
 - opgave, der peger på et projekt eller en sprint, der ikke findes
-- `end` før `start`
+- `end` før `start`, ugyldige dato- eller månedsformater
 - to opgaver med samme `id`
-- ugyldige dato- eller månedsformater
 
-Bliver JSON'en direkte ødelagt, fanges det af en try/catch, og siden viser fejlen frem for en hvid skærm.
+Er filen direkte ødelagt, vises fejlen i stedet for en hvid skærm.
 
-Dukker banneret op: ret det, der står i det. Det er altid en fejl i datablokken, aldrig i koden.
+## Design
 
----
+Farver og typografi følger [`brand/guidelines.md`](../brand/guidelines.md). Overskrifter bruger **Cormorant Garamond** som stand-in for brandfonten **The Seasons** — søg efter `BRANDFONT` i HTML-filen for at skifte den ud.
 
-## Noter om design
+Tidslinjen er CSS Grid, ikke SVG: en Gantt er i praksis en tabel, og grid giver sticky navnekolonne, tooltips og korrekt zoom uden koordinatmatematik.
 
-Farver og typografi følger [`brand/guidelines.md`](../brand/guidelines.md). Overskrifter bruger **Cormorant Garamond** som stand-in for brandfonten **The Seasons**, der er betalt og ikke ligger i repoet. Fontstakken har The Seasons først, så den overtager af sig selv, den dag den installeres — søg efter `BRANDFONT` i filen.
-
-Tidslinjen er bygget med CSS Grid frem for SVG, fordi en Gantt i praksis er en tabel: det giver sticky navnekolonne, tekstafkortning, tooltips og korrekt opførsel ved zoom uden en eneste linje koordinatmatematik.
-
-Filen understøtter lyst og mørkt tema (følger systemet, med en knap der kan overstyre begge veje) og har print-styles, så tidslinjen kan tages med til et møde på papir.
+Lyst og mørkt tema følger systemet, med en knap der overstyrer begge veje. Der er print-styles, så tidslinjen kan tages med til et møde på papir.
