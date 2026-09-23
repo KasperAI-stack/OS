@@ -52,6 +52,21 @@ Asana kan ikke hentes automatisk. Det krævede claude.ai's MCP-runtime, som kun 
 
 Sletning af et projekt eller en sprint blokeres, så længe der ligger opgaver i den. Flyt eller slet dem først.
 
+## Tidslinjen: filtrering og gruppering
+
+Bjælken over tidslinjen har fire kontroller:
+
+- **Gruppér** — ingen, epic, status eller ejer. Grupperne bliver til baner med en overskriftsrække og et antal. Epics kommer i den rækkefølge, de står i `epics`; statusser i tavlerækkefølge; ejere alfabetisk. "Uden epic" og "uden ejer" ligger altid nederst.
+- **Vis** — alle, kun åbne, kun med deadline, eller kun det der forfalder inden tre måneder.
+- **Sortér** — tidslinje (startmåned), deadline eller titel. Opgaver uden deadline ligger sidst ved deadline-sortering.
+- **Epics** — vises kun for projekter, der faktisk bruger epics.
+
+Månedsvinduet følger det filtrerede. Filtrerer du til én epic, zoomer tidslinjen ind på netop dens spænd — indeværende måned er dog altid med.
+
+Valgene er **visning, ikke data**. De gemmes i browseren og havner aldrig i datafilen; et filterskift gør derfor ikke siden "ugemt". Det betyder også, at de er personlige for den browser, du sidder ved.
+
+Et epic-filter fra ét projekt tømmer ikke et andet: gælder filteret ikke for det projekt, du ser på, ignoreres det.
+
 ## Datakontrakten
 
 Tre flade arrays: `projects`, `sprints`, `tasks`. **Én opgave = én linje.** Det er dét, der gør, at både dashboardet og Claude Code kan redigere den samme fil uden at træde på hinanden — og at git-diffene forbliver læselige.
