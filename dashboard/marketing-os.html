@@ -1216,6 +1216,15 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     var el = e.target.closest ? e.target.closest("[data-act]") : null;
     if (!el) return;
     var a = el.getAttribute("data-act");
+    if (a === "jump") {
+      // Genvejsbjælken er ren scroll i siden. Den må ikke sætte adressen,
+      // for hash'en bruges til at vælge projekt — et "#sprint" ville blive
+      // læst som et projekt-id, ikke findes, og lande på det første projekt.
+      e.preventDefault();
+      var sec = document.getElementById(el.getAttribute("data-to"));
+      if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
     if (a === "proj")       { location.hash = el.getAttribute("data-id"); }
     else if (a === "kapacitet") { location.hash = "kapacitet"; }
     else if (a === "logweek")   {
@@ -1599,6 +1608,19 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
       banners += '<div class="banner banner-info">' + esc(DATA.meta.note) + "</div>";
     }
 
+    // Sektionerne bygges først, så genvejsbjælken kun tilbyder dem, der findes.
+    // Et projekt uden øvrige sprints skal ikke have et link til en tom sektion.
+    var secSprint = renderSprint(p), secHist = renderHistory(p), secGantt = renderGantt(p);
+    var links = [];
+    if (secSprint) links.push(["sprint", "Sprint"]);
+    if (secHist)   links.push(["historik", "Øvrige sprints"]);
+    if (secGantt)  links.push(["tidslinje", "Tidslinje"]);
+    var nav = links.length > 1
+      ? '<nav class="jump">' + links.map(function (l) {
+          return '<a href="#' + l[0] + '" data-act="jump" data-to="' + l[0] + '">' + l[1] + "</a>";
+        }).join("") + "</nav>"
+      : "";
+
     document.getElementById("main").innerHTML =
       banners +
       '<div class="phead"><div><h1>' + esc(p.name) +
@@ -1610,10 +1632,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
           '<button class="theme-btn" id="themebtn" type="button"></button>' +
         "</div></div>" +
       '<div class="chips">' + (chips || '<span class="chip">Ingen opgaver endnu</span>') + "</div>" +
-      '<nav class="jump"><a href="#sprint">Sprint</a><a href="#historik">Øvrige sprints</a><a href="#tidslinje">Tidslinje</a></nav>' +
-      renderSprint(p) +
-      renderHistory(p) +
-      renderGantt(p) +
+      nav + secSprint + secHist + secGantt +
       "<footer>Marketing OS · Africa Tours · data opdateret " + esc(DATA.meta.updated || "—") +
       " · vedligeholdes af Claude Code i <span class=\"num\">dashboard/marketing-os.html</span></footer>";
 
@@ -1659,8 +1678,10 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
       : null;
     var pos = a && a.selectionStart != null ? a.selectionStart : null;
 
+    // Ukendt hash lander på forsiden frem for stiltiende på det første projekt.
+    // Det var dét, der fik genvejslinkene til at ligne et projektskifte.
     var h = fromHash();
-    if (!h || h === "kapacitet") renderCapacity();
+    if (!h || h === "kapacitet" || !projById(h)) renderCapacity();
     else render(h);
 
     var back = id ? document.getElementById(id) : null;
