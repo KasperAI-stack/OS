@@ -23,6 +23,24 @@ Det tekniske greb, der gør opdelingen mulig: HTML-filen indlæser data med et k
 
 Siden mærker selv, hvilken tilstand den er i, og skriver det nederst i sidebaren.
 
+## Forsiden: kapacitet
+
+Dashboardet åbner på kapacitetskontrollen, fordi det er dét, man åbner det for: hvor mange timer er der reelt tilbage, når drift, projekter og det uplanlagte er trukket fra.
+
+```
+fri kapacitet = (tilgængelige timer × planlægningsloft) − drift − projekter − ad hoc-buffer
+```
+
+**Timer betyder "lige nu", ikke "i alt".** En opgave med deadline i marts trækker 0 timer i denne uge. Det er dét, der gør forskel på en opgaveliste og et kapacitetsregnskab — og det er derfor tidslinjen og kapaciteten er to forskellige tidshorisonter.
+
+**Kategorien kommer fra projektet, ikke fra opgaven.** Hvert projekt har en `kind` — `drift`, `projekt` eller `adhoc` — og alle dets opgaver tæller i den bås. Derfor ligger Drift og Ad hoc som projekter i sidebaren på linje med Africa Tours 2.0: de er hverdagen, ikke noget ved siden af.
+
+**Ad hoc-bufferen måler sig selv.** Indtil to uger er registreret i ugeloggen, er den dit estimat. Derefter er den gennemsnittet af det faktiske forbrug, og feltet låses. Har du selv ført ad hoc-opgaver ind for mere end bufferen, er det dit tal der gælder — ellers ville det tælle dobbelt.
+
+**Planlægningsloftet er ikke 100 %,** og Kingman-kurven på forsiden viser hvorfor: ventetiden vokser hyperbolsk med belægningen. Springet fra 85 % til 95 % tredobler ventetiden på alt, der ligger i kø, uden at nogen har arbejdet langsommere.
+
+Asana kan ikke hentes automatisk. Det krævede claude.ai's MCP-runtime, som kun findes inde i et artifact — en fil på disken har ingen vej derhen. Bed i stedet Claude om at hente opgaverne og skrive dem ind.
+
 ## Redigering
 
 - **Opgave** — klik på et kort, på en linje i historikken, eller på navnet i tidslinjen
@@ -48,6 +66,9 @@ Tre flade arrays: `projects`, `sprints`, `tasks`. **Én opgave = én linje.** De
 | `title`, `owner`, `note` | fri tekst | |
 | `due` | `"ÅÅÅÅ-MM-DD"` eller tom | Den eneste rigtige dato. Tegner en diamant og markerer overskredet |
 | `epic` | nøgle fra `epics` | Valgfri. Lille mærke på kortet, fuldt navn som tooltip |
+| `hours` | tal | Timer pr. uge **lige nu**. 0 hvis opgaven ikke trækker tid i denne uge |
+
+Projekter har desuden `kind` (`drift` / `projekt` / `adhoc`), som afgør hvilken bås deres timer havner i på forsiden. `kapacitet` og `uger` øverst i filen holder modellens tal og ugeloggen.
 
 **Statusser — præcis disse fem:**
 

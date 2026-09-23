@@ -50,6 +50,9 @@
   --st-faerdig: #777955;
   --st-droppet: rgba(73,79,67,0.40);
   --st-ukendt: #FF00FF;
+  --c-drift: #777955;
+  --c-projekt: #F39422;
+  --c-adhoc: #C2A172;
   --lane: rgba(73,79,67,0.035);
   --shadow: 0 1px 2px rgba(73,79,67,0.05), 0 10px 28px -16px rgba(73,79,67,0.22);
   --gantt-label: 272px;
@@ -78,6 +81,9 @@
     --st-faerdig: #9BA073;
     --st-droppet: rgba(240,237,226,0.38);
     --st-ukendt: #FF00FF;
+    --c-drift: #9BA073;
+    --c-projekt: #F5A945;
+    --c-adhoc: #C2A172;
     --lane: rgba(240,237,226,0.04);
     --shadow: 0 1px 2px rgba(0,0,0,0.35), 0 14px 34px -18px rgba(0,0,0,0.7);
   }
@@ -103,6 +109,9 @@
   --st-faerdig: #9BA073;
   --st-droppet: rgba(240,237,226,0.38);
   --st-ukendt: #FF00FF;
+  --c-drift: #9BA073;
+  --c-projekt: #F5A945;
+  --c-adhoc: #C2A172;
   --lane: rgba(240,237,226,0.04);
   --shadow: 0 1px 2px rgba(0,0,0,0.35), 0 14px 34px -18px rgba(0,0,0,0.7);
 }
@@ -311,6 +320,98 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
   .phead h1 { font-size: 27px; }
 }
 
+/* ---------- Kapacitet ---------- */
+.verdict { display: grid; grid-template-columns: minmax(210px, 1.15fr) 1fr 1fr; gap: 1px;
+           background: var(--border); border: 1px solid var(--border); border-radius: 12px;
+           overflow: hidden; box-shadow: var(--shadow); margin-bottom: 22px; }
+.vcell { background: var(--surface); padding: 18px 20px 16px; display: flex; flex-direction: column; min-width: 0; }
+.vlabel { font-size: 10.5px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.vbig { font-size: 42px; line-height: 1.05; font-weight: 600; letter-spacing: -0.03em; margin-top: 6px; }
+.vbig small { font-size: 15px; font-weight: 500; color: var(--muted); letter-spacing: 0; margin-left: 5px; }
+.vmid { font-size: 27px; line-height: 1.1; font-weight: 600; letter-spacing: -0.02em; margin-top: 8px; }
+.vnote { font-size: 12px; color: var(--muted); margin-top: 7px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; margin-top: 11px;
+        padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid; }
+.pill .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.pill.good { color: var(--st-faerdig); border-color: var(--st-faerdig); background: var(--lane); }
+.pill.warn { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.pill.crit { color: var(--st-blokeret); border-color: var(--st-blokeret); background: var(--lane); }
+.proj .dot.good { background: var(--st-faerdig); }
+.proj .dot.warn { background: var(--accent); }
+.proj .dot.crit { background: var(--st-blokeret); }
+
+.cap2 { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.card-hd { display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+           flex-wrap: wrap; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+.card-hd h2 { font-size: 17px; }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+
+.krow { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        padding: 9px 0; border-bottom: 1px dashed var(--border); }
+.krow:last-of-type { border-bottom: 0; }
+.klab { color: var(--ink-2); font-size: 13px; }
+.ksub { display: block; font-size: 11px; color: var(--muted); font-weight: 400; }
+.ktotal { display: flex; align-items: baseline; justify-content: space-between; margin-top: 12px;
+          padding-top: 12px; border-top: 1px solid var(--border-strong); color: var(--ink-2); }
+.ktotal b { font-size: 21px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; }
+.kceil { margin-top: 18px; }
+.kceil-hd { display: flex; justify-content: space-between; align-items: baseline; color: var(--ink-2); font-size: 13px; margin-bottom: 4px; }
+.kbuffer { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+
+input[type="number"] { font: inherit; font-size: 14px; width: 78px; text-align: right;
+  font-variant-numeric: tabular-nums; padding: 6px 8px; border-radius: 7px;
+  border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--ink); }
+input[type="number"]:disabled { color: var(--muted); background: var(--lane); }
+input[type="number"]:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+.bar-wrap { padding-top: 24px; }
+.bar-track { position: relative; height: 34px; border-radius: 7px; background: var(--surface-2);
+             border: 1px solid var(--border); display: flex; overflow: hidden; }
+.seg { height: 100%; border-right: 2px solid var(--surface); min-width: 0; }
+.seg:last-child { border-right: 0; }
+.bar-over { position: absolute; top: 0; bottom: 0; right: 0;
+            background: repeating-linear-gradient(135deg, var(--st-blokeret) 0 5px, transparent 5px 10px); opacity: .55; }
+.ceil { position: absolute; top: -6px; bottom: -6px; width: 2px; background: var(--ink); opacity: .6; }
+.ceil-lbl { position: absolute; top: -22px; transform: translateX(-50%); font-size: 10px;
+            letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-2); white-space: nowrap; font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 16px; font-size: 12.5px; color: var(--ink-2); }
+.legend .lg { display: flex; align-items: center; gap: 7px; }
+.legend i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+.legend i.slack { background: var(--surface-2); border: 1px solid var(--border-strong); }
+.legend b { color: var(--ink); font-weight: 600; }
+
+.curve-wrap { overflow-x: auto; }
+.curve-wrap svg { width: 100%; min-width: 420px; height: auto; display: block; }
+
+.capgroup { margin-bottom: 20px; }
+.capgroup:last-of-type { margin-bottom: 0; }
+.caphd { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--ink-2);
+         padding-bottom: 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+.caphd i { width: 10px; height: 10px; border-radius: 3px; flex: 0 0 10px; }
+.caphd b { color: var(--ink); font-weight: 600; }
+.caphd .ksub { display: inline; }
+.capsum { margin-left: auto; font-weight: 600; color: var(--ink); }
+.caprow { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+.caprow:last-child { border-bottom: 0; }
+.caprow .dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px; }
+.caprow .cn { font-size: 13.5px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.caprow .cn:hover { color: var(--accent); }
+.caprow .cp { margin-left: auto; font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+
+.wtbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.wtbl th { text-align: left; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
+           color: var(--muted); font-weight: 600; padding: 0 10px 8px 0; border-bottom: 1px solid var(--border); }
+.wtbl td { padding: 6px 10px 6px 0; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.wtbl tr:last-child td { border-bottom: 0; }
+.wtbl .r, .wtbl th.r { text-align: right; padding-right: 0; }
+.wtbl input[type="number"] { width: 68px; }
+.wacts { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+.btn:disabled { opacity: .5; cursor: default; }
+.foot { font-size: 12px; color: var(--muted); max-width: 72ch; margin-top: 28px; }
+
+@media (max-width: 860px) { .cap2 { grid-template-columns: 1fr; } .verdict { grid-template-columns: 1fr; } }
+
 /* ---------- Knapper ---------- */
 .btn { font: inherit; font-size: 13px; padding: 7px 14px; border-radius: 999px; cursor: pointer;
        background: var(--surface); color: var(--ink-2); border: 1px solid var(--border-strong); white-space: nowrap; }
@@ -380,6 +481,7 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
 <div class="shell">
   <nav class="sidebar">
     <div class="brandmark">Marketing OS<span>Africa Tours</span></div>
+    <div id="navtop"></div>
     <div class="nav-label">Projekter</div>
     <div id="projlist"></div>
     <div class="sidebar-foot" id="sidefoot"></div>
@@ -411,6 +513,11 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
   function fmtDate(iso) {
     if (!isDate(iso)) return "";
     return Number(iso.slice(8, 10)) + ". " + MONTH_SHORT[Number(iso.slice(5, 7)) - 1] + " " + iso.slice(0, 4);
+  }
+  function num(v, d) { var x = parseFloat(v); return isFinite(x) ? x : (d || 0); }
+  function fmt(v, dec) {
+    dec = dec == null ? 1 : dec;
+    return (Math.round(v * Math.pow(10, dec)) / Math.pow(10, dec)).toFixed(dec).replace(".", ",");
   }
   function esc(s) {
     return String(s == null ? "" : s)
@@ -512,6 +619,15 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
   }
 
   function renderSidebar(active) {
+    var m = capacity();
+    var tone = m.free < -1 ? "crit" : (m.free < 2 ? "warn" : "good");
+    document.getElementById("navtop").innerHTML =
+      '<button class="proj" data-act="kapacitet" aria-current="' + (active === "kapacitet") + '">' +
+        '<span class="dot ' + tone + '"></span>' +
+        '<span><span class="pname">Kapacitet</span><br>' +
+        '<span class="pmeta num">' + (m.free < 0 ? "−" : "") + fmt(Math.abs(m.free)) + " t fri · " +
+        fmt(m.util * 100, 0) + " %</span></span></button>";
+
     var html = "";
     DATA.projects.forEach(function (p) {
       var ts = tasksOf(p.id);
@@ -731,43 +847,54 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
      Claude Codes kirurgiske redigeringer forenelige — og git-diffene læselige.
      Værdier går gennem JSON.stringify, så anførselstegn escapes korrekt. */
 
-  var TASK_FIELDS = ["id","project","sprint","start","end","status","title","owner","due","epic","note"];
-  var PROJ_FIELDS = ["id","name","tagline"];
+
+  var TASK_FIELDS   = ["id","project","sprint","start","end","status","title","owner","due","epic","hours","note"];
+  var PROJ_FIELDS   = ["id","name","kind","tagline"];
   var SPRINT_FIELDS = ["project","month","goal"];
+  var WEEK_FIELDS   = ["uge","drift","projekt","adhoc"];
+
+  // Felter der skal skrives som tal, ikke som tekst
+  var NUMERIC = { hours:1, drift:1, projekt:1, adhoc:1 };
 
   function q(v) { return JSON.stringify(v == null ? "" : String(v)); }
+  function cell(f, v) { return f + ":" + (NUMERIC[f] ? num(v) : q(v)); }
 
   function rows(list, fields, indent) {
     var cells = list.map(function (o) {
-      return fields.map(function (f) { return f + ":" + q(o[f]); });
+      return fields.map(function (f) { return cell(f, o[f]); });
     });
     var width = fields.map(function (_, i) {
       return Math.max.apply(null, cells.map(function (c) { return c[i].length; }).concat([0]));
     });
     return cells.map(function (c) {
-      return indent + "{" + c.map(function (cell, i) {
-        return i === fields.length - 1 ? cell : cell + ", " + new Array(width[i] - cell.length + 1).join(" ");
+      return indent + "{" + c.map(function (x, i) {
+        return i === fields.length - 1 ? x : x + ", " + new Array(width[i] - x.length + 1).join(" ");
       }).join("") + "}";
     }).join(",\n");
   }
 
   function serialize(D) {
-    var epics = Object.keys(D.epics || {}).map(function (k) { return "    " + k + ":" + q(D.epics[k]); }).join(",\n");
+    var k = D.kapacitet || {};
+    var epics = Object.keys(D.epics || {}).map(function (x) { return "    " + x + ":" + q(D.epics[x]); }).join(",\n");
+    var uger = (D.uger || []).length ? rows(D.uger, WEEK_FIELDS, "    ") : "";
+
     return [
       "/* =============================================================================",
       "   MARKETING OS — DATA",
       "",
-      "   Denne fil indeholder indholdet. Koden ligger i marketing-os.html.",
-      "   Filen skrives af dashboardet selv, når du trykker Gem, og kan også",
-      "   redigeres i hånden eller af Claude Code. Formatet skal holdes:",
+      "   Indhold. Koden ligger i marketing-os.html.",
+      "   Skrives af dashboardet, når du trykker Gem — og kan redigeres i hånden.",
       "",
       "     * ÉN OPGAVE = ÉN LINJE",
-      "     * status skal være præcis én af:",
-      "         \"Ikke startet\" | \"I gang\" | \"Blokeret\" | \"Færdig\" | \"Droppet\"",
+      "     * status:  \"Ikke startet\" | \"I gang\" | \"Blokeret\" | \"Færdig\" | \"Droppet\"",
       "     * sprint / start / end er MÅNEDER  (\"ÅÅÅÅ-MM\")",
-      "     * due er en rigtig DATO (\"ÅÅÅÅ-MM-DD\") eller tom",
+      "     * due er en DATO (\"ÅÅÅÅ-MM-DD\") eller tom",
+      "     * hours er timer pr. uge LIGE NU — ikke i alt. Trækker opgaven ikke",
+      "       tid i denne uge, er den 0, selv om den har en deadline i marts.",
+      "     * projekternes kind styrer kapacitetsregnskabet:",
+      "         \"drift\"  løbende arbejde   \"projekt\" tidsbegrænset   \"adhoc\" det uplanlagte",
       "",
-      "   Filen er bevidst holdt uden for git — den er data, ikke kode.",
+      "   Filen er bevidst uden for git — den er data, ikke kode.",
       "   OneDrive holder versionshistorik på den.",
       "   ============================================================================= */",
       "", "var DATA = {", "",
@@ -775,6 +902,13 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
       "    updated: " + q(D.meta.updated) + ",",
       "    note: " + q(D.meta.note || ""),
       "  },", "",
+      "  /* ===== KAPACITET ===== timer pr. uge; loft i procent ===== */",
+      "  kapacitet: {",
+      "    contract:" + num(k.contract) + ", meetings:" + num(k.meetings) + ", admin:" + num(k.admin) +
+        ", other:" + num(k.other) + ", ceiling:" + num(k.ceiling) + ", adhoc:" + num(k.adhoc),
+      "  },", "",
+      "  /* ===== UGELOG ===== faktisk forbrug; to uger kalibrerer ad hoc-bufferen ===== */",
+      "  uger: [" + (uger ? "\n" + uger + "\n  ]" : "]") + ",", "",
       "  /* ===== EPICS ===== valgfri gruppering; nøglen sættes i opgavens epic-felt ===== */",
       "  epics: {", epics, "  },", "",
       "  /* ===== PROJEKTER ===== rækkefølgen her er rækkefølgen i sidebaren ===== */",
@@ -844,7 +978,7 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
   function save() {
     DATA.meta.updated = TODAY_ISO;
     var text = serialize(DATA);
-    var done = function () { dirty = false; render(CURRENT); flash("Gemt"); };
+    var done = function () { dirty = false; route(); flash("Gemt"); };
 
     if (SERVER) {
       return fetch("save", { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: text })
@@ -880,7 +1014,7 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
     flash._t = setTimeout(function () { el.className = "flash"; }, bad ? 7000 : 2200);
   }
 
-  function markDirty() { dirty = true; render(CURRENT); }
+  function markDirty() { dirty = true; route(); }
 
   window.addEventListener("beforeunload", function (e) {
     if (dirty) { e.preventDefault(); e.returnValue = ""; }
@@ -942,7 +1076,7 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
     var isNew = !id;
     var t = isNew ? { id: "", project: preset.project, sprint: preset.sprint || "",
                       start: preset.sprint || "", end: preset.sprint || "",
-                      status: "Ikke startet", title: "", owner: "", due: "", epic: "", note: "" }
+                      status: "Ikke startet", title: "", owner: "", due: "", epic: "", hours: 0, note: "" }
                   : DATA.tasks.filter(function (x) { return x.id === id; })[0];
     if (!t) return;
 
@@ -972,6 +1106,8 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
         field("Deadline", '<input id="f-due" type="date" value="' + esc(t.due) + '">', "valgfri — tegner en diamant på tidslinjen") +
         field("Epic", '<select id="f-epic">' + opts(epicList, t.epic) + "</select>") +
       "</div>" +
+      field("Timer pr. uge", '<input id="f-hours" type="number" min="0" max="40" step="0.5" value="' + num(t.hours) + '">',
+            "lige nu, ikke i alt — 0 hvis opgaven ikke trækker tid i denne uge") +
       field("Note", '<textarea id="f-note" rows="3" maxlength="400">' + esc(t.note) + "</textarea>"),
 
       function () {
@@ -984,7 +1120,7 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
         o.title = title; o.status = val("f-status"); o.owner = val("f-owner");
         o.project = val("f-project"); o.sprint = sprint;
         o.start = start; o.end = end; o.due = val("f-due");
-        o.epic = val("f-epic"); o.note = val("f-note");
+        o.epic = val("f-epic"); o.hours = num(val("f-hours")); o.note = val("f-note");
         if (isNew) {
           o.id = slug(o.project.slice(0, 5) + "-" + title, DATA.tasks.map(function (x) { return x.id; }));
           DATA.tasks.push(o);
@@ -1017,16 +1153,21 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
 
     openDialog(isNew ? "Nyt projekt" : "Rediger projekt",
       field("Navn", '<input id="f-name" type="text" value="' + esc(p.name) + '" maxlength="60">') +
+      field("Type", '<select id="f-kind">' + opts(KINDS.map(function (k) {
+              return { v: k.key, t: k.label + " — " + k.hint };
+            }), KINDMAP[p.kind] ? p.kind : "projekt") + "</select>",
+            "afgør hvilken bås projektets timer havner i på kapacitetsforsiden") +
       field("Undertekst", '<textarea id="f-tag" rows="2" maxlength="200">' + esc(p.tagline) + "</textarea>",
             "vises under projektnavnet"),
       function () {
         var name = val("f-name");
         if (!name) return "Projektet skal have et navn.";
         if (isNew) {
-          var np = { id: slug(name, DATA.projects.map(function (x) { return x.id; })), name: name, tagline: val("f-tag") };
+          var np = { id: slug(name, DATA.projects.map(function (x) { return x.id; })),
+                     name: name, kind: val("f-kind"), tagline: val("f-tag") };
           DATA.projects.push(np);
           CURRENT = np.id;
-        } else { p.name = name; p.tagline = val("f-tag"); }
+        } else { p.name = name; p.kind = val("f-kind"); p.tagline = val("f-tag"); }
         return null;
       },
       isNew ? null : function () {
@@ -1076,6 +1217,20 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
     if (!el) return;
     var a = el.getAttribute("data-act");
     if (a === "proj")       { location.hash = el.getAttribute("data-id"); }
+    else if (a === "kapacitet") { location.hash = "kapacitet"; }
+    else if (a === "logweek")   {
+      var k = isoWeek(new Date());
+      if (!DATA.uger) DATA.uger = [];
+      if (!DATA.uger.some(function (w) { return w.uge === k; })) {
+        DATA.uger.push({ uge: k, drift: 0, projekt: 0, adhoc: 0 });
+        markDirty();
+      }
+    }
+    else if (a === "delweek")   {
+      var u = el.getAttribute("data-uge");
+      DATA.uger = (DATA.uger || []).filter(function (w) { return w.uge !== u; });
+      markDirty();
+    }
     else if (a === "task")      { editTask(el.getAttribute("data-id")); }
     else if (a === "newtask")   { editTask(null, { project: CURRENT, sprint: el.getAttribute("data-month") || "" }); }
     else if (a === "newproj")   { editProject(null); }
@@ -1083,6 +1238,320 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
     else if (a === "newsprint") { editSprint(CURRENT, null); }
     else if (a === "editsprint"){ editSprint(CURRENT, el.getAttribute("data-month")); }
     else if (a === "save")      { save(); }
+  });
+
+  /* ====================== Kapacitet ======================
+     Modellen er Kaspers egen fra kapacitetskontrol-artifaktet:
+       fri kapacitet = (tilgængelige timer × planlægningsloft)
+                       − drift − projekter − ad hoc-buffer
+     Ad hoc-bufferen er et estimat, indtil to uger er registreret i ugeloggen;
+     derefter er den det målte gennemsnit. Kø-faktoren er Kingmans: ventetiden
+     vokser hyperbolsk med belægningen, hvilket er hele grunden til, at loftet
+     ikke er 100 %. */
+
+  var KINDS = [
+    { key: "drift",   label: "Drift",     hint: "løbende arbejde" },
+    { key: "projekt", label: "Projekter", hint: "tidsbegrænset" },
+    { key: "adhoc",   label: "Ad hoc",    hint: "det uplanlagte" }
+  ];
+  var KINDMAP = {}; KINDS.forEach(function (k) { KINDMAP[k.key] = k; });
+
+  function projById(id) {
+    for (var i = 0; i < DATA.projects.length; i++) if (DATA.projects[i].id === id) return DATA.projects[i];
+    return null;
+  }
+  function taskById(id) {
+    for (var i = 0; i < DATA.tasks.length; i++) if (DATA.tasks[i].id === id) return DATA.tasks[i];
+    return null;
+  }
+  function kindOf(t) {
+    var p = projById(t.project);
+    return (p && KINDMAP[p.kind]) ? p.kind : "projekt";
+  }
+  function isLive(t) {
+    var k = stat(t).key;
+    return k !== "faerdig" && k !== "droppet";
+  }
+
+  function isoWeek(d) {
+    var t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    var day = t.getUTCDay() || 7;
+    t.setUTCDate(t.getUTCDate() + 4 - day);
+    var y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+    var wk = Math.ceil((((t - y0) / 86400000) + 1) / 7);
+    return t.getUTCFullYear() + "-W" + (wk < 10 ? "0" + wk : wk);
+  }
+  function weekLabel(k) {
+    var p = String(k).split("-W");
+    return p.length === 2 ? "Uge " + parseInt(p[1], 10) + " · " + p[0] : k;
+  }
+
+  function capacity() {
+    var c = DATA.kapacitet || {};
+    var avail = Math.max(0, num(c.contract) - num(c.meetings) - num(c.admin) - num(c.other));
+    var ceiling = num(c.ceiling, 85) / 100;
+    var plan = avail * ceiling;
+
+    var by = { drift: 0, projekt: 0, adhoc: 0 };
+    var live = DATA.tasks.filter(function (t) { return num(t.hours) > 0 && isLive(t); });
+    live.forEach(function (t) { by[kindOf(t)] += num(t.hours); });
+
+    var weeks = DATA.uger || [];
+    var measured = null;
+    if (weeks.length >= 2) {
+      var sum = 0;
+      weeks.forEach(function (w) { sum += num(w.adhoc); });
+      measured = sum / weeks.length;
+    }
+    // Bufferen dækker det uplanlagte. Har du selv ført ad hoc-opgaver ind for
+    // mere end bufferen, er det tallet der gælder — ellers ville du tælle dobbelt.
+    var buffer = Math.max(measured != null ? measured : num(c.adhoc), by.adhoc);
+
+    var load = by.drift + by.projekt + buffer;
+    var util = avail > 0 ? load / avail : 0;
+
+    return {
+      avail: avail, ceiling: ceiling, plan: plan, by: by, buffer: buffer,
+      measured: measured, weeksLogged: weeks.length, live: live,
+      load: load, free: plan - load, util: util,
+      queue: util >= 0.995 ? 199 : util / (1 - util)
+    };
+  }
+
+  function numInput(attrs, v, extra) {
+    return '<input type="number" step="0.5" min="0" ' + attrs +
+           ' value="' + num(v) + '"' + (extra || "") + ">";
+  }
+
+  function capModel(m) {
+    var c = DATA.kapacitet, f = [
+      ["contract", "Arbejdsuge", "kontrakttimer"],
+      ["meetings", "Faste møder", "interne + eksterne"],
+      ["admin", "Mail &amp; admin", "indbakke, rapportering"],
+      ["other", "Øvrigt fravær", "ferie/kurser omregnet pr. uge"]
+    ];
+    return '<section class="card"><div class="card-hd"><h2>Kapacitetsmodel</h2></div><div class="card-pad">' +
+      f.map(function (x) {
+        return '<div class="krow"><span class="klab">' + x[1] + '<span class="ksub">' + x[2] + "</span></span>" +
+               numInput('id="cap-' + x[0] + '" data-cap="model" data-key="' + x[0] + '" max="80"', c[x[0]]) + "</div>";
+      }).join("") +
+      '<div class="ktotal"><span>Tilgængeligt</span><b class="num">' + fmt(m.avail) + " t</b></div>" +
+      '<div class="kceil"><div class="kceil-hd"><span>Planlægningsloft</span>' +
+        '<b class="num">' + num(c.ceiling, 85) + " %</b></div>" +
+        '<input type="range" id="cap-ceiling" data-cap="model" data-key="ceiling" min="60" max="100" step="5" value="' + num(c.ceiling, 85) + '">' +
+        '<p class="hint">Andelen af din tilgængelige tid, der må bookes fast. Jo mere uforudsigelig indgangen er, jo lavere skal den ligge.</p>' +
+      "</div></div></section>";
+  }
+
+  function capLoad(m) {
+    var scale = Math.max(m.avail, m.load, 1), bar = "";
+    KINDS.forEach(function (k) {
+      var v = k.key === "adhoc" ? m.buffer : m.by[k.key];
+      if (v <= 0) return;
+      bar += '<div class="seg" style="width:' + (v / scale * 100) + "%;background:var(--c-" + k.key + ')" title="' +
+             k.label + ": " + fmt(v) + ' t"></div>';
+    });
+    var slack = Math.max(0, m.avail - m.load);
+    if (slack > 0) bar += '<div class="seg" style="width:' + (slack / scale * 100) + '%"></div>';
+
+    var over = m.load > m.avail
+      ? '<div class="bar-over" style="left:' + (m.avail / scale * 100) + '%"></div>' : "";
+    var cp = m.plan / scale * 100;
+
+    var legend = KINDS.map(function (k) {
+      var v = k.key === "adhoc" ? m.buffer : m.by[k.key];
+      return '<span class="lg"><i style="background:var(--c-' + k.key + ')"></i>' + k.label +
+             ' <b class="num">' + fmt(v) + " t</b></span>";
+    }).join("") +
+    '<span class="lg"><i class="slack"></i>Ubooket <b class="num">' + fmt(slack) + " t</b></span>";
+
+    return '<section class="card"><div class="card-hd"><h2>Belastning pr. uge</h2>' +
+      '<span class="hint num">' + fmt(m.load) + " af " + fmt(m.avail) + " timer bundet</span></div>" +
+      '<div class="card-pad"><div class="bar-wrap"><div class="bar-track">' + bar + over +
+        '<div class="ceil" style="left:' + cp + '%"></div>' +
+        '<div class="ceil-lbl" style="left:' + cp + '%">Loft ' + fmt(m.plan) + " t</div>" +
+      '</div></div><div class="legend">' + legend + "</div>" +
+      '<div class="kbuffer"><div class="krow" style="border:0;padding-top:0">' +
+        '<span class="klab">Ad hoc-buffer<span class="ksub">' +
+          (m.measured != null ? "målt gennemsnit over " + m.weeksLogged + " uger"
+                              : "estimat — registrér 2 uger for at måle") + "</span></span>" +
+        numInput('id="cap-adhoc" data-cap="model" data-key="adhoc" max="40"',
+                 m.measured != null ? m.measured : DATA.kapacitet.adhoc,
+                 m.measured != null ? " disabled" : "") + "</div>" +
+        '<p class="hint">Bufferen dækker det uplanlagte. Så snart to uger er registreret nedenfor, regnes den som gennemsnittet af det faktiske forbrug i stedet for dit estimat.</p>' +
+      "</div></div></section>";
+  }
+
+  function capCurve(m) {
+    var W = 620, H = 240, x0 = 46, x1 = W - 16, y0 = 16, y1 = H - 38;
+    var uMin = 0.4, uMax = 0.97, qMax = 20;
+    var X = function (u) { return x0 + (u - uMin) / (uMax - uMin) * (x1 - x0); };
+    var Y = function (qq) { return y1 - Math.min(qq, qMax) / qMax * (y1 - y0); };
+    var s = "";
+
+    [0, 5, 10, 15, 20].forEach(function (qq) {
+      s += '<line x1="' + x0 + '" y1="' + Y(qq) + '" x2="' + x1 + '" y2="' + Y(qq) + '" stroke="var(--border)"/>' +
+           '<text x="' + (x0 - 8) + '" y="' + (Y(qq) + 4) + '" text-anchor="end" font-size="10" fill="var(--muted)">×' + qq + "</text>";
+    });
+    [0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95].forEach(function (u) {
+      s += '<text x="' + X(u) + '" y="' + (y1 + 17) + '" text-anchor="middle" font-size="10" fill="var(--muted)">' +
+           Math.round(u * 100) + "%</text>";
+    });
+    s += '<text x="' + ((x0 + x1) / 2) + '" y="' + (y1 + 33) + '" text-anchor="middle" font-size="10" fill="var(--muted)" letter-spacing="0.06em">BELÆGNINGSGRAD</text>';
+    s += '<rect x="' + x0 + '" y="' + y0 + '" width="' + (X(0.85) - x0) + '" height="' + (y1 - y0) + '" fill="var(--st-faerdig)" opacity="0.10"/>';
+    s += '<line x1="' + X(0.85) + '" y1="' + y0 + '" x2="' + X(0.85) + '" y2="' + y1 + '" stroke="var(--muted)" stroke-dasharray="3 3"/>';
+    s += '<text x="' + (X(0.85) - 6) + '" y="' + (y0 + 13) + '" text-anchor="end" font-size="10" fill="var(--ink-2)" font-weight="600">anbefalet loft</text>';
+
+    var d = "", first = true;
+    for (var u = uMin; u <= uMax + 1e-4; u += 0.005) {
+      var qq = u / (1 - u);
+      if (qq > qMax + 4) break;
+      d += (first ? "M" : "L") + X(u).toFixed(1) + " " + Y(qq).toFixed(1);
+      first = false;
+    }
+    s += '<path d="' + d + '" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/>';
+
+    var u0 = Math.min(Math.max(m.util, uMin), uMax), q0 = Math.min(u0 / (1 - u0), qMax);
+    var px = X(u0), py = Y(q0);
+    s += '<line x1="' + px + '" y1="' + py + '" x2="' + px + '" y2="' + y1 + '" stroke="var(--ink)" opacity="0.3"/>' +
+         '<circle cx="' + px + '" cy="' + py + '" r="6" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>';
+    var right = px > x1 - 130;
+    s += '<text x="' + (right ? px - 12 : px + 12) + '" y="' + (py - 11) + '" text-anchor="' + (right ? "end" : "start") +
+         '" font-size="11" font-weight="600" fill="var(--ink)">Dig · ' + fmt(m.util * 100, 0) + "% · ×" + fmt(Math.min(m.queue, qMax)) + "</text>";
+
+    return '<section class="card"><div class="card-hd"><h2>Hvorfor loftet ikke er 100 %</h2>' +
+      '<span class="hint">Kingmans ligning: ventetid vokser hyperbolsk med belægningen</span></div>' +
+      '<div class="card-pad"><div class="curve-wrap"><svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Kø-faktor mod belægningsgrad">' + s + "</svg></div>" +
+      '<p class="hint" style="margin-top:12px">Kurven er relativ til 50 % belægning. Springet fra 85 % til 95 % tredobler ventetiden på alt, der ligger i kø — uden at du har arbejdet langsommere.</p></div></section>';
+  }
+
+  function capRow(t) {
+    var p = projById(t.project), st = stat(t);
+    return '<div class="caprow">' +
+      '<span class="dot" style="background:var(--' + st.css + ')"></span>' +
+      '<span class="cn" data-act="task" data-id="' + esc(t.id) + '" title="Åbn opgaven">' + esc(t.title) + "</span>" +
+      '<span class="cp">' + esc(p ? p.name : t.project) + "</span>" +
+      numInput('data-cap="hours" data-id="' + esc(t.id) + '" max="40"', t.hours) +
+      "</div>";
+  }
+
+  function capTasks(m) {
+    var activeIds = {};
+    m.live.forEach(function (t) { activeIds[t.id] = true; });
+    var rest = DATA.tasks.filter(function (t) { return !activeIds[t.id] && isLive(t); });
+
+    var groups = KINDS.map(function (k) {
+      var list = m.live.filter(function (t) { return kindOf(t) === k.key; })
+                       .sort(function (a, b) { return num(b.hours) - num(a.hours); });
+      var sum = list.reduce(function (s, t) { return s + num(t.hours); }, 0);
+      return '<div class="capgroup"><div class="caphd"><i style="background:var(--c-' + k.key + ')"></i>' +
+        "<b>" + k.label + "</b><span class=\"ksub\">" + k.hint + "</span>" +
+        '<span class="num capsum">' + fmt(sum) + " t</span></div>" +
+        (list.length ? list.map(capRow).join("")
+                     : '<p class="col-empty">Ingen aktive timer i denne kategori.</p>') + "</div>";
+    }).join("");
+
+    return '<section class="card"><div class="card-hd"><h2>Aktive opgaver</h2>' +
+      '<span class="hint">' + m.live.length + " opgave" + (m.live.length === 1 ? "" : "r") + " trækker tid lige nu</span></div>" +
+      '<div class="card-pad">' + groups +
+      '<p class="hint" style="margin-top:14px">Sæt kun timer på det, der reelt trækker tid <em>denne</em> uge. En opgave med deadline i marts trækker 0 nu — det er dét, der gør forskel på en opgaveliste og et kapacitetsregnskab.</p>' +
+      (rest.length
+        ? '<details class="hist" style="margin-top:14px"><summary><b>Øvrige åbne opgaver</b> <span class="num">' + rest.length + "</span>" +
+          '<span class="g">sæt timer for at trække dem ind i regnskabet</span></summary>' +
+          '<div class="hist-body">' + rest.map(capRow).join("") + "</div></details>"
+        : "") +
+      "</div></section>";
+  }
+
+  function capWeeks(m) {
+    var weeks = (DATA.uger || []).slice().sort(function (a, b) { return String(b.uge).localeCompare(String(a.uge)); });
+    var cur = isoWeek(new Date());
+    var has = weeks.some(function (w) { return w.uge === cur; });
+
+    var body = weeks.length
+      ? weeks.slice(0, 10).map(function (w) {
+          var tot = num(w.drift) + num(w.projekt) + num(w.adhoc);
+          return "<tr><td>" + esc(weekLabel(w.uge)) + "</td>" +
+            KINDS.map(function (k) {
+              return '<td class="r">' + numInput('data-cap="week" data-uge="' + esc(w.uge) + '" data-key="' + k.key + '" max="80"', w[k.key]) + "</td>";
+            }).join("") +
+            '<td class="r num"><b>' + fmt(tot) + "</b></td>" +
+            '<td class="r"><button class="icon-btn" data-act="delweek" data-uge="' + esc(w.uge) + '" type="button" title="Fjern">✕</button></td></tr>';
+        }).join("")
+      : '<tr><td colspan="6" class="col-empty">Ingen uger registreret. To uger er nok til, at bufferen begynder at måle sig selv.</td></tr>';
+
+    return '<section class="card"><div class="card-hd"><h2>Ugelog — faktisk forbrug</h2>' +
+      '<span class="hint">Kalibrerer modellen. Registrér groft; præcision er ikke pointen.</span></div>' +
+      '<div class="card-pad"><div class="table-scroll"><table class="wtbl"><thead><tr><th>Uge</th>' +
+      KINDS.map(function (k) { return '<th class="r">' + k.label + "</th>"; }).join("") +
+      '<th class="r">I alt</th><th></th></tr></thead><tbody>' + body + "</tbody></table></div>" +
+      '<div class="wacts"><button class="btn primary" data-act="logweek" type="button"' + (has ? " disabled" : "") + ">" +
+        (has ? weekLabel(cur) + " er registreret" : "Registrér indeværende uge") + "</button>" +
+        '<span class="hint">' + (m.measured != null ? "Bufferen måles nu."
+          : "Mangler " + Math.max(0, 2 - m.weeksLogged) + " uge(r), før bufferen måles.") + "</span></div>" +
+      "</div></section>";
+  }
+
+  function renderCapacity() {
+    var m = capacity();
+    renderSidebar("kapacitet");
+    document.title = "Kapacitet — Marketing OS";
+
+    var tone = m.free < -1 ? "crit" : (m.free < 2 ? "warn" : "good");
+    var word = m.free < -1 ? "Overbooket" : (m.free < 2 ? "På kanten" : "Plads tilbage");
+    var note = m.free < -1 ? "Nye opgaver fortrænger eksisterende."
+             : (m.free < 2 ? "Ingen reel plads til det løse." : "Plads til nye opgaver inden for loftet.");
+    var qnote = m.util >= 0.95 ? "Over knækket — alt står i kø."
+              : (m.util >= 0.85 ? "Ved knækket — kø opbygges." : "Ventetid vs. 50 % belægning.");
+
+    document.getElementById("main").innerHTML =
+      '<div class="phead"><div><h1>Kapacitet</h1>' +
+        '<p class="tagline">Hvor mange timer er der reelt tilbage, når drift, projekter og det uplanlagte er trukket fra?</p></div>' +
+        '<div class="pacts">' +
+          '<button class="btn primary' + (dirty ? "" : " ghost") + '" data-act="save" type="button">' +
+            (dirty ? "● Gem ændringer" : "Gem") + "</button>" +
+          '<button class="theme-btn" id="themebtn" type="button"></button>' +
+        "</div></div>" +
+
+      '<section class="verdict">' +
+        '<div class="vcell"><span class="vlabel">Fri kapacitet</span>' +
+          '<div class="vbig num">' + (m.free < 0 ? "−" : "") + fmt(Math.abs(m.free)) + "<small>t/uge</small></div>" +
+          '<span class="pill ' + tone + '"><span class="dot"></span>' + word + "</span>" +
+          '<div class="vnote">' + note + "</div></div>" +
+        '<div class="vcell"><span class="vlabel">Belægning</span>' +
+          '<div class="vmid num">' + fmt(m.util * 100, 0) + " %</div>" +
+          '<div class="vnote">af <span class="num">' + fmt(m.avail) + "</span> tilgængelige timer</div></div>" +
+        '<div class="vcell"><span class="vlabel">Kø-faktor (Kingman)</span>' +
+          '<div class="vmid num">×' + fmt(m.queue) + "</div>" +
+          '<div class="vnote">' + qnote + "</div></div>" +
+      "</section>" +
+
+      '<div class="cap2">' + capModel(m) + capLoad(m) + "</div>" +
+      capCurve(m) + capTasks(m) + capWeeks(m) +
+      '<p class="foot">Fri kapacitet = (tilgængelige timer × planlægningsloft) − drift − projekter − ad hoc-buffer. ' +
+      "Er tallet negativt, er du overbooket, og næste opgave fortrænger en eksisterende — ikke en teoretisk pointe, " +
+      "men den sætning der skal med, når chefen spørger.</p>";
+
+    wireTheme();
+  }
+
+  function applyCap(el) {
+    var what = el.getAttribute("data-cap"), v = num(el.value);
+    if (what === "model") {
+      DATA.kapacitet[el.getAttribute("data-key")] = v;
+    } else if (what === "hours") {
+      var t = taskById(el.getAttribute("data-id"));
+      if (t) t.hours = v;
+    } else if (what === "week") {
+      var uge = el.getAttribute("data-uge");
+      (DATA.uger || []).forEach(function (w) {
+        if (w.uge === uge) w[el.getAttribute("data-key")] = v;
+      });
+    }
+    markDirty();
+  }
+  document.addEventListener("input", function (e) {
+    if (e.target && e.target.getAttribute && e.target.getAttribute("data-cap")) applyCap(e.target);
   });
 
   /* ====================== Samlet rendering ====================== */
@@ -1178,10 +1647,42 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
   /* ====================== Start ====================== */
 
   function fromHash() { return (location.hash || "").replace(/^#/, ""); }
-  window.addEventListener("hashchange", function () { render(fromHash()); });
+
+  // Én indgang til al gentegning. Tomt hash = kapacitet, fordi det er dét,
+  // dashboardet åbnes for. Fokus og markørposition bevares, så man kan taste
+  // videre i et talfelt, selv om siden bliver tegnet forfra ved hvert tastetryk.
+  function route() {
+    var a = document.activeElement;
+    var id = a && a.id ? a.id : null;
+    var key = a && a.getAttribute && a.getAttribute("data-cap")
+      ? [a.getAttribute("data-cap"), a.getAttribute("data-id") || "", a.getAttribute("data-uge") || "", a.getAttribute("data-key") || ""].join("|")
+      : null;
+    var pos = a && a.selectionStart != null ? a.selectionStart : null;
+
+    var h = fromHash();
+    if (!h || h === "kapacitet") renderCapacity();
+    else render(h);
+
+    var back = id ? document.getElementById(id) : null;
+    if (!back && key) {
+      var p = key.split("|");
+      back = document.querySelector('[data-cap="' + p[0] + '"]' +
+        (p[1] ? '[data-id="' + p[1] + '"]' : "") +
+        (p[2] ? '[data-uge="' + p[2] + '"]' : "") +
+        (p[3] ? '[data-key="' + p[3] + '"]' : ""));
+    }
+    if (back && back !== document.activeElement) {
+      try { back.focus({ preventScroll: true }); } catch (e) { back.focus(); }
+      if (pos != null && back.setSelectionRange) {
+        try { back.setSelectionRange(pos, pos); } catch (e) {}
+      }
+    }
+  }
+
+  window.addEventListener("hashchange", route);
 
   try {
-    render(fromHash());
+    route();
   } catch (err) {
     document.getElementById("main").innerHTML =
       '<div class="banner banner-warn"><h3>⚠ Dashboardet kunne ikke tegnes</h3>' +
