@@ -1119,7 +1119,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   function save() {
     DATA.meta.updated = TODAY_ISO;
     var text = serialize(DATA);
-    var done = function () { dirty = false; route(); flash("Gemt"); };
+    var done = function () { dirty = false; clearDraft(); route(); flash("Gemt i marketing-os-data.js"); };
 
     if (SERVER) {
       return fetch("save", { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: text })
@@ -1141,7 +1141,12 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
       .then(function (w) { return w.write(text).then(function () { return w.close(); }); })
       .then(done)
       .catch(function (e) {
-        if (e && e.name === "AbortError") return;           // brugeren fortrød filvalget
+        // Tavshed her var netop det, der kostede en sprint: knappen så gemt ud,
+        // men filvælgeren var bare lukket igen.
+        if (e && e.name === "AbortError") {
+          flash("IKKE gemt — filvælgeren blev lukket. Tryk Gem igen og vælg marketing-os-data.js.", true);
+          return;
+        }
         flash("Kunne ikke gemme: " + (e && e.message ? e.message : e), true);
       });
   }
@@ -1155,7 +1160,50 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     flash._t = setTimeout(function () { el.className = "flash"; }, bad ? 7000 : 2200);
   }
 
-  function markDirty() { dirty = true; route(); }
+  /* ----- Kladde -----
+     Ugemte ændringer lå før kun i hukommelsen, så et genindlæst vindue tog dem
+     med sig — og en lukket filvælger gjorde det i tavshed. Nu skrives en kladde
+     til browseren ved hver ændring og tilbydes gendannet ved næste indlæsning.
+     Kladden er en sikkerhedsline, ikke et lager: filen er stadig sandheden. */
+
+  var DRAFT_KEY = "mos-draft";
+  var DRAFT = null;
+
+  function saveDraft() {
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ts: Date.now(), data: DATA })); } catch (e) {}
+  }
+  function clearDraft() {
+    DRAFT = null;
+    try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+  }
+  function loadDraft() {
+    try {
+      var raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      var d = JSON.parse(raw);
+      // Er kladden identisk med filen, er der intet at gendanne
+      if (d && d.data && serialize(d.data) !== serialize(DATA)) DRAFT = d;
+      else clearDraft();
+    } catch (e) { clearDraft(); }
+  }
+  function draftAge(ts) {
+    var min = Math.round((Date.now() - ts) / 60000);
+    if (min < 1) return "for et øjeblik siden";
+    if (min < 60) return "for " + min + " minut" + (min === 1 ? "" : "ter") + " siden";
+    var h = Math.round(min / 60);
+    return "for " + h + " time" + (h === 1 ? "" : "r") + " siden";
+  }
+  function draftBanner() {
+    if (!DRAFT) return "";
+    return '<div class="banner banner-warn"><h3>Ugemte ændringer fundet</h3>' +
+      "<p>Der ligger ændringer i browseren, som aldrig blev gemt til filen — lavet " +
+      esc(draftAge(DRAFT.ts)) + ". De går tabt, hvis du kasserer dem.</p>" +
+      '<p style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">' +
+        '<button class="btn primary" data-act="draftrestore" type="button">Gendan ændringerne</button>' +
+        '<button class="btn" data-act="draftdiscard" type="button">Kassér</button></p></div>';
+  }
+
+  function markDirty() { dirty = true; saveDraft(); route(); }
 
   window.addEventListener("beforeunload", function (e) {
     if (dirty) { e.preventDefault(); e.returnValue = ""; }
@@ -1369,6 +1417,17 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     if (a === "viewreset")  {
       VIEWOPTS = { group: "none", show: "all", sort: "start", epic: "" };
       saveView(); route(); return;
+    }
+    if (a === "draftrestore") {
+      DATA = DRAFT.data; DRAFT = null;
+      dirty = true; saveDraft(); route();
+      flash("Ændringerne er gendannet — husk at trykke Gem.");
+      return;
+    }
+    if (a === "draftdiscard") {
+      if (!confirm("Kassér de ugemte ændringer? Det kan ikke fortrydes.")) return;
+      clearDraft(); route();
+      return;
     }
     if (a === "proj")       { location.hash = el.getAttribute("data-id"); }
     else if (a === "kapacitet") { location.hash = "kapacitet"; }
@@ -1649,7 +1708,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   function renderCapacity() {
     var m = capacity();
     renderSidebar("kapacitet");
-    document.title = "Kapacitet — Marketing OS";
+    document.title = (dirty ? "● " : "") + "Kapacitet — Marketing OS";
 
     var tone = m.free < -1 ? "crit" : (m.free < 2 ? "warn" : "good");
     var word = m.free < -1 ? "Overbooket" : (m.free < 2 ? "På kanten" : "Plads tilbage");
@@ -1659,6 +1718,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
               : (m.util >= 0.85 ? "Ved knækket — kø opbygges." : "Ventetid vs. 50 % belægning.");
 
     document.getElementById("main").innerHTML =
+      draftBanner() +
       '<div class="phead"><div><h1>Kapacitet</h1>' +
         '<p class="tagline">Hvor mange timer er der reelt tilbage, når drift, projekter og det uplanlagte er trukket fra?</p></div>' +
         '<div class="pacts">' +
@@ -1738,7 +1798,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 
     CURRENT = p.id;
     renderSidebar(p.id);
-    document.title = p.name + " — Marketing OS";
+    document.title = (dirty ? "● " : "") + p.name + " — Marketing OS";
 
     var ts = tasksOf(p.id);
     var counts = {};
@@ -1754,7 +1814,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     var odAll = ts.filter(overdue).length;
     if (odAll) chips += '<span class="chip alarm"><span class="dot" style="background:var(--st-blokeret)"></span><b>' + odAll + "</b> over deadline</span>";
 
-    var banners = "";
+    var banners = draftBanner();
     var problems = validate();
     if (problems.length) {
       banners += '<div class="banner banner-warn"><h3>⚠ ' + problems.length + " problem" + (problems.length > 1 ? "er" : "") +
@@ -1859,6 +1919,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   window.addEventListener("hashchange", route);
 
   try {
+    loadDraft();
     route();
   } catch (err) {
     document.getElementById("main").innerHTML =

@@ -48,7 +48,13 @@ Asana kan ikke hentes automatisk. Det krævede claude.ai's MCP-runtime, som kun 
 - **Projekt** — blyanten ved projektnavnet; nyt projekt via **+ Nyt projekt** i sidebaren
 - **Sprint** — blyanten ved sprintens navn; ny via **+ Ny sprint**
 
-Ændringer lægger sig i hukommelsen, indtil du trykker **Gem ændringer** — knappen skifter farve, når der er noget ugemt, og browseren advarer, hvis du lukker fanen først.
+Ændringer lægger sig i hukommelsen, indtil du trykker **Gem ændringer**. At der er noget ugemt, vises tre steder: knappen skifter farve, sidebaren skriver det, og fanens titel får en prik foran.
+
+**Ugemte ændringer overlever nu et genindlæs.** Ved hver ændring skrives en kladde til browseren. Åbner du siden igen med noget ugemt, møder du et banner med **Gendan ændringerne** eller **Kassér**. Kladden ryddes, så snart du har gemt rigtigt.
+
+Kladden er en sikkerhedsline, ikke et lager. Den ligger i den browser, du sidder ved, og følger ikke med filen — og fordi `file://` og `localhost` tæller som hver sit sted i browseren, deler de to måder at åbne dashboardet på ikke kladde. Filen er stadig den eneste sandhed.
+
+**Når du gemmer fra en fil åbnet med dobbeltklik,** spørger Windows én gang pr. session, hvilken fil der må skrives — vælg `marketing-os-data.js`. Lukker du filvælgeren uden at vælge, bliver der **ikke** gemt, og siden siger det tydeligt. Det er værd at læse beskeden: en lukket filvælger ligner ellers et vellykket gem.
 
 Sletning af et projekt eller en sprint blokeres, så længe der ligger opgaver i den. Flyt eller slet dem først.
 
