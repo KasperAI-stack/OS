@@ -18,12 +18,13 @@ When invoking an agent explicitly, use its name (e.g. "use the marketing-special
 
 ## Folder structure
 
-- `brand/` — guidelines, tone-of-voice, brand assets. Every content-producing agent checks this first.
+- `brand/` — guidelines, tone-of-voice, brand assets. Every content-producing agent checks this first. Two brands: Africa Tours (`brand/guidelines.md`) and Hey Otto (`brand/hey-otto/`, also used by the `dashboard/`).
 - `projects/` — one subfolder per active campaign/project; briefs, creative, budget, performance live together here.
 - `reference/` — standing context (personas, contacts, recurring meetings, benchmarks) agents should read before asking Kasper to repeat himself.
 - `templates/` — reusable starting points (`ads/`, `email/`, `reports/`).
 - `reports/weekly/` — recurring status updates from `personal-assistant`, dated `YYYY-MM-DD.md`.
-- `.claude/skills/` — packaged, repeatable workflows that any agent can invoke consistently. See `.claude/skills/README.md`. Two real skills so far, both ported from claude.ai Project drafts and adapted to this environment's tools: `personal-assistant-dashboard` (daily/weekly status dashboard for `personal-assistant`, covering calendar + email + Asana tasks as one routine) and `meta-ads-weekly` (weekly Meta Ads performance dashboard for `marketing-specialist`, proposals-only per `reference/marketing-specialist-playbook.md`).
+- `dashboard/` — **HeyOtto OS**, Kasper's project/capacity web app on Netlify (`heyotto-os.netlify.app`). Its data lives in the cloud (Netlify Blobs), not in files — read and change it via the `heyotto-os-data` skill. See `dashboard/README.md`.
+- `.claude/skills/` — packaged, repeatable workflows that any agent can invoke consistently. See `.claude/skills/README.md`. Real skills so far: `heyotto-os-data` (read and change HeyOtto OS data through its API), plus two ported from claude.ai Project drafts and adapted to this environment's tools: `personal-assistant-dashboard` (daily/weekly status dashboard for `personal-assistant`, covering calendar + email + Asana tasks as one routine) and `meta-ads-weekly` (weekly Meta Ads performance dashboard for `marketing-specialist`, proposals-only per `reference/marketing-specialist-playbook.md`).
 
 ## Working conventions
 

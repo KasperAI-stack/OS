@@ -4,7 +4,6 @@ Thumbs.db
 .env
 .env.local
 
-# Dashboard-data. Indhold, ikke kode — versioneres af OneDrive, ikke af git.
-# Kopier marketing-os-data.example.js hvis du starter forfra.
-dashboard/marketing-os-data.js
-dashboard/marketing-os-data.js.tmp
+# Netlify og npm
+node_modules/
+.netlify/

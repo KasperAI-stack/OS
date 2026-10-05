@@ -1,0 +1,11 @@
+{
+  "name": "heyotto-os",
+  "private": true,
+  "description": "HeyOtto OS — dashboardet og den Netlify-funktion, der gemmer dets data. Se dashboard/README.md.",
+  "dependencies": {
+    "@netlify/blobs": "^11.1.3"
+  },
+  "devDependencies": {
+    "@netlify/functions": "^6.0.2"
+  }
+}
