@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- Google Ads API design documentation for HeyOtto OS, written for Google's
+     developer-token review. The PDF next to this file is printed from it
+     (A4). To change the text: edit this file, open it in Chrome, and use
+     Print → Save as PDF with paper size A4 and "Background graphics" on. -->
+<title>HeyOtto OS — Google Ads API design documentation</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Colours, type and shapes follow brand/hey-otto/guidelines.md. */
+:root {
+  --font: "Geist", "Helvetica Neue", Arial, sans-serif;
+  --mono: "Geist Mono", ui-monospace, Menlo, Consolas, monospace;
+  --ink: #0F0E13;
+  --muted: #5E5A6B;
+  --soft: #F4F2F8;
+  --line: #E4E1EC;
+  --line-strong: #D3CFDD;
+  --plus: #A7A3B2;
+  --accent: #7C3AED;
+  --accent-soft: rgba(124,58,237,0.08);
+  --gradient: linear-gradient(135deg, #4C1D95 0%, #7C3AED 38%, #C026D3 72%, #F472B6 100%);
+}
+@page { size: A4; margin: 16mm 17mm 18mm; }
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin: 0; background: #fff; color: var(--ink); font-family: var(--font);
+       font-size: 10.4pt; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+.doc { max-width: 176mm; margin: 0 auto; }
+a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
+p { margin: 0 0 8pt; }
+b, strong { font-weight: 600; }
+.eyebrow { font-family: var(--mono); font-size: 7.6pt; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------- Header ---------- */
+.top { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12pt; border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: 9px; }
+.brand .i { width: 26px; height: 26px; display: block; }
+.brand .l { height: 20px; width: auto; display: block; }
+.hero { padding: 22pt 0 16pt; border-bottom: 1px solid var(--line); position: relative; }
+.hero h1 { font-size: 30pt; line-height: 1.04; letter-spacing: -0.045em; font-weight: 600; margin: 6pt 0 6pt; }
+.hero .sub { font-size: 12pt; color: var(--muted); margin: 0; max-width: 135mm; }
+.facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 16pt; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.facts div { padding: 8pt 10pt; border-left: 1px solid var(--line); }
+.facts div:first-child { border-left: 0; }
+.facts b { display: block; font-size: 9.6pt; margin-top: 2pt; line-height: 1.3; }
+
+/* ---------- Sections ---------- */
+section { padding: 14pt 0 6pt; border-bottom: 1px solid var(--line); }
+section:last-of-type { border-bottom: 0; }
+h2 { font-size: 13pt; font-weight: 600; letter-spacing: -0.015em; margin: 0 0 6pt; display: flex; align-items: baseline; gap: 8pt; }
+h2 .n { font-family: var(--mono); font-size: 8pt; font-weight: 400; color: var(--muted); letter-spacing: .04em; }
+h3 { font-size: 10.6pt; font-weight: 600; margin: 10pt 0 3pt; }
+ul.clean { margin: 0 0 8pt; padding-left: 14pt; }
+ul.clean li { margin: 0 0 3pt; }
+.callout { background: var(--accent-soft); border-radius: 12px; padding: 9pt 12pt; margin: 6pt 0 10pt; }
+.callout b { color: var(--ink); }
+
+/* Architecture diagram */
+.flow { display: grid; grid-template-columns: 1fr 26mm 1.25fr 26mm 1fr; align-items: center; margin: 8pt 0 6pt; }
+.node { border: 1px solid var(--line-strong); border-radius: 14px; padding: 8pt 10pt; background: #fff; min-height: 52pt; }
+.node.main { background: var(--soft); border-color: var(--line-strong); }
+.node b { display: block; font-size: 9.8pt; line-height: 1.3; }
+.node span { display: block; font-size: 8.4pt; color: var(--muted); line-height: 1.35; margin-top: 2pt; }
+.arrow { text-align: center; font-size: 7.4pt; color: var(--muted); line-height: 1.25; padding: 0 3pt; }
+.arrow i { display: block; font-style: normal; font-size: 13pt; color: var(--ink); line-height: 1; margin-bottom: 2pt; }
+.below { display: grid; grid-template-columns: 1fr 26mm 1.25fr 26mm 1fr; }
+.below .down { grid-column: 3; text-align: center; font-size: 7.4pt; color: var(--muted); padding: 3pt 0; }
+.below .down i { font-style: normal; font-size: 13pt; color: var(--ink); display: block; line-height: 1; }
+.below .node { grid-column: 3; }
+.figcap { font-size: 8.6pt; color: var(--muted); margin: 4pt 0 8pt; }
+
+/* API table */
+table.api { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin: 4pt 0 10pt; font-size: 9.4pt; }
+table.api th { text-align: left; font-family: var(--mono); font-weight: 400; font-size: 7.4pt; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); background: var(--soft); padding: 6pt 9pt; }
+table.api td { padding: 5pt 9pt; border-top: 1px solid var(--line); vertical-align: top; line-height: 1.4; }
+table.api td:first-child { white-space: nowrap; font-weight: 500; }
+.pill { display: inline-block; font-family: var(--mono); font-size: 7pt; letter-spacing: .05em; text-transform: uppercase; border-radius: 999px; padding: 1.5pt 6pt; border: 1px solid var(--line-strong); color: var(--muted); white-space: nowrap; }
+.pill.w { border-color: var(--accent); color: var(--accent); }
+
+/* ---------- Mockups ---------- */
+.break { break-before: page; }
+h2, h3 { break-after: avoid; }
+table.api { break-inside: avoid; }
+figure { margin: 6pt 0 10pt; break-inside: avoid; }
+.frame { border: 1px solid var(--line-strong); border-radius: 14px; overflow: hidden; }
+.chrome { display: flex; align-items: center; gap: 8px; background: var(--soft); border-bottom: 1px solid var(--line); padding: 6px 10px; }
+.chrome .dots { display: flex; gap: 4px; }
+.chrome .dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--line-strong); display: block; }
+.chrome .url { flex: 1; background: #fff; border: 1px solid var(--line); border-radius: 999px; font-family: var(--mono); font-size: 7.4pt; color: var(--muted); padding: 2px 10px; }
+.mock-tag { font-family: var(--mono); font-size: 6.8pt; letter-spacing: .07em; text-transform: uppercase; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 1px 7px; }
+
+/* The app itself is drawn at screen size and zoomed to fit the page. */
+.app { zoom: .70; display: flex; font-size: 13px; line-height: 1.45; background: #fff; }
+.side { width: 205px; flex: 0 0 205px; background: #0F0E13; color: #F4F2F8; padding: 20px 0 18px; display: flex; flex-direction: column; }
+.side .bm { padding: 0 18px 18px; }
+.side .bm-row { display: flex; align-items: center; gap: 9px; }
+.side .bm-row .i { width: 26px; height: 26px; }
+.side .bm-row .l { height: 20px; filter: invert(1); }
+.side .bm small { display: block; font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #A7A3B2; margin-top: 8px; }
+.side .lbl { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #A7A3B2; padding: 10px 18px 6px; }
+.side .it { display: flex; align-items: center; gap: 9px; margin: 1px 8px; padding: 7px 10px; border-radius: 12px; font-size: 13px; font-weight: 500; }
+.side .it .dot { width: 7px; height: 7px; border-radius: 50%; background: #6B6778; flex: 0 0 7px; }
+.side .it.on { background: rgba(244,242,248,.11); font-weight: 600; }
+.side .it.on .dot { background: #F472B6; }
+.side .it.sub { padding-left: 26px; font-weight: 400; font-size: 12.5px; color: #D3CFDD; }
+.side .it.sub.on { color: #F4F2F8; font-weight: 600; }
+.side .foot { margin-top: auto; border-top: 1px solid #3B3845; padding: 12px 18px 0; font-size: 11.5px; color: #A7A3B2; }
+.side .foot b { color: #F4F2F8; font-weight: 500; }
+
+.main { flex: 1; padding: 22px 24px 24px; min-width: 0; }
+.mh { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.mh h4 { font-size: 24px; letter-spacing: -0.035em; font-weight: 600; margin: 4px 0 0; line-height: 1.1; }
+.mh .acts { display: flex; gap: 8px; align-items: center; }
+.btn { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 7px 14px; font-size: 12.5px; font-weight: 500; border: 1px solid var(--ink); color: var(--ink); background: #fff; white-space: nowrap; }
+.btn.pri { background: var(--ink); color: #fff; }
+.btn.sm { padding: 4px 11px; font-size: 11.5px; }
+.sel { border: 1px solid var(--line-strong); border-radius: 999px; padding: 7px 14px; font-size: 12.5px; font-weight: 500; white-space: nowrap; }
+.synced { font-size: 11.5px; color: var(--muted); margin-top: 6px; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0 14px; }
+.kpi { border: 1px solid var(--line); border-radius: 18px; padding: 13px 15px; }
+.kpi .eyebrow { font-size: 10px; }
+.kpi .v { font-size: 25px; font-weight: 600; letter-spacing: -0.03em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.tab { border: 1px solid var(--line-strong); border-radius: 999px; padding: 4px 12px; font-size: 12px; font-weight: 500; color: var(--muted); }
+.tab.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+table.m { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; font-size: 12.5px; }
+table.m th { text-align: right; font-family: var(--mono); font-weight: 400; font-size: 10px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); background: var(--soft); padding: 8px 12px; }
+table.m th:first-child, table.m th:nth-child(2) { text-align: left; }
+table.m td { text-align: right; padding: 9px 12px; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.m td:first-child { text-align: left; font-weight: 500; white-space: normal; width: 34%; }
+table.m td:nth-child(2) { text-align: left; }
+table.m tr.new td { background: var(--accent-soft); }
+.st { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
+.st i { width: 8px; height: 8px; border-radius: 50%; display: block; }
+.st.en i { background: #7C3AED; }
+.st.pa i { background: #A7A3B2; }
+.st.nw i { background: transparent; border: 1.5px dashed #5E5A6B; width: 9px; height: 9px; }
+.m-note { font-size: 11.5px; color: var(--muted); margin-top: 10px; }
+
+/* Campaign builder */
+.steps { display: flex; gap: 6px; margin: 14px 0 14px; }
+.step { display: flex; align-items: center; gap: 7px; border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px 5px 6px; font-size: 12px; font-weight: 500; color: var(--muted); }
+.step b { width: 20px; height: 20px; border-radius: 50%; background: var(--soft); color: var(--muted); display: inline-grid; place-items: center; font-size: 11px; font-weight: 600; }
+.step.done b { background: var(--ink); color: #fff; }
+.step.on { border-color: var(--ink); color: var(--ink); }
+.step.on b { background: var(--accent); color: #fff; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.box { border: 1px solid var(--line); border-radius: 18px; padding: 13px 15px; }
+.box .hd { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.box .hd a { font-size: 11.5px; color: var(--muted); text-decoration: underline; }
+dl.kv { display: grid; grid-template-columns: 105px 1fr; gap: 5px 10px; margin: 0; font-size: 12.5px; }
+dl.kv dt { color: var(--muted); }
+dl.kv dd { margin: 0; font-weight: 500; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.chip { border: 1px solid var(--line-strong); border-radius: 999px; padding: 2px 10px; font-size: 11.5px; }
+.serp { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-top: 4px; font-family: Arial, sans-serif; }
+.serp .sp { font-size: 11px; color: #202124; font-weight: 700; }
+.serp .u { font-size: 11.5px; color: #4d5156; }
+.serp .h { font-size: 15.5px; color: #1a0dab; margin: 3px 0 2px; line-height: 1.3; }
+.serp .d { font-size: 12px; color: #4d5156; line-height: 1.45; }
+.gate { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 12px; padding: 4px; border-radius: 18px; background: var(--gradient); }
+.gate .in { flex: 1; display: flex; align-items: center; justify-content: space-between; gap: 14px; background: #fff; border-radius: 14px; padding: 11px 14px; }
+.gate p { margin: 0; font-size: 12.5px; line-height: 1.45; }
+.gate .bt { display: flex; gap: 8px; }
+
+.fine { font-size: 8.6pt; color: var(--muted); }
+.end { margin-top: 14pt; padding-top: 10pt; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <div class="top">
+    <div class="brand">
+      <img class="i" src="../../brand/hey-otto/icon.svg" alt="">
+      <img class="l" src="../../brand/hey-otto/logo.svg" alt="hey otto">
+    </div>
+    <span class="eyebrow">Google Ads API · Tool design documentation</span>
+  </div>
+
+  <div class="hero">
+    <span class="eyebrow">Design documentation · October 2026</span>
+    <h1>HeyOtto OS</h1>
+    <p class="sub">How Hey Otto's internal tool will use the Google Ads API to build and report on Hey Otto's own Google Ads campaigns.</p>
+    <div class="facts">
+      <div><span class="eyebrow">Company</span><b>Hey Otto</b></div>
+      <div><span class="eyebrow">Website advertised</span><b>heyotto.dk</b></div>
+      <div><span class="eyebrow">Google Ads accounts</span><b>1 (our own)</b></div>
+      <div><span class="eyebrow">Users</span><b>1 (the owner)</b></div>
+    </div>
+  </div>
+
+  <section>
+    <h2><span class="n">01</span>Company name</h2>
+    <p>Hey Otto v/ Kasper Schrøder Asmussen (trading as <b>Hey Otto</b>).</p>
+  </section>
+
+  <section>
+    <h2><span class="n">02</span>Business model</h2>
+    <p>Hey Otto is a one-person AI and marketing consultancy in Denmark, run by its owner, Kasper Schrøder Asmussen. Hey Otto helps companies use AI in their marketing, for example with analysis and reporting built on their own data. We sell our services through our own website, <b>www.heyotto.dk</b>.</p>
+    <p>We use Google Ads <b>only to advertise our own website, heyotto.dk</b>, which we own. We do not manage Google Ads for clients or for anyone else, and HeyOtto OS will never be connected to another company's Google Ads account. The manager account we use for API access is linked only to Hey Otto's own Google Ads account.</p>
+  </section>
+
+  <section>
+    <h2><span class="n">03</span>Tool access and use</h2>
+    <p>HeyOtto OS is Hey Otto's own internal web app. Today it is used to plan projects and keep track of working capacity. We want to add Google Ads to it, so that Hey Otto's campaigns can be built and followed up in the same place.</p>
+    <ul class="clean">
+      <li><b>One user only:</b> the tool is used by Kasper Schrøder Asmussen, the owner of Hey Otto. There are no other users.</li>
+      <li><b>Private and password-protected:</b> the app runs at heyotto-os.netlify.app behind a password login. A browser stays signed in for at most 90 days, and sign-in is blocked for 15 minutes after 10 wrong passwords.</li>
+      <li><b>No outside access:</b> no clients, agencies or other third parties can use the tool or see the reports it makes. The tool is not offered, sold or licensed to anyone.</li>
+    </ul>
+  </section>
+
+  <section class="break">
+    <h2><span class="n">04</span>Tool design</h2>
+    <p>HeyOtto OS is a web app hosted on Netlify. The page in the browser only shows the interface. <b>All calls to the Google Ads API are made on the server</b>, by Netlify Functions, and never from the browser.</p>
+
+    <div class="flow">
+      <div class="node"><b>Kasper</b><span>Web browser, signed in with the HeyOtto OS password</span></div>
+      <div class="arrow"><i>⇄</i>HTTPS</div>
+      <div class="node main"><b>HeyOtto OS on Netlify</b><span>Web page + server functions (reporting sync, campaign builder)</span></div>
+      <div class="arrow"><i>⇄</i>OAuth 2.0,<br>server only</div>
+      <div class="node"><b>Google Ads API</b><span>Hey Otto's own Google Ads account only</span></div>
+    </div>
+    <div class="below">
+      <div class="down"><i>⇅</i>saves and reads report data</div>
+      <div class="node"><b>Netlify Blobs</b><span>The app's private storage for synced report data</span></div>
+    </div>
+    <p class="figcap">How HeyOtto OS connects to the Google Ads API.</p>
+
+    <h3>Reporting</h3>
+    <p>Once a day, a scheduled server function pulls performance metrics from the Google Ads API and saves them in the app's own storage (Netlify Blobs). The dashboard reads from that storage. Kasper can view performance at account, campaign, ad group, ad and keyword level, for different time periods (for example the last 7 days, the last 30 days or a calendar month). A <b>Refresh now</b> button runs the same sync on demand.</p>
+
+    <h3>Campaign building</h3>
+    <p>Kasper builds Search campaigns in a step-by-step form in HeyOtto OS: campaign name, daily budget, location and language targeting, ad groups, keywords, and responsive search ads (headlines, descriptions and a final URL on heyotto.dk). When he submits the form, the tool creates the budget, campaign, targeting, ad groups, keywords and ads through the API.</p>
+    <div class="callout"><b>Every new campaign is created as Paused.</b> Nothing goes live and no money is spent until Kasper has reviewed the campaign and clicks <b>Enable</b> himself. The tool can also pause or enable an existing campaign, but only when Kasper clicks the button. There are no automated rules or scripts that change ads on their own.</div>
+
+    <h3>Credentials and volume</h3>
+    <p>Kasper authorises HeyOtto OS once with his Google account through Google's OAuth 2.0 consent screen. The developer token, OAuth client ID and secret, and refresh token are stored as environment variables in Netlify. They are only used on the server and are never sent to the browser or saved in the source code. The tool makes a small number of API calls: one sync a day, plus the calls made when Kasper builds, pauses or enables a campaign.</p>
+  </section>
+
+  <section>
+    <h2><span class="n">05</span>API services called</h2>
+    <table class="api">
+      <thead><tr><th>Service</th><th>What HeyOtto OS uses it for</th><th>Type</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://developers.google.com/google-ads/api/reference/rpc/latest/GoogleAdsService">GoogleAdsService</a></td><td>Pull performance reports and campaign status with Search / SearchStream (GAQL queries on the <i>customer</i>, <i>campaign</i>, <i>ad_group</i>, <i>ad_group_ad</i> and <i>keyword_view</i> resources)</td><td><span class="pill">Read</span></td></tr>
+        <tr><td><a href="https://developers.google.com/google-ads/api/reference/rpc/latest/CampaignBudgetService">CampaignBudgetService</a></td><td>Create the daily budget for a new campaign</td><td><span class="pill w">Write</span></td></tr>
+        <tr><td><a href="https://developers.google.com/google-ads/api/reference/rpc/latest/CampaignService">CampaignService</a></td><td>Create Search campaigns (always as Paused), and pause or enable a campaign when Kasper clicks the button</td><td><span class="pill w">Write</span></td></tr>
+        <tr><td><a href="https://developers.google.com/google-ads/api/reference/rpc/latest/CampaignCriterionService">CampaignCriterionService</a></td><td>Set location and language targeting on a new campaign</td><td><span class="pill w">Write</span></td></tr>
+        <tr><td><a href="https://developers.google.com/google-ads/api/reference/rpc/latest/AdGroupService">AdGroupService</a></td><td>Create ad groups in a new campaign</td><td><span class="pill w">Write</span></td></tr>
+        <tr><td><a href="https://developers.google.com/google-ads/api/reference/rpc/latest/AdGroupCriterionService">AdGroupCriterionService</a></td><td>Add keywords to ad groups</td><td><span class="pill w">Write</span></td></tr>
+        <tr><td><a href="https://developers.google.com/google-ads/api/reference/rpc/latest/AdGroupAdService">AdGroupAdService</a></td><td>Create responsive search ads in ad groups</td><td><span class="pill w">Write</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2><span class="n">06</span>Tool mockups</h2>
+    <p>Here are mockups of the planned Google Ads screens in HeyOtto OS. The live app's interface is in Danish; the mockups are shown in English for this review. <b>All numbers are example values, not real data.</b></p>
+
+    <figure>
+      <div class="frame">
+        <div class="chrome"><div class="dots"><span></span><span></span><span></span></div><div class="url">heyotto-os.netlify.app</div><span class="mock-tag">Mockup</span></div>
+        <div class="app">
+          <aside class="side">
+            <div class="bm">
+              <div class="bm-row"><img class="i" src="../../brand/hey-otto/icon.svg" alt=""><img class="l" src="../../brand/hey-otto/logo.svg" alt="hey otto"></div>
+              <small>HeyOtto OS</small>
+            </div>
+            <div class="lbl">Overview</div>
+            <div class="it"><span class="dot"></span>Capacity</div>
+            <div class="it"><span class="dot"></span>Projects</div>
+            <div class="lbl">Google Ads</div>
+            <div class="it on"><span class="dot"></span>Performance</div>
+            <div class="it"><span class="dot"></span>Build campaign</div>
+            <div class="foot">Signed in as <b>Kasper</b><br>Log out</div>
+          </aside>
+          <div class="main">
+            <div class="mh">
+              <div><span class="eyebrow">Google Ads · Hey Otto (own account)</span><h4>Account performance</h4></div>
+              <div class="acts"><span class="sel">September 2026 ▾</span><span class="btn">↻ Refresh now</span></div>
+            </div>
+            <div class="synced">Last synced today at 06:00</div>
+            <div class="kpis">
+              <div class="kpi"><span class="eyebrow">Impressions</span><div class="v">12,480</div></div>
+              <div class="kpi"><span class="eyebrow">Clicks</span><div class="v">486</div></div>
+              <div class="kpi"><span class="eyebrow">Conversions</span><div class="v">14</div></div>
+              <div class="kpi"><span class="eyebrow">Cost</span><div class="v">3,215 kr.</div></div>
+            </div>
+            <div class="tabs"><span class="tab">Account</span><span class="tab on">Campaigns</span><span class="tab">Ad groups</span><span class="tab">Ads</span><span class="tab">Keywords</span></div>
+            <table class="m">
+              <thead><tr><th>Campaign</th><th>Status</th><th>Impr.</th><th>Clicks</th><th>Conv.</th><th>Cost</th><th></th></tr></thead>
+              <tbody>
+                <tr><td>Search – AI prototype</td><td><span class="st en"><i></i>Enabled</span></td><td>7,940</td><td>301</td><td>9</td><td>2,045 kr.</td><td><span class="btn sm">Pause</span></td></tr>
+                <tr><td>Search – Marketing reporting</td><td><span class="st en"><i></i>Enabled</span></td><td>3,860</td><td>142</td><td>4</td><td>918 kr.</td><td><span class="btn sm">Pause</span></td></tr>
+                <tr><td>Search – Brand (Hey Otto)</td><td><span class="st en"><i></i>Enabled</span></td><td>680</td><td>43</td><td>1</td><td>252 kr.</td><td><span class="btn sm">Pause</span></td></tr>
+                <tr class="new"><td>Search – Spring offer</td><td><span class="st nw"><i></i>New · paused</span></td><td>–</td><td>–</td><td>–</td><td>–</td><td><span class="btn sm pri">Review &amp; enable</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <p class="figcap"><b>Mockup 1: Performance reports.</b> Metrics are synced from the Google Ads API once a day (GoogleAdsService) and can be viewed by account, campaign, ad group, ad and keyword, for any month or period. Clicking a campaign opens its ad groups, ads and keywords. A campaign built in HeyOtto OS shows up as <i>New · paused</i> until Kasper reviews and enables it.</p>
+    </figure>
+
+    <figure>
+      <div class="frame">
+        <div class="chrome"><div class="dots"><span></span><span></span><span></span></div><div class="url">heyotto-os.netlify.app</div><span class="mock-tag">Mockup</span></div>
+        <div class="app">
+          <aside class="side">
+            <div class="bm">
+              <div class="bm-row"><img class="i" src="../../brand/hey-otto/icon.svg" alt=""><img class="l" src="../../brand/hey-otto/logo.svg" alt="hey otto"></div>
+              <small>HeyOtto OS</small>
+            </div>
+            <div class="lbl">Overview</div>
+            <div class="it"><span class="dot"></span>Capacity</div>
+            <div class="it"><span class="dot"></span>Projects</div>
+            <div class="lbl">Google Ads</div>
+            <div class="it"><span class="dot"></span>Performance</div>
+            <div class="it on"><span class="dot"></span>Build campaign</div>
+            <div class="foot">Signed in as <b>Kasper</b><br>Log out</div>
+          </aside>
+          <div class="main">
+            <div class="mh">
+              <div><span class="eyebrow">Google Ads · New Search campaign</span><h4>Build campaign</h4></div>
+            </div>
+            <div class="steps">
+              <span class="step done"><b>✓</b>Campaign</span>
+              <span class="step done"><b>✓</b>Ad group &amp; keywords</span>
+              <span class="step done"><b>✓</b>Ad</span>
+              <span class="step on"><b>4</b>Review</span>
+            </div>
+            <div class="grid2">
+              <div class="box">
+                <div class="hd"><span class="eyebrow">Campaign</span><a>Edit</a></div>
+                <dl class="kv">
+                  <dt>Name</dt><dd>Search – Spring offer</dd>
+                  <dt>Type</dt><dd>Search</dd>
+                  <dt>Daily budget</dt><dd class="num">100 kr.</dd>
+                  <dt>Locations</dt><dd>Denmark</dd>
+                  <dt>Language</dt><dd>Danish</dd>
+                  <dt>Status after</dt><dd>Paused</dd>
+                </dl>
+              </div>
+              <div class="box">
+                <div class="hd"><span class="eyebrow">Ad group &amp; keywords</span><a>Edit</a></div>
+                <dl class="kv"><dt>Ad group</dt><dd>AI prototype</dd></dl>
+                <div class="chips"><span class="chip">"ai prototype"</span><span class="chip">"ai i marketing"</span><span class="chip">"ai konsulent"</span><span class="chip">"marketing rapportering"</span><span class="chip">"ai analyse"</span></div>
+              </div>
+            </div>
+            <div class="box" style="margin-top:10px">
+              <div class="hd"><span class="eyebrow">Responsive search ad · 8 headlines, 3 descriptions</span><a>Edit</a></div>
+              <div class="serp">
+                <div class="sp">Sponsored</div>
+                <div class="u">heyotto.dk</div>
+                <div class="h">AI og marketing uden raketvidenskab | Hey Otto</div>
+                <div class="d">Jeg bygger en gratis prototype på jeres egne data, så I kan se, hvad AI kan gøre for jer, før I beslutter noget.</div>
+              </div>
+              <div class="m-note">Final URL: https://heyotto.dk</div>
+            </div>
+            <div class="gate"><div class="in">
+              <p><b>This campaign is created as Paused.</b><br>Nothing goes live and no money is spent until you click Enable.</p>
+              <div class="bt"><span class="btn">Back</span><span class="btn pri">Create campaign (paused)</span></div>
+            </div></div>
+          </div>
+        </div>
+      </div>
+      <p class="figcap"><b>Mockup 2: Campaign builder, review step.</b> When Kasper clicks <i>Create campaign (paused)</i>, the tool creates the budget, campaign, location and language targeting, ad group, keywords and responsive search ad through the API (CampaignBudgetService, CampaignService, CampaignCriterionService, AdGroupService, AdGroupCriterionService, AdGroupAdService). The ad text is in Danish, as searchers in Denmark will see it.</p>
+    </figure>
+
+    <div class="end">
+      <span class="fine">Hey Otto v/ Kasper Schrøder Asmussen · heyotto.dk</span>
+      <img src="../../brand/hey-otto/icon.svg" alt="" style="width:18px;height:18px">
+    </div>
+  </section>
+
+</div>
+</body>
+</html>
