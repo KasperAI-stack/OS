@@ -1,8 +1,8 @@
-# HeyOtto OS på Netlify — se dashboard/README.md, afsnittet "På nettet".
+# HeyOtto OS på Netlify — se dashboard/README.md.
 #
-# Intet byggetrin: dashboardet er én HTML-fil. Datafilen serveres og gemmes af
-# netlify/functions/data.mts (Netlify Blobs), som efterligner dashboard/server.js.
-# Projektet er privat på Netlify, så kun indloggede teammedlemmer når siden.
+# Intet byggetrin: appen er én HTML-fil (dashboard/index.html). Al data ligger i
+# Netlify Blobs bag netlify/functions/api.mts, som også står for login.
+# Adgangskoden sættes som miljøvariablen HEYOTTO_PASSWORD i Netlify.
 
 [build]
   publish = "dashboard"
@@ -10,8 +10,10 @@
 [functions]
   directory = "netlify/functions"
 
-# Adressen er bare heyotto-os.netlify.app — uden filnavn.
-[[redirects]]
-  from = "/"
-  to = "/marketing-os.html"
-  status = 200
+# Siden må ikke vises inde i andre sider, og browseren må ikke gætte filtyper.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "same-origin"
