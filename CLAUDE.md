@@ -18,7 +18,7 @@ When invoking an agent explicitly, use its name (e.g. "use the marketing-special
 
 ## Folder structure
 
-- `brand/` — guidelines, tone-of-voice, brand assets. Every content-producing agent checks this first.
+- `brand/` — guidelines, tone-of-voice, brand assets. Every content-producing agent checks this first. Two brands: Africa Tours (`brand/guidelines.md`) and Hey Otto (`brand/hey-otto/`, also used by the `dashboard/`).
 - `projects/` — one subfolder per active campaign/project; briefs, creative, budget, performance live together here.
 - `reference/` — standing context (personas, contacts, recurring meetings, benchmarks) agents should read before asking Kasper to repeat himself.
 - `templates/` — reusable starting points (`ads/`, `email/`, `reports/`).

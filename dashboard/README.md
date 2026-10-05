@@ -1,6 +1,6 @@
-# Marketing OS — dashboard
+# HeyOtto OS — dashboard
 
-Et Scrum-/projektoverblik over de store initiativer. Ingen byggetrin, ingen biblioteker, ingen afhængigheder ud over en browser.
+Et Scrum-/projektoverblik over de store initiativer. Filerne hedder stadig `marketing-os…` — kun navnet på skærmen er skiftet, så datafil, server og gemte kladder virker som før. Ingen byggetrin, ingen biblioteker, ingen afhængigheder ud over en browser.
 
 ## Kode og data er adskilt
 
@@ -113,7 +113,7 @@ Omvendt: har du redigeret i browseren uden at gemme, og beder Claude ændre noge
 
 Flade data fejler i stilhed — en stavefejl i en status giver en usynlig bjælke, ikke en fejlmeddelelse. Derfor tjekkes alt ved indlæsning, og problemer vises som et orange banner:
 
-- ukendt status (bjælken tegnes **magenta**, så den ikke kan overses)
+- ukendt status (bjælken tegnes **signalgul med kant**, så den ikke kan overses — en farve, der bevidst ikke findes i brandet)
 - opgave, der peger på et projekt eller en sprint, der ikke findes
 - `end` før `start`, ugyldige dato- eller månedsformater
 - to opgaver med samme `id`
@@ -122,7 +122,12 @@ Er filen direkte ødelagt, vises fejlen i stedet for en hvid skærm.
 
 ## Design
 
-Farver og typografi følger [`brand/guidelines.md`](../brand/guidelines.md). Overskrifter bruger **Cormorant Garamond** som stand-in for brandfonten **The Seasons** — søg efter `BRANDFONT` i HTML-filen for at skifte den ud.
+Farver, skrift og former følger Hey Otto-brandbogen — se [`brand/hey-otto/guidelines.md`](../brand/hey-otto/guidelines.md) og selve brandbogen i [`brand/hey-otto/brand-book.html`](../brand/hey-otto/brand-book.html). Alle farver ligger som CSS-variabler øverst i `<style>`, så et farveskift er ét sted.
+
+- **Skrift:** Geist til alt, Geist Mono til de små etiketter med store bogstaver. Begge hentes fra Google Fonts; uden net falder siden tilbage til Helvetica Neue / Arial, og intet layout afhænger af en bestemt fonts mål.
+- **Farver:** sort, grå og hvid bærer designet. Lilla er en accent og bruges sparsomt — gradientrammen om dommen på forsiden er det eneste sted, den får lov at fylde.
+- **Statusfarver** holder sig til brandfarverne: Ikke startet = Sølvgrå, I gang = Violet, Blokeret = Orkidé med skravering, Færdig = Onyx (Tåge i mørkt tema), Droppet = stiplet. Skraveringen gør, at Blokeret kan skelnes i sort/hvid-print og af en farveblind læser.
+- **Former:** knapper og chips er helt runde og i tekstfarven, kort har 22 px hjørner, alt er 1 px-linjer uden skygger. Hovedkolonnen står mellem tynde lodrette linjer med plus-mærker, hvor de møder de vandrette.
 
 Tidslinjen er CSS Grid, ikke SVG: en Gantt er i praksis en tabel, og grid giver sticky navnekolonne, tooltips og korrekt zoom uden koordinatmatematik.
 

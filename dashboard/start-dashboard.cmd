@@ -1,5 +1,5 @@
 @echo off
-title Marketing OS
+title HeyOtto OS
 cd /d "%~dp0"
 
 where node >nul 2>nul

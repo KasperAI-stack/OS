@@ -1,4 +1,4 @@
-/* Marketing OS — lokal server.
+/* HeyOtto OS — lokal server.
 
    Kun til for at dashboardet kan gemme lydløst. Åbnet som ren fil virker
    dashboardet også, men skal spørge om lov til at skrive én gang pr. session.
@@ -83,7 +83,7 @@ var server = http.createServer(function (req, res) {
 server.on("error", function (e) {
   if (e.code === "EADDRINUSE") {
     console.error("\n  Port " + PORT + " er optaget.");
-    console.error("  Kører Marketing OS allerede i et andet vindue? Åbn http://localhost:" + PORT);
+    console.error("  Kører HeyOtto OS allerede i et andet vindue? Åbn http://localhost:" + PORT);
     console.error("  Ellers: sæt en anden port med   set PORT=7788 && node server.js\n");
   } else {
     console.error("\n  Serveren kunne ikke starte: " + e.message + "\n");
@@ -93,7 +93,7 @@ server.on("error", function (e) {
 
 server.listen(PORT, "127.0.0.1", function () {
   var url = "http://localhost:" + PORT;
-  console.log("\n  Marketing OS kører på " + url);
+  console.log("\n  HeyOtto OS kører på " + url);
   console.log("  Skriver til " + DATA_FILE + " i denne mappe.");
   console.log("  Luk vinduet eller tryk Ctrl+C for at stoppe.\n");
   if (process.env.MOS_NO_OPEN) return;              // bruges ved test
