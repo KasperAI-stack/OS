@@ -8,3 +8,7 @@ Thumbs.db
 # Kopier marketing-os-data.example.js hvis du starter forfra.
 dashboard/marketing-os-data.js
 dashboard/marketing-os-data.js.tmp
+
+# Netlify og npm
+node_modules/
+.netlify/

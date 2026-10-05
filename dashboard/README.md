@@ -1,6 +1,6 @@
 # HeyOtto OS — dashboard
 
-Et Scrum-/projektoverblik over de store initiativer. Filerne hedder stadig `marketing-os…` — kun navnet på skærmen er skiftet, så datafil, server og gemte kladder virker som før. Ingen byggetrin, ingen biblioteker, ingen afhængigheder ud over en browser.
+Et Scrum-/projektoverblik over de store initiativer. Filerne hedder stadig `marketing-os…` — kun navnet på skærmen er skiftet, så datafil, server og gemte kladder virker som før. Selve dashboardet har ingen byggetrin og ingen biblioteker — det er én HTML-fil. Til daglig kører det på Netlify (se **På nettet** nedenfor), men det kan stadig åbnes lokalt.
 
 ## Kode og data er adskilt
 
@@ -10,18 +10,47 @@ Et Scrum-/projektoverblik over de store initiativer. Filerne hedder stadig `mark
 | `marketing-os-data.js` | Alt indhold: projekter, sprints, opgaver | **Nej** — data, ikke kode |
 | `marketing-os-data.example.js` | Tom skabelon at starte fra | Ja |
 | `server.js` + `start-dashboard.cmd` | Valgfri lokal server | Ja |
+| `../netlify.toml` + `../netlify/functions/data.mts` | Netlify-opsætningen og funktionen, der gemmer data på nettet | Ja |
 
-Datafilen er bevidst holdt uden for versionsstyring. Den versioneres i stedet af OneDrive — mister du den, så højreklik filen i File Explorer → **Versionshistorik**. Det er dit sikkerhedsnet, ikke git.
+Datafilen er bevidst holdt uden for versionsstyring. På nettet ligger den i Netlify Blobs med sin egen historik (se **På nettet**). Lokalt versioneres den af OneDrive — mister du den, så højreklik filen i File Explorer → **Versionshistorik**. Sikkerhedsnettet er aldrig git.
 
 Det tekniske greb, der gør opdelingen mulig: HTML-filen indlæser data med et klassisk `<script src>`. En `file://`-side må nemlig **ikke** `fetch`e en nabofil — men den må godt indlæse den som script. Derfor virker opdelingen også, når du bare dobbeltklikker filen.
 
-## To måder at køre den på
+## Tre måder at køre den på
+
+**På nettet: `heyotto-os.netlify.app`** — sådan bruges det til daglig, fra computer og telefon. Gem sker lydløst i skyen. Se afsnittet nedenfor.
 
 **Dobbeltklik `marketing-os.html`** — virker altid, også uden Node. Du kan redigere alt, og når du trykker Gem, spørger Windows én gang pr. session, hvilken fil der må skrives. Vælg `marketing-os-data.js`. Derefter er gem lydløst resten af sessionen.
 
 **Dobbeltklik `start-dashboard.cmd`** — starter en lille lokal server og åbner `localhost:7777`. Gem sker lydløst uden dialoger. Serveren lytter kun på din egen maskine. Luk vinduet for at stoppe den.
 
 Siden mærker selv, hvilken tilstand den er i, og skriver det nederst i sidebaren.
+
+De to lokale måder bruger datafilen på din computer — ikke den på nettet. Bruger du begge, har du to sæt data. Flyt mellem dem med **Download datafil** og **Hent datafil ind**.
+
+## På nettet (Netlify)
+
+Dashboardet ligger på Netlify-projektet **heyotto-os**. Projektet er **privat**: siden — og funktionen, der gemmer — kan kun nås af den, der er logget ind på Netlify som medlem af teamet. Første gang i en browser beder Netlify dig logge ind; derefter husker browseren det. Der er intet password i koden.
+
+**Hvor data bor.** I Netlify Blobs — Netlifys indbyggede lager, som ikke kan nås udefra. `netlify/functions/data.mts` gør det samme, som `server.js` gør lokalt, så dashboardet ikke ved forskel:
+
+| Adresse | Hvad |
+|---|---|
+| `/marketing-os-data.js` | Datafilen, som siden indlæser |
+| `/save` | Gem — afviser alt, der ikke ligner datafilen |
+| `/historik` | De seneste 60 gemte versioner, hver med et download-link |
+
+**Knapperne nederst i sidebaren.**
+
+- **Download datafil** — hent de nuværende data ned som fil. En manuel backup, og vejen til at lade Claude rette i data (se nedenfor).
+- **Hent datafil ind** — gør en fil til de gældende data: din gamle fil fra OneDrive, en download, eller en version fra historikken. Siden spørger først.
+- **Historik** — hver gang du gemmer, lægges versionen også i historikken. Vil du tilbage: hent den version ned, og vælg den med **Hent datafil ind**.
+
+**Computer og telefon på samme tid.** Siden husker, hvilken version den indlæste. Har du gemt på telefonen, siden du åbnede siden på computeren, nægter computeren at gemme og siger det — i stedet for stille at overskrive telefonens ændringer. Genindlæs, så ser du de nye data; dine ugemte ændringer ligger i kladden og kan gendannes.
+
+**Test rører aldrig rigtige data.** Kun produktionen (`heyotto-os.netlify.app`) bruger det rigtige lager. En Deploy Preview af en pull request — eller et branch-deploy — får sit eget, tomme lager.
+
+**Udrulning.** Netlify bygger fra `main` på GitHub. Alt står i `netlify.toml` — der er intet byggetrin at sætte op. Merger du en pull request, er den live et minut efter.
 
 ## Forsiden: kapacitet
 
@@ -106,6 +135,8 @@ Projekter har desuden `kind` (`drift` / `projekt` / `adhoc`), som afgør hvilken
 ## Når Claude redigerer filen
 
 Redigeringer forankres på opgavens `id`, så de rammer præcis én linje. Efter en ændring: **F5** i browseren. Står tidsstemplet i bunden stadig på det gamle, cacher browseren filen — så **Ctrl+Shift+R**.
+
+**På nettet** kan Claude ikke selv nå dine data — projektet er privat. Fremgangsmåden er: **Download datafil** → giv filen til Claude → Claude retter → **Hent datafil ind** med den rettede fil. Har du gemt noget på nettet imens, så download igen først.
 
 Omvendt: har du redigeret i browseren uden at gemme, og beder Claude ændre noget, går dine ugemte ændringer tabt. Gem først.
 

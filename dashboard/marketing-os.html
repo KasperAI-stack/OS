@@ -201,6 +201,10 @@ p { margin: 0; }
 .proj .pmeta { font-size: 12px; color: var(--sidebar-muted); }
 .sidebar-foot { margin-top: 24px; padding: 16px 22px 0; border-top: 1px solid var(--sidebar-line); font-size: 12px; color: var(--sidebar-muted); }
 .sidebar-foot b { color: var(--sidebar-fg); font-weight: 500; }
+.sf-acts { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; margin-top: 14px; }
+.sf-link { font: inherit; font-size: 12px; font-weight: 500; color: var(--sidebar-fg); background: none; border: 0; padding: 0;
+           cursor: pointer; text-decoration: underline; text-decoration-color: var(--sidebar-line); text-underline-offset: 3px; }
+.sf-link:hover { text-decoration-color: var(--accent); }
 
 .main { flex: 1 1 auto; min-width: 0; padding: 0 34px; }
 /* Siden står i et grid af tynde linjer med plus-mærker, hvor linjerne mødes */
@@ -585,6 +589,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 </div>
 <dialog id="editor"></dialog>
 <div id="flash" class="flash"></div>
+<input type="file" id="importfile" accept=".js,text/javascript" hidden>
 
 <script>
 (function () {
@@ -752,7 +757,13 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     document.getElementById("sidefoot").innerHTML =
       "Opdateret<br><b class=\"num\">" + esc(DATA.meta.updated || "—") + "</b>" +
       (dirty ? '<br><span class="unsaved">● ugemte ændringer</span>' : "") +
-      "<br><br>" + (SERVER ? "Kører på localhost — gemmer lydløst." : "Åbnet som fil — Gem spørger én gang pr. session.");
+      "<br><br>" + (HOSTED ? "Kører på nettet — gemmer i skyen."
+                   : SERVER ? "Kører på localhost — gemmer lydløst." : "Åbnet som fil — Gem spørger én gang pr. session.") +
+      '<div class="sf-acts">' +
+        '<button class="sf-link" data-act="export" type="button">Download datafil</button>' +
+        (SERVER ? '<button class="sf-link" data-act="import" type="button">Hent datafil ind</button>' : "") +
+        (HOSTED ? '<a class="sf-link" href="historik">Historik</a>' : "") +
+      "</div>";
   }
 
   /* ====================== Sprintvisning ====================== */
@@ -1152,11 +1163,17 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 
   /* ====================== Gem ======================
      To bagender, valgt af hvordan siden er åbnet:
-       http(s)  → lokal server, lydløs skrivning, kan også køre git
+       http(s)  → en server, der gemmer lydløst: på nettet Netlify-funktionen
+                  (netlify/functions/data.mts), på localhost server.js
        file://  → File System Access API; Windows spørger én gang pr. session
-     Kan browseren ingen af delene, falder den tilbage til at hente filen ned. */
+     Kan browseren ingen af delene, falder den tilbage til at hente filen ned.
+
+     På nettet kommer datafilen med en DATA_REV — den version, siden indlæste.
+     Den sendes med ved gem, så to enheder ikke overskriver hinanden i stilhed:
+     er data ændret et andet sted imens, afviser serveren og siger det. */
 
   var SERVER = location.protocol === "http:" || location.protocol === "https:";
+  var HOSTED = SERVER && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   var dirty = false;
 
   function idb(fn) {
@@ -1205,17 +1222,47 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
   }
 
+  function looksLikeData(text) {
+    return /var\s+DATA\s*=\s*\{/.test(text) && /tasks\s*:\s*\[/.test(text);
+  }
+
+  function postData(text) {
+    var headers = { "Content-Type": "text/plain;charset=utf-8" };
+    if (typeof window.DATA_REV === "string") headers["X-Data-Rev"] = window.DATA_REV;
+    return fetch("save", { method: "POST", headers: headers, body: text }).then(function (r) {
+      if (!r.ok) return r.text().then(function (t) { throw new Error(t || ("HTTP " + r.status)); });
+      var rev = r.headers.get("X-Data-Rev");
+      if (rev !== null) window.DATA_REV = rev;
+    });
+  }
+
+  // Hent ind: en datafil — din egen fra OneDrive, en download eller en version
+  // fra historikken — bliver til de gældende data. Kun via en server; som ren
+  // fil erstatter man bare filen på disken.
+  function importFile(file) {
+    file.text().then(function (text) {
+      if (!looksLikeData(text)) {
+        flash("„" + file.name + "“ ligner ikke en datafil — intet hentet ind.", true);
+        return;
+      }
+      if (!confirm("Erstat alle data med „" + file.name + "“?\n\n" +
+                   (HOSTED ? "Den nuværende version kan altid findes igen under Historik."
+                           : "Den nuværende datafil bliver overskrevet."))) return;
+      return postData(text).then(function () {
+        dirty = false; clearDraft();
+        location.reload();
+      });
+    }).catch(function (e) { flash("Kunne ikke hente filen ind: " + (e && e.message ? e.message : e), true); });
+  }
+
   function save() {
     DATA.meta.updated = TODAY_ISO;
     var text = serialize(DATA);
-    var done = function () { dirty = false; clearDraft(); route(); flash("Gemt i marketing-os-data.js"); };
+    var done = function () { dirty = false; clearDraft(); route(); flash(HOSTED ? "Gemt" : "Gemt i marketing-os-data.js"); };
 
     if (SERVER) {
-      return fetch("save", { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: text })
-        .then(function (r) {
-          if (!r.ok) return r.text().then(function (t) { throw new Error(t || ("HTTP " + r.status)); });
-          done();
-        })
+      return postData(text)
+        .then(done)
         .catch(function (e) { flash("Kunne ikke gemme: " + e.message, true); });
     }
 
@@ -1266,6 +1313,9 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
   }
   function loadDraft() {
+    // Kunne datafilen ikke hentes (fx intet net), er der intet at sammenligne
+    // med — og kladden må endelig ikke ryddes væk af den grund.
+    if (typeof DATA === "undefined") return;
     try {
       var raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) return;
@@ -1540,6 +1590,20 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     else if (a === "newsprint") { editSprint(CURRENT, null); }
     else if (a === "editsprint"){ editSprint(CURRENT, el.getAttribute("data-month")); }
     else if (a === "save")      { save(); }
+    else if (a === "export")    {
+      downloadFallback(serialize(DATA));
+      flash(dirty ? "Datafilen er hentet ned — med dine ugemte ændringer." : "Datafilen er hentet ned.");
+    }
+    else if (a === "import")    {
+      if (dirty && !confirm("Du har ugemte ændringer. De går tabt, hvis du henter en anden datafil ind. Fortsæt?")) return;
+      document.getElementById("importfile").click();
+    }
+  });
+
+  document.getElementById("importfile").addEventListener("change", function (e) {
+    var f = e.target.files && e.target.files[0];
+    e.target.value = "";                 // samme fil skal kunne vælges igen
+    if (f) importFile(f);
   });
 
   /* ====================== Kapacitet ======================
@@ -2013,8 +2077,9 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   } catch (err) {
     document.getElementById("main").innerHTML =
       '<div class="banner banner-warn"><h3>' + icon("alert") + "Dashboardet kunne ikke tegnes</h3>" +
-      "<p>" + esc(err && err.message ? err.message : String(err)) +
-      "</p><p style=\"margin-top:8px\">Det skyldes næsten altid en fejl i DATA-blokken øverst i filen. Bed Claude om at rette den.</p></div>";
+      "<p>" + (typeof DATA === "undefined" ? "Datafilen kunne ikke hentes."
+                                          : esc(err && err.message ? err.message : String(err))) +
+      "</p><p style=\"margin-top:8px\">Det skyldes næsten altid en fejl i datafilen — eller at den ikke kunne hentes. Prøv at genindlæse; hjælper det ikke, så bed Claude om at se på den. Dine ugemte ændringer er ikke rørt.</p></div>";
   }
 })();
 </script>
