@@ -63,6 +63,8 @@ The full contract is in `dashboard/README.md` under "Datakontrakten". The rules 
 - A project's **kind** (`drift` / `projekt` / `adhoc`) decides where its hours count on the capacity page.
 - Set `meta.updated` to today's date when you change something.
 
+Jobs that Kasper sends to Claude from the app ("Lad Claude udføre", or owner "Claude") are not part of `data`. They live under `/api/claude/jobs`, and the `heyotto-os-job` skill handles them.
+
 ## 5. Conventions
 
 - Ask Kasper before deleting anything or changing many items at once (roughly 10 or more). Additions and edits he asked for directly need no extra confirmation.

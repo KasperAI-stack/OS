@@ -7,7 +7,7 @@ Et Scrum-/projektoverblik over de store initiativer, med kapacitet på forsiden.
 | Hvad | Hvor |
 |---|---|
 | Appen (layout, logik, redigering) | `dashboard/index.html` — én HTML-fil, intet byggetrin, ingen biblioteker |
-| API'et (login, data, historik, Claudes nøgle) | `netlify/functions/api.mts` |
+| API'et (login, data, historik, Claudes nøgle, Claude-jobs) | `netlify/functions/api.mts` |
 | Indholdet (projekter, sprints, opgaver, kapacitet) | Netlify Blobs — Netlifys indbyggede lager. Aldrig i git |
 | Opsætningen | `netlify.toml` — Netlify bygger fra `main` på GitHub |
 
@@ -45,6 +45,46 @@ Claude kan læse og rette dine data direkte — fx lægge opgaver ind fra Asana,
 
 Claude kan ikke se din adgangskode eller lave nye nøgler. Alt, hvad Claude gemmer, står i Historik som „gemt af Claude“. **Lav en ny nøgle** udskifter nøglen (den gamle holder op med at virke med det samme), og **Fjern Claudes adgang** lukker helt. Fremgangsmåden for Claude står i `.claude/skills/heyotto-os-data/SKILL.md`.
 
+## Claude udfører opgaver
+
+Claude kan gå i gang med en opgave, så snart du beder om det, fx skrive et mailudkast, lave en ugerapport eller foreslå annoncetekster. Der er to måder at starte på:
+
+- Åbn opgaven, og tryk **✦ Lad Claude udføre**. Feltet over knappen er valgfrit. Står der ingenting, arbejder Claude ud fra titel og note.
+- Skriv **Claude** som ejer, og gem. Det virker både på nye opgaver og på opgaver, du giver videre til Claude.
+
+Claude arbejder i skyen i en **Claude Code Routine** på dette repo, med dine agenter, skills og forbindelser. Mens Claude arbejder, står der „Claude arbejder …“ på kortet. Når Claude er færdig, står der **Klar til dig**, og i opgaven ser du udkastet med knapperne **Kopiér**, **Godkend**, **Kassér** og **Se Claudes session**. Siden opdager selv, når Claude er færdig, så du behøver ikke genindlæse.
+
+**Claude laver kun udkast.** En automatisk start kan ikke give samtykke til noget, så Claude sender ingen mails, svarer ikke på invitationer, ændrer ingen annoncer og bruger ingen penge. Vil du have noget sendt, åbner du Claudes session og siger det dér. Så er det din beslutning.
+
+**Opsætning (én gang).** Trinene står også på siden **Claude-adgang**, hvor instruktionen kan kopieres med én knap.
+
+1. Giv Claude adgang med en nøgle (se ovenfor), i det Claude-miljø routinen skal bruge.
+2. På [claude.ai/code/routines](https://claude.ai/code/routines) → **New routine**:
+   - navn: „HeyOtto OS-opgaver“
+   - repo: `KasperAI-stack/OS`
+   - miljø: det fra trin 1
+   - forbindelser: fjern dem, opgaverne ikke skal bruge
+   - instruktion: teksten fra Claude-adgang
+3. Under **Select a trigger**: vælg **API**, og tryk **Create**. Åbn routinen igen → **Edit** → API-triggeren. Kopiér URL'en, og tryk **Generate token**. Tokenet vises kun én gang.
+4. I Netlify (*Project configuration → Environment variables*) tilføjer du:
+   - **`CLAUDE_ROUTINE_URL`** med URL'en
+   - **`CLAUDE_ROUTINE_TOKEN`** med tokenet, markeret som hemmeligt
+
+   Lav derefter et nyt deploy (*Deploys → Trigger deploy*).
+
+Routinen bruger skillen `.claude/skills/heyotto-os-job/SKILL.md` fra `main`. Routinen kloner altid `main`, så ændringer i skillen virker først, når de er merget.
+
+**Grænser og sikkerhed**
+
+- **Starter Claude?** Kun du kan starte Claude. Claudes nøgle kan ikke, og hverken Claudes egne gem eller en gendannelse fra Historik sætter noget i gang. Så kan Claude aldrig starte sig selv.
+- **Hvad sendes med?** Routinen får kun job-id'et og opgavens titel. Resten henter Claude selv fra API'et.
+- **Hvor mange?** Højst ét aktivt job pr. opgave og 10 starter i timen. Gemmer du mange opgaver med Claude som ejer på én gang, starter kun 3 automatisk; resten startes med knappen. Anthropic tillader desuden 30 starter i timen pr. routine.
+- **Hvad koster det?** Kørslerne bruger af dit Claude-abonnement, ligesom almindelige sessioner.
+- **Hvis noget går galt.** Melder Claude ikke tilbage inden for to timer, viser opgaven „Intet svar“, og du kan starte igen. Fejler starten (forkert token, routinen sat på pause, for mange kørsler), står en dansk forklaring på opgaven.
+- **Hvor ligger jobbene?** I Netlify Blobs under `claude-jobs/`, ved siden af dine data, og de seneste 100 gemmes. Når Claude skriver et resultat, ændres dine data ikke. Derfor giver det aldrig „data er ændret et andet sted“.
+
+Routines er stadig en testfunktion hos Anthropic, så navne og grænser kan ændre sig.
+
 ## API'et
 
 Alle svar er JSON. Fejl er `{ "error": "dansk besked" }`.
@@ -54,10 +94,14 @@ Alle svar er JSON. Fejl er `{ "error": "dansk besked" }`.
 | `POST /api/login` `{ password }` | Log ind → session-cookie |
 | `POST /api/logout` | Log ud |
 | `GET /api/data` | `{ rev, data }` |
-| `PUT /api/data` `{ rev, data }` | Gem → `{ rev }`. **409**, hvis `rev` ikke længere er den nyeste |
+| `PUT /api/data` `{ rev, data }` | Gem → `{ rev }`, plus `claude: { started, skipped }`, hvis gemmet satte Claude i gang. **409**, hvis `rev` ikke længere er den nyeste |
 | `GET /api/history` | `{ versions: [...] }` |
 | `POST /api/history/:id/restore` | Gør en gammel version gældende |
 | `GET` / `POST` / `DELETE /api/claude-key` | Status / lav ny / fjern — kun for dig, ikke for Claude |
+| `GET /api/claude/jobs` | `{ connected, jobs }`: er routinen sat op, og de seneste 40 jobs |
+| `POST /api/claude/jobs` `{ taskId, task, instruction }` | Sæt Claude i gang. Kun for dig, ikke for Claude |
+| `GET /api/claude/jobs/:id` | Ét job |
+| `PUT /api/claude/jobs/:id` `{ status, result?, error? }` | Claude: `i gang` / `til godkendelse` / `fejlet`. Dig: `godkendt` / `kasseret`. **410**, hvis jobbet er lukket |
 
 Du er logget ind med enten session-cookien eller `Authorization: Bearer <nøgle>` (Claude). Ændringer med cookie skal komme fra appen selv: JSON og samme oprindelse. API'et svarer aldrig 403 eller 404. Netlify ville ved de koder lede efter en statisk side i stedet, så afvisninger er 400/401, og en forsvundet version er 410.
 
