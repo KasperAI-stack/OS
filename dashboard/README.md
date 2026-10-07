@@ -7,7 +7,8 @@ Et Scrum-/projektoverblik over de store initiativer, med kapacitet på forsiden.
 | Hvad | Hvor |
 |---|---|
 | Appen (layout, logik, redigering) | `dashboard/index.html` — én HTML-fil, intet byggetrin, ingen biblioteker |
-| API'et (login, data, historik, Claudes nøgle, Claude-jobs) | `netlify/functions/api.mts` |
+| API'et (login, data, historik, Claudes nøgle, Claude-jobs, dashboard-tal) | `netlify/functions/api.mts` |
+| Udtrækket fra Google og Meta | `netlify/lib/metrics.mts`, kørt hver 6. time af `netlify/functions/metrics-sync.mts` |
 | Indholdet (projekter, sprints, opgaver, kapacitet) | Netlify Blobs — Netlifys indbyggede lager. Aldrig i git |
 | Opsætningen | `netlify.toml` — Netlify bygger fra `main` på GitHub |
 
@@ -102,6 +103,8 @@ Alle svar er JSON. Fejl er `{ "error": "dansk besked" }`.
 | `POST /api/claude/jobs` `{ taskId, task, instruction }` | Sæt Claude i gang. Kun for dig, ikke for Claude |
 | `GET /api/claude/jobs/:id` | Ét job |
 | `PUT /api/claude/jobs/:id` `{ status, result?, error? }` | Claude: `i gang` / `til godkendelse` / `fejlet`. Dig: `godkendt` / `kasseret`. **410**, hvis jobbet er lukket |
+| `GET /api/metrics` | `{ snapshot, setup }`: de seneste tal fra Google og Meta, og hvilke nøgler der mangler pr. kilde |
+| `POST /api/metrics/refresh` | Hent friske tal nu. Højst én gang i minuttet; ellers kommer de seneste tilbage |
 
 Du er logget ind med enten session-cookien eller `Authorization: Bearer <nøgle>` (Claude). Ændringer med cookie skal komme fra appen selv: JSON og samme oprindelse. API'et svarer aldrig 403 eller 404. Netlify ville ved de koder lede efter en statisk side i stedet, så afvisninger er 400/401, og en forsvundet version er 410.
 
@@ -126,6 +129,48 @@ fri kapacitet = (tilgængelige timer × planlægningsloft) − drift − projekt
 **Planlægningsloftet er ikke 100 %,** og Kingman-kurven på forsiden viser hvorfor: ventetiden vokser hyperbolsk med belægningen. Springet fra 85 % til 95 % tredobler ventetiden på alt, der ligger i kø, uden at nogen har arbejdet langsommere.
 
 Asana hentes ikke automatisk. Bed i stedet Claude om at hente opgaverne og skrive dem ind — med Claude-adgang skriver Claude direkte i skyen.
+
+## Dashboard: tal fra Google og Meta
+
+Fanen **Dashboard** ligger under Kapacitet i sidebaren (`#dashboard`). Den samler fire kilder, så du ikke skal ind i fire værktøjer for at se, hvordan det går:
+
+| Kilde | Nøgletal | Toplister |
+|---|---|---|
+| Google Search Console | klik, visninger, CTR, gns. position | søgninger, sider |
+| Google Analytics 4 | sessioner, engagerede sessioner, engagementsrate, key events | kanaler, landingssider |
+| Google Ads | forbrug, klik, konverteringer, pris pr. konvertering | kampagner |
+| Meta Ads | forbrug, linkklik, resultater (leads, køb, registreringer), pris pr. resultat | kampagner |
+
+Øverst står fire tal på tværs af kilderne: annoncekroner (Google + Meta), konverteringer fra annoncer, sessioner og klik fra Google-søgning. Vælg 7, 28 eller 90 dage. Hvert tal sammenlignes med lige så mange dage før. Klik på et nøgletal for at se det dag for dag i grafen. Perioden og den valgte graf er visning, ikke data, og gemmes i browseren.
+
+**Sådan kommer tallene ind.** Netlify henter dem selv, så din computer behøver ikke være tændt:
+
+- `netlify/lib/metrics.mts` kalder API'erne direkte. Den henter kun og ændrer intet i kontiene.
+- Resultatet gemmes som ét øjebliksbillede i Netlify Blobs (`metrics/snapshot`): en dagsserie på 180 dage pr. kilde plus toplister for 7, 28 og 90 dage. Fanen regner selv perioderne ud fra serien.
+- Billedet fornyes hver 6. time (`metrics-sync.mts`, kun på produktion) og når du trykker **Opdatér tal**.
+- Fejler en kilde, beholdes dens seneste gode tal, og fejlen står på kortet. En kilde uden nøgler står som „Ikke forbundet“ med navnene på det, der mangler.
+
+Search Console er 2–3 dage bagud, så dens periode slutter tidligere end de andres. Platformene tæller konverteringer hver på sin måde, så Google Ads, Meta og GA4 giver ikke samme tal. Det er forventet.
+
+### Forbind kilderne
+
+Sæt miljøvariablerne i Netlify (*Project configuration → Environment variables*), markér tokens som hemmelige, og lav et nyt deploy (*Deploys → Trigger deploy*). Navnene er de samme som i `.env` i marketing-repoet (`C:\Claude VS Code`), så værdierne kan kopieres derfra.
+
+| Variabel | Bruges til | Standard, hvis den ikke er sat |
+|---|---|---|
+| `GOOGLE_ADS_CLIENT_ID`, `GOOGLE_ADS_CLIENT_SECRET` | OAuth-klienten. Fælles for alle tre Google-kilder | — (påkrævet) |
+| `GSC_REFRESH_TOKEN` | Search Console (fra `python scripts/gsc.py auth`) | — (påkrævet) |
+| `GA4_REFRESH_TOKEN` | Analytics (fra `python scripts/ga4.py auth`) | — (påkrævet) |
+| `GOOGLE_ADS_REFRESH_TOKEN`, `GOOGLE_ADS_DEVELOPER_TOKEN` | Google Ads | — (påkrævet) |
+| `META_ACCESS_TOKEN` | Meta Ads. Et token fra en systembruger i Meta Business Manager med `ads_read` til annoncekontiene | — (påkrævet) |
+| `GSC_SITE` | Search Console-property | `https://heyotto.dk/` |
+| `GA4_PROPERTY` | GA4-property | `557401007` (heyotto.dk) |
+| `GOOGLE_ADS_CUSTOMER_ID` | Google Ads-konto | `3826858823` (Hey Otto) |
+| `GOOGLE_ADS_LOGIN_CUSTOMER_ID` | Manager-kontoen, der giver adgang | `7601106978` (HeyOtto-MCC). Sæt den tom, hvis kontoen ikke ligger under en MCC |
+| `META_AD_ACCOUNTS` | Én eller flere annoncekonti, adskilt af komma. De lægges sammen og skal have samme valuta | `1834773060878221` (HeyOtto) |
+| `GOOGLE_ADS_API_VERSION`, `META_API_VERSION` | API-versioner, når de gamle udløber | `v25`, `v24.0` |
+
+Hvis Google-kortet siger, at et token er udløbet: kør `auth`-kommandoen igen i marketing-repoet, og kopiér det nye token til Netlify. Står OAuth-klienten i Google Cloud som *Testing*, udløber tokens efter 7 dage. Sæt den til *In production* for at undgå det.
 
 ## Redigering
 
