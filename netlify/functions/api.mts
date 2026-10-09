@@ -16,7 +16,7 @@
      GET    /api/claude/jobs/:id             ét job
      PUT    /api/claude/jobs/:id             { status, result?, error? } — Claude melder tilbage,
                                              Kasper godkender eller kasserer
-     GET    /api/metrics                     { snapshot, setup } — tallene bag fanen Dashboard
+     GET    /api/metrics                     { snapshot, setup } — tallene bag Marketing-dashboardet
      POST   /api/metrics/refresh             hent friske tal fra Google og Meta nu
 
    To måder at være logget ind på:
@@ -524,7 +524,7 @@ async function claudeJobs(req: Request, store: Store, who: Who, path: string) {
   return fail(405, "Brug GET eller PUT.");
 }
 
-/* ---------- Dashboard: tal fra Google og Meta ----------
+/* ---------- Marketing-dashboard: tal fra Google og Meta ----------
    Udtrækket bor i netlify/lib/metrics.mts. Her gemmes øjebliksbilledet i
    lageret, så fanen åbner med det samme og ikke rammer API'erne ved hvert
    besøg. Det fornyes hver 6. time (metrics-sync.mts) og med knappen Opdatér. */

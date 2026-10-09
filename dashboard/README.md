@@ -130,9 +130,9 @@ fri kapacitet = (tilgængelige timer × planlægningsloft) − drift − projekt
 
 Asana hentes ikke automatisk. Bed i stedet Claude om at hente opgaverne og skrive dem ind — med Claude-adgang skriver Claude direkte i skyen.
 
-## Dashboard: tal fra Google og Meta
+## Marketing-dashboard: tal fra Google og Meta
 
-Fanen **Dashboard** ligger under Kapacitet i sidebaren (`#dashboard`). Den samler fire kilder, så du ikke skal ind i fire værktøjer for at se, hvordan det går:
+**Marketing-dashboard** er sin egen sektion i sidebaren under overskriften Marketing (`#marketing`). Den samler fire kilder, så du ikke skal ind i fire værktøjer for at se, hvordan det går:
 
 | Kilde | Nøgletal | Toplister |
 |---|---|---|

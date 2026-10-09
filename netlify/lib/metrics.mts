@@ -1,4 +1,4 @@
-/* HeyOtto OS — dataudtrækket bag fanen Dashboard.
+/* HeyOtto OS — dataudtrækket bag Marketing-dashboardet.
 
    Henter tal fra fire kilder og samler dem i ét øjebliksbillede:
 

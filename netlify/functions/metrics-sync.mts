@@ -1,4 +1,4 @@
-/* HeyOtto OS — henter friske tal til fanen Dashboard hver 6. time.
+/* HeyOtto OS — henter friske tal til Marketing-dashboardet hver 6. time.
 
    Netlify kører kun planlagte funktioner på produktion, så de rigtige data
    bruges altid her. Selve udtrækket står i netlify/lib/metrics.mts. */
