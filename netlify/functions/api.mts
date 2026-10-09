@@ -16,6 +16,8 @@
      GET    /api/claude/jobs/:id             ét job
      PUT    /api/claude/jobs/:id             { status, result?, error? } — Claude melder tilbage,
                                              Kasper godkender eller kasserer
+     GET    /api/metrics                     { snapshot, setup } — tallene bag Marketing-dashboardet
+     POST   /api/metrics/refresh             hent friske tal fra Google og Meta nu
 
    To måder at være logget ind på:
      * Kasper: adgangskoden fra miljøvariablen HEYOTTO_PASSWORD giver en signeret
@@ -33,6 +35,7 @@
 import { getDeployStore, getStore } from "@netlify/blobs";
 import type { Config, Context } from "@netlify/functions";
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { collect, METRICS_KEY, missingKeys, SOURCE_KEYS, type Snapshot } from "../lib/metrics.mts";
 
 type Store = ReturnType<typeof getStore>;
 type Who = "dig" | "Claude";
@@ -521,6 +524,44 @@ async function claudeJobs(req: Request, store: Store, who: Who, path: string) {
   return fail(405, "Brug GET eller PUT.");
 }
 
+/* ---------- Marketing-dashboard: tal fra Google og Meta ----------
+   Udtrækket bor i netlify/lib/metrics.mts. Her gemmes øjebliksbilledet i
+   lageret, så fanen åbner med det samme og ikke rammer API'erne ved hvert
+   besøg. Det fornyes hver 6. time (metrics-sync.mts) og med knappen Opdatér. */
+
+const REFRESH_GAP_MS = 60_000;         // højst én manuel opdatering i minuttet
+
+const env = (k: string) => Netlify.env.get(k);
+
+async function readSnapshot(store: Store) {
+  return (await store.get(METRICS_KEY, { type: "json" })) as Snapshot | null;
+}
+
+async function refreshMetrics(store: Store) {
+  const snapshot = await collect(env, await readSnapshot(store));
+  await store.setJSON(METRICS_KEY, snapshot);
+  return snapshot;
+}
+
+// Hvilke nøgler mangler pr. kilde. Kun navnene, aldrig værdierne.
+function metricsSetup() {
+  return Object.fromEntries(SOURCE_KEYS.map((k) => [k, missingKeys(env, k)]));
+}
+
+async function metrics(req: Request, store: Store, path: string) {
+  if (path === "/api/metrics" && req.method === "GET") {
+    return json(200, { snapshot: await readSnapshot(store), setup: metricsSetup() });
+  }
+  if (path === "/api/metrics/refresh" && req.method === "POST") {
+    const last = await readSnapshot(store);
+    if (last && Date.now() - Date.parse(last.fetchedAt) < REFRESH_GAP_MS) {
+      return json(200, { snapshot: last, setup: metricsSetup(), note: "Tallene blev hentet for under et minut siden." });
+    }
+    return json(200, { snapshot: await refreshMetrics(store), setup: metricsSetup() });
+  }
+  return fail(405, "Brug GET /api/metrics eller POST /api/metrics/refresh.");
+}
+
 /* ---------- Ruter ---------- */
 
 export default async (req: Request, context: Context) => {
@@ -559,6 +600,7 @@ export default async (req: Request, context: Context) => {
       return await claudeKey(req, store);
     }
     if (path === "/api/claude/jobs" || /^\/api\/claude\/jobs\/[^/]+$/.test(path)) return await claudeJobs(req, store, who, path);
+    if (path === "/api/metrics" || path === "/api/metrics/refresh") return await metrics(req, store, path);
     return fail(400, "Ukendt adresse eller metode: " + method + " " + path);
   } catch (e) {
     if (e instanceof HttpError) return fail(e.status, e.message);

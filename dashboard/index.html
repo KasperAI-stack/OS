@@ -179,7 +179,7 @@ p { margin: 0; }
 .brandmark span { display: block; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--sidebar-muted); margin-top: 10px; }
 
 .nav-label { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--sidebar-muted); padding: 0 22px 8px; }
-#navtop { margin-bottom: 18px; }
+#navtop, #mktnav { margin-bottom: 18px; }
 .proj {
   display: flex; align-items: flex-start; gap: 10px;
   width: calc(100% - 20px); margin: 1px 10px; text-align: left;
@@ -447,6 +447,7 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
 .proj .dot.good { background: var(--st-faerdig); }
 .proj .dot.warn { background: var(--accent); }
 .proj .dot.crit { background: var(--st-blokeret); }
+.proj .dot.idle { background: var(--sidebar-muted); }
 
 .cap2 { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 20px; align-items: start; }
 .card-hd { display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
@@ -522,6 +523,67 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .foot { font-size: 12.5px; color: var(--muted); max-width: 72ch; margin-top: 28px; }
 
 @media (max-width: 860px) { .cap2 { grid-template-columns: 1fr; } .verdict { grid-template-columns: 1fr; } }
+
+/* ---------- Marketing-dashboard: tal fra Google og Meta ----------
+   Ingen gradient her — den er forbeholdt dommen på kapacitetssiden. */
+.dmeta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: -8px 0 22px; font-size: 12.5px; color: var(--muted); }
+.seg-ctl { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 999px; padding: 2px; background: var(--surface); }
+.seg-ctl button { font: inherit; font-size: 12.5px; font-weight: 500; color: var(--ink-2); background: none; border: 0;
+                  border-radius: 999px; padding: 5px 12px; cursor: pointer; white-space: nowrap; }
+.seg-ctl button:hover { color: var(--ink); }
+.seg-ctl button[aria-pressed="true"] { background: var(--ink); color: var(--bg); font-weight: 600; }
+.dsum { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: var(--r-card); overflow: hidden; }
+.dsum .dcell { padding: 18px 20px 16px; border-left: 1px solid var(--border); min-width: 0; }
+.dsum .dcell:first-child { border-left: 0; }
+.dval { font-size: 30px; line-height: 1.05; font-weight: 600; letter-spacing: -0.035em; margin-top: 8px; }
+.dsub { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+.delta { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; color: var(--ink-2); margin-top: 8px; }
+.delta .arr { font-size: 10px; }
+.dsrc { margin-top: 22px; }
+.dsrc .card-hd { align-items: center; }
+.dsrc .card-hd .pill { margin-top: 0; }
+.dsrc .card-hd .hint { margin-right: auto; }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.kpi { text-align: left; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--border);
+       border-radius: var(--r-inner); padding: 12px 14px; cursor: pointer; min-width: 0; }
+.kpi:hover { border-color: var(--border-strong); }
+.kpi[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.kpi .kv { display: block; font-size: 22px; font-weight: 600; letter-spacing: -0.03em; margin-top: 6px; line-height: 1.1; }
+.kpi .delta { margin-top: 6px; }
+.dchart { position: relative; margin-top: 18px; }
+.dchart svg { width: 100%; height: auto; display: block; overflow: visible; }
+.dchart .gl { stroke: var(--border); stroke-width: 1; }
+.dchart .ax { fill: var(--muted); font: 500 10.5px var(--mono); }
+.dchart .cur { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.dchart .prev { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 4 4; stroke-linejoin: round; opacity: .8; }
+.dchart .cross { stroke: var(--ink-2); stroke-width: 1; }
+.dchart .hdot { stroke: var(--surface); stroke-width: 2; }
+.dchart .hdot.c { fill: var(--accent); }
+.dchart .hdot.p { fill: var(--muted); }
+.dtip { position: absolute; top: 0; pointer-events: none; background: var(--surface); border: 1px solid var(--border-strong);
+        border-radius: 10px; padding: 7px 10px; font-size: 12px; line-height: 1.45; box-shadow: var(--shadow-pop); white-space: nowrap; z-index: 5; }
+.dtip b { font-weight: 600; }
+.dtip .tl { display: flex; align-items: center; gap: 6px; color: var(--ink-2); }
+.dtip .tl i, .dlegend i { width: 14px; height: 0; border-top: 2px solid var(--accent); display: inline-block; }
+.dtip .tl i.p, .dlegend i.p { border-top: 2px dashed var(--muted); }
+.dlegend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; font-size: 12.5px; color: var(--ink-2); }
+.dlegend span { display: inline-flex; align-items: center; gap: 7px; }
+.dtables { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin-top: 24px; }
+.dtables.one { grid-template-columns: 1fr; }
+.dtables h3 { font-size: 13.5px; letter-spacing: -0.01em; margin-bottom: 10px; }
+.wtbl td.nm { max-width: 0; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wtbl td.r, .wtbl th.r { white-space: nowrap; padding-left: 10px; }
+.dsetup { font-size: 13.5px; color: var(--ink-2); }
+.dsetup ul { margin: 8px 0 10px; padding-left: 18px; }
+.dsetup code { font-family: var(--mono); font-size: 12.5px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; color: var(--ink); }
+.dsrc .banner { margin-bottom: 16px; }
+@media (max-width: 860px) {
+  .dsum { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dsum .dcell:nth-child(3) { border-left: 0; }
+  .dsum .dcell:nth-child(n+3) { border-top: 1px solid var(--border); }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dtables { grid-template-columns: 1fr; }
+}
 
 /* ---------- Knapper ----------
    Helt runde i enderne og i tekstfarven — den primære knap er blæk, ikke lilla. */
@@ -644,6 +706,8 @@ a.btn { text-decoration: none; }
       <span>HeyOtto OS</span>
     </div>
     <div id="navtop"></div>
+    <div class="nav-label">Marketing</div>
+    <div id="mktnav"></div>
     <div class="nav-label">Projekter</div>
     <div id="projlist"></div>
     <div class="sidebar-foot" id="sidefoot"></div>
@@ -803,6 +867,11 @@ a.btn { text-decoration: none; }
         '<span><span class="pname">Kapacitet</span><br>' +
         '<span class="pmeta num">' + (m.free < 0 ? "−" : "") + fmt(Math.abs(m.free)) + " t fri · " +
         fmt(m.util * 100, 0) + " %</span></span></button>";
+    document.getElementById("mktnav").innerHTML =
+      '<button class="proj" data-act="marketing" aria-current="' + (active === "marketing") + '">' +
+        '<span class="dot ' + dashMeta().tone + '"></span>' +
+        '<span><span class="pname">Marketing-dashboard</span><br>' +
+        '<span class="pmeta num">' + esc(dashMeta().text) + "</span></span></button>";
 
     var html = "";
     DATA.projects.forEach(function (p) {
@@ -1491,6 +1560,10 @@ a.btn { text-decoration: none; }
     }
     if (a === "proj")       { location.hash = el.getAttribute("data-id"); }
     else if (a === "kapacitet") { location.hash = "kapacitet"; }
+    else if (a === "marketing") { location.hash = "marketing"; }
+    else if (a === "drefresh")  { loadMetrics(true); }
+    else if (a === "dperiod")   { DASH.period = el.getAttribute("data-p"); saveDash(); route(); }
+    else if (a === "dmetric")   { DASH.metric[el.getAttribute("data-src")] = el.getAttribute("data-key"); saveDash(); route(); }
     else if (a === "logweek")   {
       var k = isoWeek(new Date());
       if (!DATA.uger) DATA.uger = [];
@@ -2335,6 +2408,417 @@ a.btn { text-decoration: none; }
     });
   }
 
+  /* ====================== Marketing-dashboard: tal fra Google og Meta ======================
+     Tallene hentes i skyen (netlify/lib/metrics.mts) og ligger klar som et
+     øjebliksbillede: en dagsserie på 180 dage pr. kilde plus toplister. Siden
+     regner selv perioden og sammenligningen med perioden før ud fra serien.
+     Periode og valgt graf er visning, ikke data — de gemmes i browseren. */
+
+  var METRICS = null;          // { snapshot, setup } fra /api/metrics
+  var METRICS_LOADING = false;
+  var METRICS_ERR = "";
+  var DASH = { period: "28", metric: {} };
+  try {
+    var savedDash = JSON.parse(localStorage.getItem("mos-dash") || "{}");
+    if (["7", "28", "90"].indexOf(savedDash.period) >= 0) DASH.period = savedDash.period;
+    if (savedDash.metric && typeof savedDash.metric === "object") DASH.metric = savedDash.metric;
+  } catch (e) {}
+  function saveDash() { try { localStorage.setItem("mos-dash", JSON.stringify(DASH)); } catch (e) {} }
+
+  var NF0 = new Intl.NumberFormat("da-DK", { maximumFractionDigits: 0 });
+  var NF1 = new Intl.NumberFormat("da-DK", { maximumFractionDigits: 1 });
+  var NFD1 = new Intl.NumberFormat("da-DK", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  var DAYFMT = new Intl.DateTimeFormat("da-DK", { day: "numeric", month: "short", timeZone: "UTC" });
+
+  function dayLabel(iso) { return DAYFMT.format(new Date(iso + "T12:00:00Z")); }
+  function fInt(v) { return NF0.format(v); }
+  function fConv(v) { return NF1.format(v); }
+  function fPct(v) { return NFD1.format(v * 100) + " %"; }
+  function fPos(v) { return NFD1.format(v); }
+  function fMoney(cur) {
+    return function (v) { return NF0.format(v) + (!cur || cur === "DKK" ? " kr." : " " + cur); };
+  }
+  function fMoney2(cur) {
+    return function (v) { return NFD1.format(v) + (!cur || cur === "DKK" ? " kr." : " " + cur); };
+  }
+
+  // Et nøgletal er en funktion af en række dage. Det gør, at samme definition
+  // giver både periodens tal og grafens punkt for hver enkelt dag.
+  function sumOf(k) {
+    return function (days) { return days.reduce(function (s, d) { return s + (Number(d[k]) || 0); }, 0); };
+  }
+  function ratio(a, b, scale) {
+    return function (days) {
+      var den = sumOf(b)(days);
+      return den ? sumOf(a)(days) / den * (scale || 1) : null;
+    };
+  }
+
+  // Hvad der vises for hver kilde. cur = kildens valuta, så kroner står som kroner.
+  var DSRC = {
+    gsc: {
+      short: "Søgning", sub: "Hvordan heyotto.dk klarer sig i Googles organiske resultater.",
+      note: "Search Console er 2–3 dage bagud, så perioden slutter tidligere end de andre.",
+      kpis: function () {
+        return [
+          { key: "clicks", label: "Klik", f: sumOf("clicks"), fmt: fInt },
+          { key: "impressions", label: "Visninger", f: sumOf("impressions"), fmt: fInt },
+          { key: "ctr", label: "CTR", f: ratio("clicks", "impressions"), fmt: fPct },
+          { key: "position", label: "Gns. position", f: ratio("posSum", "impressions"), fmt: fPos, hint: "lavere er bedre" }
+        ];
+      },
+      tables: [
+        { key: "queries", title: "Top-søgninger", cols: [["name", "Søgning"], ["clicks", "Klik", fInt], ["impressions", "Visn.", fInt], ["position", "Pos.", fPos]] },
+        { key: "pages", title: "Top-sider", cols: [["name", "Side", shortUrl], ["clicks", "Klik", fInt], ["impressions", "Visn.", fInt], ["ctr", "CTR", fPct]] }
+      ]
+    },
+    ga4: {
+      short: "Trafik", sub: "Besøg på sitet og de handlinger, der tæller som key events.",
+      kpis: function () {
+        return [
+          { key: "sessions", label: "Sessioner", f: sumOf("sessions"), fmt: fInt },
+          { key: "engagedSessions", label: "Engagerede sessioner", f: sumOf("engagedSessions"), fmt: fInt },
+          { key: "engagement", label: "Engagementsrate", f: ratio("engagedSessions", "sessions"), fmt: fPct },
+          { key: "keyEvents", label: "Key events", f: sumOf("keyEvents"), fmt: fConv }
+        ];
+      },
+      tables: [
+        { key: "channels", title: "Kanaler", cols: [["name", "Kanal", channelName], ["sessions", "Sessioner", fInt], ["keyEvents", "Key events", fConv]] },
+        { key: "landingPages", title: "Landingssider", cols: [["name", "Side", emptyName], ["sessions", "Sessioner", fInt], ["keyEvents", "Key events", fConv]] }
+      ]
+    },
+    gads: {
+      short: "Google Ads", sub: "Forbrug og konverteringer i Google Ads.",
+      kpis: function (cur) {
+        return [
+          { key: "cost", label: "Forbrug", f: sumOf("cost"), fmt: fMoney(cur) },
+          { key: "clicks", label: "Klik", f: sumOf("clicks"), fmt: fInt },
+          { key: "conversions", label: "Konverteringer", f: sumOf("conversions"), fmt: fConv },
+          { key: "cpa", label: "Pris pr. konvertering", f: ratio("cost", "conversions"), fmt: fMoney2(cur), hint: "lavere er bedre" }
+        ];
+      },
+      tables: [
+        { key: "campaigns", title: "Kampagner", cols: [["name", "Kampagne"], ["status", "Status", adsStatus], ["cost", "Forbrug", "money"], ["clicks", "Klik", fInt], ["conversions", "Konv.", fConv]] }
+      ]
+    },
+    meta: {
+      short: "Meta Ads", sub: "Forbrug og resultater på Facebook og Instagram. Resultater = leads, køb og registreringer.",
+      kpis: function (cur) {
+        return [
+          { key: "spend", label: "Forbrug", f: sumOf("spend"), fmt: fMoney(cur) },
+          { key: "clicks", label: "Linkklik", f: sumOf("clicks"), fmt: fInt },
+          { key: "results", label: "Resultater", f: sumOf("results"), fmt: fConv },
+          { key: "cpr", label: "Pris pr. resultat", f: ratio("spend", "results"), fmt: fMoney2(cur), hint: "lavere er bedre" }
+        ];
+      },
+      tables: [
+        { key: "campaigns", title: "Kampagner", cols: [["name", "Kampagne"], ["account", "Konto"], ["spend", "Forbrug", "money"], ["clicks", "Linkklik", fInt], ["results", "Result.", fConv]] }
+      ]
+    }
+  };
+  var DORDER = ["gsc", "ga4", "gads", "meta"];
+
+  function shortUrl(u) { return String(u).replace(/^https?:\/\/[^/]+/, "") || "/"; }
+  function emptyName(v) { return v === "" || v === "(not set)" ? "(ikke angivet)" : v; }
+  function channelName(v) {
+    var da = { "Direct": "Direkte", "Organic Search": "Organisk søgning", "Paid Search": "Betalt søgning",
+               "Organic Social": "Organisk social", "Paid Social": "Betalt social", "Referral": "Henvisning",
+               "Unassigned": "Ikke tildelt", "Email": "E-mail", "Cross-network": "På tværs af netværk" };
+    return da[v] || emptyName(v);
+  }
+  function adsStatus(v) { return { ENABLED: "Aktiv", PAUSED: "Sat på pause", REMOVED: "Fjernet" }[v] || v; }
+
+  // Seneste N dage og de N dage før. Serien har altid 180 dage (se metrics.mts).
+  function windows(src) {
+    var n = Number(DASH.period), d = src.daily || [];
+    return { cur: d.slice(-n), prev: d.slice(Math.max(0, d.length - 2 * n), d.length - n) };
+  }
+  function hasData(src) { return src && src.daily && src.daily.length > 0; }
+
+  function deltaHtml(cur, prev) {
+    if (cur == null || prev == null) return '<span class="delta">Intet at sammenligne med</span>';
+    if (prev === 0) return '<span class="delta">' + (cur === 0 ? "Uændret" : "Ny i perioden") + "</span>";
+    var ch = (cur - prev) / Math.abs(prev);
+    if (Math.abs(ch) < 0.005) return '<span class="delta">Uændret mod perioden før</span>';
+    return '<span class="delta"><span class="arr" aria-hidden="true">' + (ch > 0 ? "▲" : "▼") + "</span>" +
+           (ch > 0 ? "+" : "−") + NF0.format(Math.abs(ch) * 100) + " % mod perioden før</span>";
+  }
+
+  function loadMetrics(refresh) {
+    if (METRICS_LOADING) return;
+    METRICS_LOADING = true;
+    METRICS_ERR = "";
+    if (fromHash() === "marketing") route();
+    api(refresh ? "POST" : "GET", refresh ? "/api/metrics/refresh" : "/api/metrics", refresh ? {} : undefined)
+      .then(function (res) {
+        METRICS = res;
+        if (refresh) flash(res.note || "Tallene er hentet.");
+        // Første gang findes der intet øjebliksbillede. Er mindst én kilde sat op, hentes det med det samme.
+        var ready = res.setup && DORDER.some(function (k) { return res.setup[k] && !res.setup[k].length; });
+        if (!refresh && !res.snapshot && ready) { METRICS_LOADING = false; loadMetrics(true); return "again"; }
+      })
+      .catch(function (e) {
+        if (e.status === 401) { showLogin("Du er blevet logget ud. Log ind igen."); return; }
+        METRICS_ERR = e.message;
+        if (refresh) flash("Kunne ikke hente tallene: " + e.message, true);
+      })
+      .then(function (again) {
+        if (again === "again") return;
+        METRICS_LOADING = false;
+        if (DATA) route();
+      });
+  }
+
+  function statusPill(src) {
+    if (src.status === "ok") return '<span class="pill good"><span class="dot"></span>Forbundet</span>';
+    if (src.status === "fejl") return '<span class="pill crit"><span class="dot"></span>Fejl ved seneste hentning</span>';
+    return '<span class="pill warn"><span class="dot"></span>Ikke forbundet</span>';
+  }
+
+  function summaryHtml(S) {
+    function tot(key, metric) {
+      var s = S[key];
+      if (!hasData(s)) return null;
+      var w = windows(s);
+      return { cur: sumOf(metric)(w.cur), prev: sumOf(metric)(w.prev), cur$: s.currency };
+    }
+    function both(a, b) {
+      if (!a && !b) return null;
+      return { cur: (a ? a.cur : 0) + (b ? b.cur : 0), prev: (a ? a.prev : 0) + (b ? b.prev : 0) };
+    }
+    var gCost = tot("gads", "cost"), mCost = tot("meta", "spend");
+    var gConv = tot("gads", "conversions"), mConv = tot("meta", "results");
+    var sess = tot("ga4", "sessions"), kev = tot("ga4", "keyEvents");
+    var clk = tot("gsc", "clicks"), imp = tot("gsc", "impressions");
+    var money = fMoney((S.gads && S.gads.currency) || (S.meta && S.meta.currency) || "DKK");
+    var split = function (a, b, fmt) {
+      return [a ? "Google " + fmt(a.cur) : "", b ? "Meta " + fmt(b.cur) : ""].filter(Boolean).join(" · ");
+    };
+    function cell(label, t, fmt, sub) {
+      return '<div class="dcell"><span class="vlabel">' + esc(label) + "</span>" +
+        (t ? '<div class="dval num">' + esc(fmt(t.cur)) + "</div>" + deltaHtml(t.cur, t.prev)
+           : '<div class="dval num">—</div><div class="dsub">Ikke forbundet</div>') +
+        (t && sub ? '<div class="dsub">' + esc(sub) + "</div>" : "") + "</div>";
+    }
+    return '<div class="dsum">' +
+      cell("Annoncekroner", both(gCost, mCost), money, split(gCost, mCost, money)) +
+      cell("Konverteringer fra annoncer", both(gConv, mConv), fConv, split(gConv, mConv, fConv)) +
+      cell("Sessioner på sitet", sess, fInt, kev ? fConv(kev.cur) + " key events" : "") +
+      cell("Klik fra Google-søgning", clk, fInt, imp ? fInt(imp.cur) + " visninger" : "") +
+      "</div>";
+  }
+
+  // Linjegraf: perioden som fuld linje, perioden før som stiplet linje på samme
+  // akse, dag for dag. Ét mål ad gangen — vælges ved at klikke på et nøgletal.
+  // Grafen tegnes i kortets faktiske bredde, så tekst og streger har samme
+  // størrelse på telefon og computer i stedet for at blive skaleret ned.
+  var CHARTS = {};
+  var CHART_W = 720;
+  function chartHtml(key, kpi, w) {
+    var W = CHART_W, H = W < 500 ? 170 : 190, L = 46, R = 8, T = 10, B = 26;
+    var n = w.cur.length;
+    var cur = w.cur.map(function (d) { return kpi.f([d]); });
+    var prev = w.prev.map(function (d) { return kpi.f([d]); });
+    var vals = cur.concat(prev).filter(function (v) { return v != null; });
+    var max = Math.max.apply(null, vals.concat([0]));
+    // Pæne trin på aksen: 1, 2 eller 5 gange en tierpotens
+    var step = 1, raw = max / 3 || 1, p = Math.pow(10, Math.floor(Math.log10(raw)));
+    [1, 2, 5, 10].some(function (m) { step = m * p; return step >= raw; });
+    var top = Math.max(step * 3, step * Math.ceil(max / step));
+    var x = function (i) { return L + (n > 1 ? i * (W - L - R) / (n - 1) : (W - L - R) / 2); };
+    var y = function (v) { return T + (H - T - B) * (1 - v / top); };
+    function path(arr) {
+      var d = "", on = false;
+      arr.forEach(function (v, i) {
+        if (v == null) { on = false; return; }
+        d += (on ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1);
+        on = true;
+      });
+      return d;
+    }
+    var grid = "";
+    for (var g = 0; g <= top + step / 2; g += step) {
+      grid += '<line class="gl" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(g) + '" y2="' + y(g) + '"/>' +
+              '<text class="ax" x="' + (L - 8) + '" y="' + (y(g) + 3.5) + '" text-anchor="end">' + esc(kpi.fmt(g).replace(/ kr\.$/, "")) + "</text>";
+    }
+    var ticks = n > 1 ? [0, Math.floor((n - 1) / 2), n - 1] : [0];
+    var xl = ticks.map(function (i, j) {
+      var anchor = j === 0 && n > 1 ? "start" : (j === ticks.length - 1 && n > 1 ? "end" : "middle");
+      return '<text class="ax" x="' + x(i) + '" y="' + (H - 6) + '" text-anchor="' + anchor + '">' + esc(dayLabel(w.cur[i].date)) + "</text>";
+    }).join("");
+    var id = "ch-" + key;
+    CHARTS[id] = { kpi: kpi, w: w, cur: cur, prev: prev, x: x, y: y, W: W, n: n };
+    var total = kpi.f(w.cur);
+    return '<div class="dchart" id="' + id + '">' +
+      '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' +
+        esc(kpi.label + " pr. dag, seneste " + n + " dage. I alt " + (total == null ? "—" : kpi.fmt(total)) + ".") + '">' +
+        grid + xl +
+        '<path class="prev" d="' + path(prev) + '"/>' +
+        '<path class="cur" d="' + path(cur) + '"/>' +
+        '<g class="hover" visibility="hidden"><line class="cross" y1="' + T + '" y2="' + (H - B) + '"/>' +
+          '<circle class="hdot p" r="4"/><circle class="hdot c" r="4.5"/></g>' +
+      "</svg>" +
+      '<div class="dtip" hidden></div>' +
+      '<div class="dlegend"><span><i></i>' + esc(kpi.label) + ", seneste " + n + ' dage</span>' +
+        '<span><i class="p"></i>De ' + n + " dage før</span></div>" +
+      "</div>";
+  }
+
+  function wireCharts() {
+    Object.keys(CHARTS).forEach(function (id) {
+      var box = document.getElementById(id);
+      if (!box) return;
+      var c = CHARTS[id], svg = box.querySelector("svg"), tip = box.querySelector(".dtip"), hov = svg.querySelector(".hover");
+      function at(ev) {
+        var r = svg.getBoundingClientRect();
+        var sx = (ev.clientX - r.left) * c.W / r.width;
+        var i = 0, best = Infinity;
+        for (var k = 0; k < c.n; k++) { var dx = Math.abs(c.x(k) - sx); if (dx < best) { best = dx; i = k; } }
+        var cx = c.x(i);
+        hov.setAttribute("visibility", "visible");
+        hov.querySelector(".cross").setAttribute("x1", cx);
+        hov.querySelector(".cross").setAttribute("x2", cx);
+        var dc = hov.querySelector(".hdot.c"), dp = hov.querySelector(".hdot.p");
+        dc.setAttribute("visibility", c.cur[i] == null ? "hidden" : "visible");
+        dp.setAttribute("visibility", c.prev[i] == null ? "hidden" : "visible");
+        if (c.cur[i] != null) { dc.setAttribute("cx", cx); dc.setAttribute("cy", c.y(c.cur[i])); }
+        if (c.prev[i] != null) { dp.setAttribute("cx", cx); dp.setAttribute("cy", c.y(c.prev[i])); }
+        var pd = c.w.prev[i];
+        tip.innerHTML = '<div class="tl"><i></i>' + esc(dayLabel(c.w.cur[i].date)) + ": <b>" + esc(c.cur[i] == null ? "—" : c.kpi.fmt(c.cur[i])) + "</b></div>" +
+          (pd ? '<div class="tl"><i class="p"></i>' + esc(dayLabel(pd.date)) + ": <b>" + esc(c.prev[i] == null ? "—" : c.kpi.fmt(c.prev[i])) + "</b></div>" : "");
+        tip.hidden = false;
+        var px = cx / c.W * r.width, tw = tip.offsetWidth;
+        tip.style.left = Math.min(Math.max(0, px + 12 + tw > r.width ? px - tw - 12 : px + 12), r.width - tw) + "px";
+      }
+      svg.addEventListener("pointermove", at);
+      svg.addEventListener("pointerdown", at);
+      svg.addEventListener("pointerleave", function () { hov.setAttribute("visibility", "hidden"); tip.hidden = true; });
+    });
+  }
+
+  function tableHtml(src, t) {
+    var rows = ((src.tables || {})[t.key] || {})[DASH.period] || [];
+    var cols = t.cols.filter(function (c) { return c[0] !== "account" || rows.some(function (r) { return r.account; }); });
+    var money = fMoney(src.currency);
+    var body = rows.length
+      ? rows.map(function (r) {
+          return "<tr>" + cols.map(function (c, j) {
+            var f = c[2] === "money" ? money : c[2];
+            var v = f ? f(r[c[0]]) : r[c[0]];
+            return j === 0 ? '<td class="nm" title="' + esc(r[c[0]]) + '">' + esc(v) + "</td>" : '<td class="r num">' + esc(v) + "</td>";
+          }).join("") + "</tr>";
+        }).join("")
+      : '<tr><td colspan="' + cols.length + '" class="col-empty">Ingen data i perioden.</td></tr>';
+    return "<div><h3>" + esc(t.title) + '</h3><div class="table-scroll"><table class="wtbl"><thead><tr>' +
+      cols.map(function (c, j) { return "<th" + (j ? ' class="r"' : "") + ">" + esc(c[1]) + "</th>"; }).join("") +
+      "</tr></thead><tbody>" + body + "</tbody></table></div></div>";
+  }
+
+  function setupHtml(key, missing) {
+    var how = key === "meta"
+      ? "Meta-tokenet laves i Meta Business Manager (<i>Brugere → Systembrugere</i>) med rettigheden <code>ads_read</code> til annoncekontiene."
+      : "Værdierne står i <code>.env</code> i marketing-repoet. De kopieres som de er.";
+    return '<div class="dsetup"><p>Sæt disse miljøvariabler i Netlify (<i>Project configuration → Environment variables</i>), ' +
+      "og lav et nyt deploy:</p><ul>" + missing.map(function (m) { return "<li><code>" + esc(m) + "</code></li>"; }).join("") +
+      "</ul><p>" + how + " Fremgangsmåden står i <code>dashboard/README.md</code>.</p></div>";
+  }
+
+  function sourceHtml(key, src, missing) {
+    var spec = DSRC[key];
+    src = src || { key: key, name: key, status: "mangler", daily: [], tables: {}, missing: missing || [] };
+    if (missing && missing.length) src = { key: key, name: src.name, status: "mangler", daily: [], tables: {}, missing: missing };
+    var names = { gsc: "Google Search Console", ga4: "Google Analytics 4", gads: "Google Ads", meta: "Meta Ads" };
+    var acct = [src.account, src.end ? "data til og med " + fmtDate(src.end) : ""].filter(Boolean).join(" · ");
+    var html = '<section class="card dsrc" id="d-' + key + '"><div class="card-hd"><h2>' + esc(names[key]) + "</h2>" +
+      '<span class="hint">' + esc(acct || spec.sub) + "</span>" + statusPill(src) + '</div><div class="card-pad">';
+
+    if (src.status === "mangler") return html + setupHtml(key, src.missing || []) + "</div></section>";
+    if (src.status === "fejl") {
+      html += '<div class="banner banner-warn"><h3>' + icon("alert") + "Kunne ikke hente friske tal</h3><p>" + esc(src.error) + "</p>" +
+        (hasData(src) && src.okAt ? '<p style="margin-top:6px">Viser tallene fra ' + esc(DATEFMT.format(new Date(src.okAt))) + ".</p>" : "") + "</div>";
+      if (!hasData(src)) return html + "</div></section>";
+    }
+
+    var kpis = spec.kpis(src.currency), w = windows(src);
+    var chosen = kpis.filter(function (k) { return k.key === DASH.metric[key]; })[0] || kpis[0];
+    html += '<div class="kpis">' + kpis.map(function (k) {
+      var c = k.f(w.cur), p = k.f(w.prev);
+      return '<button class="kpi" type="button" data-act="dmetric" data-src="' + key + '" data-key="' + k.key + '" aria-pressed="' + (k === chosen) + '">' +
+        '<span class="vlabel">' + esc(k.label) + "</span>" +
+        '<span class="kv num">' + esc(c == null ? "—" : k.fmt(c)) + "</span>" +
+        deltaHtml(c, p) + (k.hint ? '<span class="ksub">' + esc(k.hint) + "</span>" : "") + "</button>";
+    }).join("") + "</div>";
+    html += chartHtml(key, chosen, w);
+    html += '<div class="dtables' + (spec.tables.length === 1 ? " one" : "") + '">' +
+      spec.tables.map(function (t) { return tableHtml(src, t); }).join("") + "</div>";
+    if (spec.note) html += '<p class="hint" style="margin-top:14px">' + esc(spec.note) + "</p>";
+    return html + "</div></section>";
+  }
+
+  function renderDashboard() {
+    renderSidebar("marketing");
+    document.title = (dirty ? "● " : "") + "Marketing-dashboard — HeyOtto OS";
+    CHARTS = {};
+    var n = DASH.period;
+    var seg = '<div class="seg-ctl" role="group" aria-label="Periode">' + ["7", "28", "90"].map(function (p) {
+      return '<button type="button" data-act="dperiod" data-p="' + p + '" aria-pressed="' + (p === n) + '">' + p + " dage</button>";
+    }).join("") + "</div>";
+    var snap = METRICS && METRICS.snapshot, setup = (METRICS && METRICS.setup) || {};
+
+    var head = '<div class="phead"><div><h1>Marketing-dashboard</h1>' +
+      '<p class="tagline">Søgning, trafik og annoncer fra Google og Meta samlet ét sted. ' +
+      "Seneste " + n + " dage sammenlignet med de " + n + " dage før.</p></div>" +
+      '<div class="pacts">' +
+        '<button class="btn" data-act="drefresh" type="button"' + (METRICS_LOADING ? " disabled" : "") + ">" +
+          (METRICS_LOADING ? "Henter …" : "Opdatér tal") + "</button>" +
+        '<button class="theme-btn" id="themebtn" type="button"></button>' +
+      "</div></div>";
+    var meta = '<div class="dmeta">' + seg + "<span>" +
+      (snap ? "Hentet " + esc(DATEFMT.format(new Date(snap.fetchedAt))) + " · fornyes automatisk hver 6. time" : "") +
+      "</span></div>";
+
+    var body;
+    if (METRICS_ERR && !snap) {
+      body = '<div class="banner banner-warn"><h3>' + icon("alert") + "Kunne ikke hente tallene</h3><p>" + esc(METRICS_ERR) + "</p></div>";
+    } else if (!METRICS) {
+      body = '<p class="hint">Henter …</p>';
+    } else if (!snap && METRICS_LOADING) {
+      body = '<p class="hint">Henter tal fra Google og Meta for første gang …</p>';
+    } else {
+      var S = (snap && snap.sources) || {};
+      body = summaryHtml(S) + DORDER.map(function (k) { return sourceHtml(k, S[k], setup[k]); }).join("");
+    }
+
+    document.getElementById("main").innerHTML = draftBanner() + head + meta + body +
+      '<p class="foot">Tallene hentes direkte fra Google Search Console, Google Analytics 4, Google Ads og Meta Ads — kun læsning, ' +
+      "intet ændres i kontiene. Konverteringer tælles, som hver platform selv tæller dem, så Google Ads, Meta og GA4 vil ikke give samme tal.</p>";
+    wireTheme();
+    // Første tegning afslører, hvor bred grafen faktisk er. Passer det ikke, tegnes der én gang til.
+    var first = document.querySelector(".dchart");
+    var real = first ? Math.round(first.clientWidth) : 0;
+    if (real > 200 && Math.abs(real - CHART_W) > 4) { CHART_W = real; renderDashboard(); return; }
+    wireCharts();
+  }
+
+  var resizeT = null;
+  window.addEventListener("resize", function () {
+    if (fromHash() !== "marketing") return;
+    clearTimeout(resizeT);
+    resizeT = setTimeout(function () { if (DATA) route(); }, 150);
+  });
+
+  // Sidebarens linje under Marketing-dashboard: hvor mange kilder virker, og hvor gamle er tallene?
+  function dashMeta() {
+    var snap = METRICS && METRICS.snapshot;
+    if (!snap) return { tone: "idle", text: "Google og Meta" };
+    var srcs = DORDER.map(function (k) { return snap.sources[k]; }).filter(Boolean);
+    var ok = srcs.filter(function (s) { return s.status === "ok"; }).length;
+    var bad = srcs.some(function (s) { return s.status === "fejl"; });
+    var t = new Date(snap.fetchedAt);
+    return { tone: bad ? "crit" : (ok < DORDER.length ? "warn" : "good"),
+             text: ok + " af " + DORDER.length + " kilder · " + String(t.getHours()).padStart(2, "0") + "." + String(t.getMinutes()).padStart(2, "0") };
+  }
+
   /* ====================== Start ====================== */
 
   function fromHash() { return (location.hash || "").replace(/^#/, ""); }
@@ -2357,6 +2841,7 @@ a.btn { text-decoration: none; }
     if (h !== "claude") NEWKEY = null;   // en ny nøgle vises kun, mens man er på siden
     if (h === "versioner") renderVersions();
     else if (h === "claude") renderClaude();
+    else if (h === "marketing") renderDashboard();
     else if (!h || h === "kapacitet" || !projById(h)) renderCapacity();
     else render(h);
 
@@ -2433,6 +2918,7 @@ a.btn { text-decoration: none; }
         return;
       }
       loadJobs();
+      loadMetrics(false);
     }, function (err) {
       if (err.status === 401 || err.status === 503) { showLogin(err.status === 503 ? err.message : ""); return; }
       crash(err, "HeyOtto OS kunne ikke hente dine data", "Prøv at genindlæse om lidt.");
