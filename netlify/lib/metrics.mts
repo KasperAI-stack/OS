@@ -118,11 +118,14 @@ const postJson = (body: unknown, headers: Record<string, string>): RequestInit =
   ({ method: "POST", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify(body) });
 
 // Et refresh token pr. tjeneste, ligesom i den lokale .env (ga4.py, gsc.py, gads.py).
+// Anførselstegn fra .env-linjen kommer let med, når værdien kopieres til Netlify.
+const secret = (v: string | undefined) => (v || "").trim().replace(/^(["'])(.*)\1$/, "$2").trim();
+
 async function googleToken(env: Env, refreshKey: string, script: string) {
   const body = new URLSearchParams({
-    client_id: env("GOOGLE_ADS_CLIENT_ID")!.trim(),
-    client_secret: env("GOOGLE_ADS_CLIENT_SECRET")!.trim(),
-    refresh_token: env(refreshKey)!.trim(),
+    client_id: secret(env("GOOGLE_ADS_CLIENT_ID")),
+    client_secret: secret(env("GOOGLE_ADS_CLIENT_SECRET")),
+    refresh_token: secret(env(refreshKey)),
     grant_type: "refresh_token"
   });
   try {
@@ -132,8 +135,14 @@ async function googleToken(env: Env, refreshKey: string, script: string) {
   } catch (e) {
     const m = e instanceof Error ? e.message : String(e);
     if (/invalid_grant/.test(m)) {
-      throw new SourceError(`Google afviste ${refreshKey}: tokenet er udløbet eller trukket tilbage. ` +
-        `Kør "python scripts/${script} auth" i marketing-repoet, og kopiér det nye token til Netlify.`);
+      throw new SourceError(`Google afviste ${refreshKey}. Oftest er værdien i Netlify kopieret forkert (et tegn for meget ` +
+        "eller for lidt), eller den passer ikke til GOOGLE_ADS_CLIENT_ID/_SECRET. Kopiér alle tre fra samme .env i " +
+        "marketing-repoet, og lav et nyt deploy. Virker tokenet heller ikke lokalt, er det udløbet: " +
+        (script ? `kør "python scripts/${script} auth" og kopiér det nye.` : "lav et nyt, og kopiér det."));
+    }
+    if (/invalid_client|unauthorized_client/.test(m)) {
+      throw new SourceError("Google afviste OAuth-klienten. Tjek GOOGLE_ADS_CLIENT_ID og GOOGLE_ADS_CLIENT_SECRET i Netlify " +
+        "mod .env i marketing-repoet, og lav et nyt deploy.");
     }
     throw e;
   }
@@ -232,8 +241,8 @@ async function gads(env: Env): Promise<Partial<Source>> {
   // Kontoen ligger under HeyOtto-MCC'en. Står login-ID'et tomt i Netlify, bruges den.
   const login = env("GOOGLE_ADS_LOGIN_CUSTOMER_ID") === undefined ? "7601106978" : digits(env("GOOGLE_ADS_LOGIN_CUSTOMER_ID"));
   const version = (env("GOOGLE_ADS_API_VERSION") || "v25").trim();
-  const token = await googleToken(env, "GOOGLE_ADS_REFRESH_TOKEN", "gads.py");
-  const headers: Record<string, string> = { Authorization: "Bearer " + token, "developer-token": env("GOOGLE_ADS_DEVELOPER_TOKEN")!.trim() };
+  const token = await googleToken(env, "GOOGLE_ADS_REFRESH_TOKEN", "");
+  const headers: Record<string, string> = { Authorization: "Bearer " + token, "developer-token": secret(env("GOOGLE_ADS_DEVELOPER_TOKEN")) };
   if (login) headers["login-customer-id"] = login;
   const end = addDays(todayCph(), -1);
 
@@ -295,7 +304,7 @@ const results = (actions: any) =>
 async function meta(env: Env): Promise<Partial<Source>> {
   const accounts = (env("META_AD_ACCOUNTS") || "1834773060878221").split(/[\s,]+/).map(digits).filter(Boolean);
   const version = (env("META_API_VERSION") || "v24.0").trim();
-  const headers = { Authorization: "Bearer " + env("META_ACCESS_TOKEN")!.trim() };
+  const headers = { Authorization: "Bearer " + secret(env("META_ACCESS_TOKEN")) };
   const end = addDays(todayCph(), -1);
 
   const graph = async (path: string, params: Record<string, string>) => {
