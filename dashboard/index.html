@@ -307,14 +307,15 @@ section { margin-top: 34px; scroll-margin-top: 62px; }
 .meter-txt { font-size: 13px; color: var(--ink-2); }
 
 /* ---------- Kanban ---------- */
-.kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 22px; }
+.kanban { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 22px; }
 .col-head { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 500; color: var(--ink-2); margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
 .col-head .dot { width: 8px; height: 8px; border-radius: 50%; }
 .col-head .cnt { margin-left: auto; color: var(--muted); font-family: var(--mono); font-size: 11.5px; }
 .tcard { background: var(--surface-2); border: 1px solid var(--border); border-left: 3px solid var(--border-strong); border-radius: var(--r-field); padding: 10px 12px; margin-bottom: 9px; }
-.tcard .tt { font-size: 13.5px; font-weight: 500; line-height: 1.35; }
+.tcard .tt { font-size: 13.5px; font-weight: 500; line-height: 1.35; overflow-wrap: anywhere; }
 .tcard .tm { font-size: 12px; color: var(--muted); margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.tcard .tnote { font-size: 12px; color: var(--ink-2); margin-top: 7px; padding-top: 7px; border-top: 1px dashed var(--border-strong); }
+.tcard .tnote { font-size: 12px; color: var(--ink-2); margin-top: 7px; padding-top: 7px; border-top: 1px dashed var(--border-strong);
+               overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
 .ep { font-family: var(--mono); font-size: 10px; letter-spacing: 0.04em; font-weight: 500; color: var(--ink-2);
       background: var(--surface); border: 1px solid var(--border-strong); border-radius: 999px; padding: 1px 6px; flex: 0 0 auto; }
 .due { display: inline-flex; align-items: center; gap: 4px; }
@@ -410,7 +411,7 @@ details.hist .hist-body { padding: 0 16px 14px 34px; }
 footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }
 
 /* ---------- Smalle skærme ---------- */
-@media (max-width: 1000px) { .kanban { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 1000px) { .kanban { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 760px) {
   .shell { flex-direction: column; }
   .sidebar { width: 100%; flex: none; height: auto; position: static; padding-bottom: 14px; }
@@ -421,7 +422,7 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
   .phead, footer { margin-inline: 0; padding-inline: 0; }
   .phead::before, .phead::after, footer::before, footer::after { display: none; }
   .phead { flex-wrap: wrap; }
-  .kanban { grid-template-columns: 1fr; }
+  .kanban { grid-template-columns: minmax(0, 1fr); }
   .phead h1 { font-size: 28px; }
   .card-pad { padding: 18px; }
   :root { --gantt-label: 180px; }
@@ -924,7 +925,7 @@ a.btn { text-decoration: none; }
     return '<div class="tcard" data-act="task" data-id="' + esc(t.id) + '" tabindex="0" style="border-left-color:var(--' + st.css + ')">' +
              '<div class="tt">' + esc(t.title) + "</div>" +
              (meta.length ? '<div class="tm">' + meta.join(" · ") + "</div>" : "") +
-             (t.note ? '<div class="tnote">' + esc(t.note) + "</div>" : "") +
+             (t.note ? '<div class="tnote" title="' + esc(t.note) + '">' + esc(t.note) + "</div>" : "") +
              jobChip(t) +
            "</div>";
   }
