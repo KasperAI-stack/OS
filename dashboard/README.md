@@ -7,6 +7,7 @@ Et Scrum-/projektoverblik over de store initiativer, med kapacitet på forsiden.
 | Hvad | Hvor |
 |---|---|
 | Appen (layout, logik, redigering) | `dashboard/index.html` — én HTML-fil, intet byggetrin, ingen biblioteker |
+| Otto-illustrationerne | `dashboard/otto/` — PNG'er med gennemsigtig baggrund |
 | API'et (login, data, historik, Claudes nøgle, Claude-jobs, dashboard-tal) | `netlify/functions/api.mts` |
 | Udtrækket fra Google og Meta | `netlify/lib/metrics.mts`, kørt hver 6. time af `netlify/functions/metrics-sync.mts` |
 | Indholdet (projekter, sprints, opgaver, kapacitet) | Netlify Blobs — Netlifys indbyggede lager. Aldrig i git |
@@ -241,12 +242,14 @@ Kan data slet ikke tegnes eller hentes, vises fejlen i stedet for en hvid skærm
 
 ## Design
 
-Farver, skrift og former følger Hey Otto-brandbogen — se [`brand/hey-otto/guidelines.md`](../brand/hey-otto/guidelines.md) og selve brandbogen i [`brand/hey-otto/brand-book.html`](../brand/hey-otto/brand-book.html). Alle farver ligger som CSS-variabler øverst i `<style>`, så et farveskift er ét sted.
+Farver, skrift og former følger Hey Otto-designsystemet — se [`brand/hey-otto/guidelines.md`](../brand/hey-otto/guidelines.md). Alle farver ligger som CSS-variabler øverst i `<style>`, så et farveskift er ét sted.
 
-- **Skrift:** Geist til alt, Geist Mono til de små etiketter med store bogstaver. Begge hentes fra Google Fonts; uden net falder siden tilbage til Helvetica Neue / Arial, og intet layout afhænger af en bestemt fonts mål.
-- **Farver:** sort, grå og hvid bærer designet. Lilla er en accent og bruges sparsomt — gradientrammen om dommen på forsiden er det eneste sted, den får lov at fylde.
-- **Statusfarver** holder sig til brandfarverne: Ikke startet = Sølvgrå, I gang = Violet, Blokeret = Orkidé med skravering, Færdig = Onyx (Tåge i mørkt tema), Droppet = stiplet. Skraveringen gør, at Blokeret kan skelnes i sort/hvid-print og af en farveblind læser.
-- **Former:** knapper og chips er helt runde og i tekstfarven, kort har 22 px hjørner, alt er 1 px-linjer uden skygger. Hovedkolonnen står mellem tynde lodrette linjer med plus-mærker, hvor de møder de vandrette.
+- **Skrift:** Geist til alt, også de små etiketter. Geist Mono bruges kun til kode og nøgler. Begge hentes fra Google Fonts; uden net falder siden tilbage til Helvetica Neue / Arial, og intet layout afhænger af en bestemt fonts mål.
+- **Farver:** sort, grå og hvid. Der er ingen gradienter og ingen lilla flader i appen. Den primære farve er blæk (Onyx i lyst tema, Tåge i mørkt), og knapper, valgte faner, kurver og „i dag“-linjen står i den. Lilla findes kun i fokusringen ved tastaturnavigation (designsystemets `focus`) og i Otto selv.
+- **Signalfarve:** én rød (`#B42318`, `#F97066` i mørkt tema) bruges kun til blokeret, overskredet deadline og overbooket. Den findes ikke i brandet, men appen er et arbejdsredskab, og de tre ting skal kunne ses med det samme.
+- **Statusfarver:** Ikke startet = lysegrå, I gang = blæk, Blokeret = rød med skravering, Færdig = mellemgrå, Droppet = stiplet. Skraveringen gør, at Blokeret kan skelnes i sort/hvid-print og af en farveblind læser.
+- **Former:** knapper og chips er helt runde og i tekstfarven, kort har 22 px hjørner, felter 10 px med 1,5 px kant, alt er 1 px-linjer uden skygger. Knapper løfter sig 1 px ved hover, og bevægelse slås fra ved `prefers-reduced-motion`. Hovedkolonnen står mellem tynde lodrette linjer med plus-mærker, hvor de møder de vandrette.
+- **Otto:** maskotten ligger som PNG'er med gennemsigtig baggrund i `dashboard/otto/` (udskåret fra Kaspers illustrationer). Han står altid i en lys flise (`--otto-tile`), så han ser ens ud i begge temaer: med tommel op på login, tænkende i tomme tilstande, ved computeren mens Claude arbejder, jublende når et udkast er klar, og på kapacitetssiden efter stemningen — kaffe ved plads tilbage, løb ved på kanten, hårdt arbejde ved overbooket. Hans hoved er fane-ikon og står ved ordmærket i sidebaren. `laeser.png` og `praesenterer.png` ligger klar, men er ikke i brug endnu.
 
 Tidslinjen er CSS Grid, ikke SVG: en Gantt er i praksis en tabel, og grid giver sticky navnekolonne, tooltips og korrekt zoom uden koordinatmatematik.
 
