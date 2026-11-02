@@ -52,17 +52,19 @@ Linjer i lyst tema: `#E4E1EC` og (stærkere) `#D3CFDD`. I mørkt tema: `#2B2932`
 linear-gradient(135deg, #4C1D95 0%, #7C3AED 38%, #C026D3 72%, #F472B6 100%)
 ```
 
-### Statusfarver i grænseflader
+### Grænseflader (HeyOtto OS)
 
-Brandbogen har ingen rød eller grøn. Status oversættes derfor til brandfarverne, og betydningen bæres også af form, ikke kun af farve:
+Appen bruger ingen gradienter og ingen lilla flader. Sort, grå og hvid bærer den, og den primære farve er blæk (Onyx i lyst tema, Tåge i mørkt). Lilla findes kun i fokusringen ved tastaturnavigation og i Otto selv. Én rød signalfarve er tilladt, kun til blokeret, overskredet og overbooket, fordi de tre ting skal ses med det samme. Betydningen bæres også af form, ikke kun af farve:
 
 | Status | Lyst tema | Mørkt tema / mørk flade |
 |---|---|---|
-| Ikke startet | Sølvgrå | `#6B6778` |
-| I gang | Violet | Violet |
-| Blokeret | Orkidé + 45° skravering | Orkidé + skravering. Tekst i Rosé |
-| Færdig | Onyx | Tåge |
+| Ikke startet | Lysegrå `#D3CFDD` | `#4A4656` |
+| I gang | Onyx | Tåge |
+| Blokeret | Rød `#B42318` + 45° skravering | `#F97066` + skravering |
+| Færdig | Mellemgrå `#8E8A9B` | `#8E8A9B` |
 | Droppet | stiplet kant | stiplet kant |
+
+Otto står i appen altid i en lys flise (Tåge), så han ser ens ud i begge temaer. Billederne ligger i `dashboard/otto/`.
 
 **Bevidst undtagelse:** ukendt status, altså en datafejl, tegnes i signalgul `#FACC15` med kant. Farven findes ikke i brandet med vilje. En fejl må ikke kunne forveksles med noget, der er designet sådan. Den bruges kun til datafejl og aldrig i kundevendt materiale.
 
