@@ -1,5 +1,7 @@
 # M8: Mail → opgaver i projekterne
 
+**Status (2026-11-05):** bygget på branchen `claude/m8-mail-opgaver`. Ændret efter Kaspers ønske: mails hentes med knappen **Hent mails** i Indbakken, ikke hvert 15. minut. Haiku-forfilteret er udeladt: Gmail-søgningen springer kampagner, sociale, opdateringer og fora over, og Sonnet vurderer resten. Gmail læses med `messages.list` over de seneste 3 dage i stedet for `history.list`, fordi kørslen startes i hånden. Knappen "Opret" opretter og gemmer med det samme, "Ret og opret" åbner dialogen. Automatik ("opret selv") og mødeopgaver er ikke bygget endnu. Åbent spørgsmål 1 (cc, afsendere) er ikke afklaret: Otto vurderer i dag cc-mails og springer dem over, når intet bliver bedt om.
+
 > "hertil skal den selv ekstrakte tasks … og oprette tasks i projekter"
 
 Bygges som den første kørsel i OS-agenten (M7) med Gmail API direkte, **ikke** som en Claude Code Routine. Google-forbindelsen fra M4 udvides med scopet `gmail.readonly`. Fletningen fra M4 gør, at automatisk oprettede opgaver ikke giver 409.

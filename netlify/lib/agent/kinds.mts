@@ -4,12 +4,14 @@
    prompt injection: indholdet i en kalender eller (senere) en mail kan højst give et
    forkert svar eller forslag, aldrig en handling.
 
-   M8 (indbakke) og M9 (omplanlægning) tilføjer deres slags her. */
+   Indbakken (M8) har kun mail-læsning, data_read og de to indbakke-værktøjer: en mail kan
+   højst give et forkert forslag. M9 (omplanlægning) tilføjer sin slags her. */
 
 import OTTO from "./skills/otto.mts";
 import PING from "./skills/ping.mts";
 import SPOERG from "./skills/spoerg.mts";
 import MORGENBRIEF from "./skills/morgenbrief.mts";
+import INDBAKKE from "./skills/indbakke.mts";
 
 export type Effort = "low" | "medium" | "high";
 export type Kind = {
@@ -36,6 +38,12 @@ export const KINDS: Record<string, Kind> = {
   spoerg: {
     id: "spoerg", label: "Spørg Otto", tools: READ_ALL, model: "claude-opus-5-5", effort: "medium",
     maxSteps: 12, skill: SPOERG, defaultEnabled: true, byHand: true, needsInput: true
+  },
+  indbakke: {
+    id: "indbakke", label: "Indbakke (mail → opgaver)",
+    tools: ["data_read", "gmail_new", "gmail_read", "inbox_suggest_task", "inbox_skip"],
+    model: "claude-sonnet-5-5", effort: "medium",
+    maxSteps: 20, skill: INDBAKKE, defaultEnabled: true, byHand: true, needsInput: false
   },
   morgenbrief: {
     id: "morgenbrief", label: "Morgenbrief", tools: READ_ALL, model: "claude-sonnet-5-5", effort: "medium",

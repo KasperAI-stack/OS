@@ -84,9 +84,10 @@ async function overBudget(store: Store, s: Settings, now: Date) {
   return { over: spend.usd * s.usdDkk >= s.budgetDkk, spend };
 }
 
-export async function execute(store: Store, id: string, opts: { call?: ModelCall; notify?: Notify; now?: () => Date } = {}) {
+export async function execute(store: Store, id: string, opts: { call?: ModelCall; notify?: Notify; now?: () => Date; env?: (k: string) => string | undefined } = {}) {
   const call = opts.call || callClaude;
   const now = opts.now || (() => new Date());
+  const env = opts.env || ((k: string) => process.env[k]);
   const run = await readRun(store, id);
   if (!run) return null;
   if (run.status !== "i kø") return run;          // allerede taget (Netlify kan prøve igen)
@@ -111,6 +112,7 @@ export async function execute(store: Store, id: string, opts: { call?: ModelCall
 
   const tools: Tool[] = toolsFor(kind.tools, settings.auto[kind.id] === true);
   const allowed = new Set(tools.map((t) => t.name));
+  const scratch: Record<string, any> = { runId: run.id };
   const system: Anthropic.TextBlockParam[] = [{ type: "text", text: BASE_PROMPT + "\n\n" + kind.skill }];
   const apiTools: Anthropic.Tool[] = tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.input_schema }));
   const ask = kind.needsInput ? run.input : (run.input || "Udfør kørslen.");
@@ -193,7 +195,7 @@ export async function execute(store: Store, id: string, opts: { call?: ModelCall
       const logged: Step = { at: new Date(t1).toISOString(), type: "tool", ms: 0, name: tu.name, input: short(input, 300) };
       try {
         if (!allowed.has(tu.name)) throw new Error(`Værktøjet ${tu.name} er ikke tilladt i denne kørsel.`);
-        const out = await tools.find((t) => t.name === tu.name)!.run(input, { store, now: now() });
+        const out = await tools.find((t) => t.name === tu.name)!.run(input, { store, now: now(), env, scratch });
         const textOut = JSON.stringify(out);
         logged.output = short(textOut, 500);
         logged.ms = Date.now() - t1;

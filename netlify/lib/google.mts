@@ -33,7 +33,7 @@ const PAST_DAYS = 7;
 const FUTURE_DAYS = 84;                 // 12 uger frem: kalendervisning og prognose
 export const REFRESH_GAP_MS = 60_000;   // højst én manuel synk i minuttet
 
-// Hvad man kan bede om. "calendar" bruges nu (M4); "gmail" tilføjes i M8 som et ekstra
+// Hvad man kan bede om. "calendar" (M4) og "gmail" (M8, kun læsning) — gmail er et ekstra
 // samtykke på den samme konto (include_granted_scopes), så man ikke skal forbinde forfra.
 export const SCOPES: Record<string, string> = {
   calendar: "https://www.googleapis.com/auth/calendar.readonly",
@@ -152,7 +152,7 @@ async function checkState(store: Store, state: string) {
   return { secret, scopes: p.s };
 }
 
-async function googleJson(url: string, init: RequestInit = {}) {
+export async function googleJson(url: string, init: RequestInit = {}) {
   let res: Response;
   try {
     res = await fetch(url, { ...init, signal: AbortSignal.timeout(FETCH_MS) });
@@ -175,7 +175,7 @@ function explain(status: number, msg: string) {
     return "Adgangen er udløbet eller trukket tilbage hos Google. Forbind kontoen igen. (Står OAuth-klienten som \"Testing\" i Google Cloud, udløber adgangen efter 7 dage — sæt den til \"In production\".)";
   }
   if (/redirect_uri_mismatch/i.test(msg)) return "Google kender ikke denne adresse som redirect-URI. Tilføj den, der står i Indstillinger, til OAuth-klienten i Google Cloud.";
-  if (status === 403 && /has not been used|disabled/i.test(msg)) return "Google Calendar API er ikke slået til i Google Cloud-projektet. Slå den til under APIs & Services → Library.";
+  if (status === 403 && /has not been used|disabled/i.test(msg)) return (/gmail/i.test(msg) ? "Gmail API" : "Google Calendar API") + " er ikke slået til i Google Cloud-projektet. Slå den til under APIs & Services → Library.";
   if (status === 401) return "Google afviste adgangen. Forbind kontoen igen.";
   return "Google: " + msg;
 }
@@ -230,7 +230,7 @@ export async function finish(store: Store, env: Env, origin: string, code: strin
   return acc.email;
 }
 
-async function accessToken(env: Env, secret: string, acc: Account) {
+export async function accessToken(env: Env, secret: string, acc: Account) {
   const c = client(env);
   if (!c) throw new GoogleError("Google er ikke sat op i Netlify.");
   const tok = await googleJson("https://oauth2.googleapis.com/token", {

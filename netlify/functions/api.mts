@@ -34,6 +34,8 @@
      GET    /api/agent/runs                  de seneste kørsler (uden trin)
      POST   /api/agent/runs                  { kind, input?, parent? } → læg en kørsel i kø og start den (kun Kasper)
      GET    /api/agent/runs/:id              én kørsel med hvert trin, tokens og pris
+     GET    /api/inbox                       { suggestions, handled, mail } — Ottos forslag fra mail
+     PUT    /api/inbox/:id                   { status: "oprettet" | "ignoreret" | "ny", taskId? } (kun Kasper)
 
    To måder at være logget ind på:
      * Kasper: adgangskoden fra miljøvariablen HEYOTTO_PASSWORD giver en signeret
@@ -57,6 +59,7 @@ import * as agent from "../lib/agent/store.mts";
 import { KINDS, MODELS } from "../lib/agent/kinds.mts";
 import { enqueue, fire } from "../lib/agent/queue.mts";
 import { configured as agentConfigured } from "../lib/agent/runtime.mts";
+import * as inbox from "../lib/inbox.mts";
 
 type Store = ReturnType<typeof getStore>;
 type Who = "dig" | "Claude";
@@ -708,6 +711,15 @@ async function startAgentRun(req: Request, store: agent.Store) {
   }
   const lastHour = (await agent.runIds(store)).filter((id) => Date.now() - (dateOf(id)?.getTime() ?? 0) < 3_600_000).length;
   if (lastHour >= AGENT_PER_HOUR) return fail(429, `Otto kan højst startes ${AGENT_PER_HOUR} gange i timen. Prøv igen om lidt.`);
+  if (kind.id === "indbakke") {
+    const accounts = await google.readAccounts(store as any);
+    if (!accounts.some((a) => a.scopes.includes("gmail"))) {
+      return fail(400, "Ingen Google-konto har givet adgang til mail endnu. Tryk „Giv adgang til mail“ i Indbakken.");
+    }
+    const busy = (await agent.readRuns(store, 10)).find((r) => r.kind === "indbakke" && (r.status === "i kø" || r.status === "kører") &&
+                                                          Date.now() - Date.parse(r.updatedAt) < 16 * 60_000);
+    if (busy) return json(200, { run: busy, started: true, note: "Otto er allerede i gang med at hente mails." });
+  }
   let parent = clip(body?.parent, 60);
   const p = parent ? await agent.readRun(store, parent) : null;
   if (!p || p.kind !== kind.id) parent = "";
@@ -733,6 +745,32 @@ async function agentRoutes(req: Request, store: agent.Store, who: Who, path: str
     return json(200, await agentStatus(store));
   }
   if (path === "/api/agent/runs" && req.method === "POST") return await startAgentRun(req, store);
+  return fail(400, "Ukendt adresse eller metode: " + req.method + " " + path);
+}
+
+/* ---------- Indbakke: Ottos forslag fra mail (M8) ----------
+   "Hent mails" er bare en kørsel af slagsen indbakke (POST /api/agent/runs). Her ligger
+   forslagene, og du markerer dem som oprettet eller ignoreret. Selve opgaven laves af
+   appen og gemmes med PUT /api/data som alt andet. */
+
+async function inboxRoutes(req: Request, store: agent.Store, who: Who, path: string) {
+  if (path === "/api/inbox" && req.method === "GET") {
+    const all = await inbox.readSuggestions(store);
+    const accounts = await google.readAccounts(store as any);
+    return json(200, {
+      suggestions: all.filter((s) => s.status === "ny"),
+      handled: all.filter((s) => s.status !== "ny").slice(0, 20),
+      mail: { accounts: accounts.map((a) => ({ id: a.id, email: a.email, gmail: a.scopes.includes("gmail") })) }
+    });
+  }
+  const one = path.match(/^\/api\/inbox\/([0-9a-f]{12})$/);
+  if (one && req.method === "PUT") {
+    if (who !== "dig") return fail(401, "Kun du kan oprette eller ignorere forslag — log ind i appen.");
+    const body = await readJson(req);
+    if (!["ny", "oprettet", "ignoreret"].includes(body?.status)) return fail(400, 'status skal være "oprettet", "ignoreret" eller "ny".');
+    const s = await inbox.setStatus(store, one[1], body.status, clip(body?.taskId, 120));
+    return s ? json(200, { suggestion: s }) : fail(410, "Forslaget findes ikke længere.");
+  }
   return fail(400, "Ukendt adresse eller metode: " + req.method + " " + path);
 }
 
@@ -781,6 +819,7 @@ export default async (req: Request, context: Context) => {
     if (path === "/api/calendar" || path === "/api/calendar/refresh") return await calendarRoutes(req, store, who, path);
     if (path === "/api/alerts" || path.startsWith("/api/alerts/") || path.startsWith("/api/push/")) return await alertRoutes(req, store, who, path);
     if (path === "/api/agent" || path.startsWith("/api/agent/")) return await agentRoutes(req, store as unknown as agent.Store, who, path);
+    if (path === "/api/inbox" || path.startsWith("/api/inbox/")) return await inboxRoutes(req, store as unknown as agent.Store, who, path);
     return fail(400, "Ukendt adresse eller metode: " + method + " " + path);
   } catch (e) {
     if (e instanceof HttpError) return fail(e.status, e.message);
