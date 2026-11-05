@@ -164,7 +164,7 @@ HeyOtto OS kan forbinde én eller flere Google-konti, fx en privat og en til arb
 - **Fravær**: "Ikke til stede"-hændelser og heldagshændelser som *Ferie*, *Syg* eller *Kursus*. Et møde på en feriedag tæller ikke som møde.
 - Fokustid, arbejdssted og hændelser markeret "Ledig" tæller ikke.
 
-I Indstillinger kan du vælge mellem **Kalenderen** og **Fast tal** og sætte arbejdstiden. Under **Forbindelser** vælger du, hvilke kalendere der tæller pr. konto. Den primære og dem, du selv ejer, er slået til fra start. Helligdage og andres delte kalendere er slået fra.
+I Indstillinger kan du vælge mellem **Kalenderen** og **Fast tal** og sætte arbejdstiden. Under **Forbindelser** vælger du, hvilke kalendere der tæller pr. konto. Du kommer også dertil fra linket **Forbind Google** (eller **Google forbundet**) nederst i sidebaren. Den primære og dem, du selv ejer, er slået til fra start. Helligdage og andres delte kalendere er slået fra.
 
 **Kun læsning.** Scopet er `calendar.readonly`. HeyOtto OS kan aldrig oprette, ændre eller svare på noget. Der gemmes kun titel, tidspunkt, type, dit svar og antal deltagere, ikke beskrivelser eller deltagernes adresser. Refresh-tokens krypteres (AES-256-GCM) i Netlify Blobs og sendes aldrig til browseren. **Afbryd** trækker også adgangen tilbage hos Google.
 

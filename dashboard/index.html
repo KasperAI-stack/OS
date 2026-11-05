@@ -630,7 +630,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
           position: sticky; top: 0; background: var(--surface); z-index: 1; }
 .set-hd h3 { font-size: 22px; letter-spacing: -0.025em; }
 .set-hd .icon-btn { margin-left: auto; }
-.set-sec { margin-top: 0; padding: 18px 24px 20px; border-bottom: 1px solid var(--border); }
+.set-sec { margin-top: 0; scroll-margin-top: 76px; padding: 18px 24px 20px; border-bottom: 1px solid var(--border); }
 .set-sec:last-of-type { border-bottom: 0; }
 .set-sec h4 { font-family: var(--font); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
               color: var(--muted); font-weight: 500; margin-bottom: 6px; }
@@ -932,6 +932,9 @@ a.btn { text-decoration: none; }
       '<div class="sf-acts">' +
         '<a class="sf-link" href="#versioner">Historik</a>' +
         '<a class="sf-link" href="#claude">Claude-adgang</a>' +
+        // Google: står som "Forbind Google", indtil en konto er forbundet
+        '<button class="sf-link" data-act="settings" data-section="forbindelser" type="button">' +
+          (calConnected() ? "Google forbundet" : "Forbind Google") + "</button>" +
         '<button class="sf-link" data-act="logout" type="button">Log ud</button>' +
       "</div>";
   }
@@ -1784,7 +1787,7 @@ a.btn { text-decoration: none; }
     else if (a === "newsprint") { editSprint(CURRENT, null); }
     else if (a === "editsprint"){ editSprint(CURRENT, el.getAttribute("data-month")); }
     else if (a === "save")      { save(); }
-    else if (a === "settings")  { openSettings(); }
+    else if (a === "settings")  { openSettings(el.getAttribute("data-section")); }
     else if (a === "settingsclose") { setDlg.close(); }
     else if (a === "logout")    { if (setDlg.open) setDlg.close(); logout(); }
     else if (a === "restore")   { restoreVersion(el.getAttribute("data-id"), el.getAttribute("data-label")); }
@@ -2453,11 +2456,13 @@ a.btn { text-decoration: none; }
       '<p class="hint">Vejledningen står også i <code>dashboard/README.md</code> under „Google: kalender og mail“.</p>';
   }
 
+  var SET_SCROLL_TO = null;
   function rerenderSettingsSection(id) {
     if (!setDlg.open) return;
     var s = SETTINGS_SECTIONS.filter(function (x) { return x.id === id; })[0];
     var box = document.getElementById("set-" + id);
     if (s && box) box.innerHTML = "<h4>" + esc(s.title) + "</h4>" + s.html();
+    if (box && SET_SCROLL_TO === id) { box.scrollIntoView({ block: "start" }); SET_SCROLL_TO = null; }
   }
 
   function adhocSub(m) {
@@ -2496,6 +2501,7 @@ a.btn { text-decoration: none; }
       '<div class="set-ft" id="set-ft">' + settingsFooter() + "</div>";
     setDlg.showModal();
     var target = section && document.getElementById("set-" + section);
+    SET_SCROLL_TO = section || null;   // scroll igen, når sektionen har hentet sit indhold
     if (target) target.scrollIntoView({ block: "start" });
     setDlg.focus({ preventScroll: true });
   }
