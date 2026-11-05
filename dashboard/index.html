@@ -170,7 +170,7 @@ h1, h2, h3 {
 }
 p { margin: 0; }
 .num { font-variant-numeric: tabular-nums; }
-:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 /* Ikoner: streg på 1,8 i et 24-felt, runde ender og hjørner */
 .i { width: 16px; height: 16px; flex: 0 0 auto; vertical-align: -3px; }
@@ -598,7 +598,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 
 .tcard[data-act], .hrow[data-act], .g-label[data-act] { cursor: pointer; }
 .tcard[data-act]:hover { border-color: var(--plus); }
-.tcard[data-act]:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.tcard[data-act]:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .hrow[data-act]:hover, .g-label[data-act]:hover { color: var(--accent); }
 
 /* ---------- Dialog ---------- */
@@ -625,6 +625,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 #settings { border: 1px solid var(--border); border-radius: var(--r-card); background: var(--surface); color: var(--ink);
             padding: 0; width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 48px); box-shadow: var(--shadow-pop); }
 #settings::backdrop { background: var(--backdrop); }
+#settings:focus { outline: none; }
 .set-hd { display: flex; align-items: center; gap: 12px; padding: 20px 24px 16px; border-bottom: 1px solid var(--border);
           position: sticky; top: 0; background: var(--surface); z-index: 1; }
 .set-hd h3 { font-size: 22px; letter-spacing: -0.025em; }
@@ -756,7 +757,7 @@ a.btn { text-decoration: none; }
   <main class="main"><div class="main-inner" id="main"></div></main>
 </div>
 <dialog id="editor"></dialog>
-<dialog id="settings" aria-labelledby="set-title"></dialog>
+<dialog id="settings" aria-labelledby="set-title" tabindex="-1"></dialog>
 <div id="flash" class="flash"></div>
 
 <script>
@@ -2495,9 +2496,8 @@ a.btn { text-decoration: none; }
       '<div class="set-ft" id="set-ft">' + settingsFooter() + "</div>";
     setDlg.showModal();
     var target = section && document.getElementById("set-" + section);
-    if (target) { target.scrollIntoView({ block: "start" }); var f = target.querySelector("a,button"); if (f) f.focus(); return; }
-    var first = setDlg.querySelector("input:not(:disabled)");
-    if (first) first.focus();
+    if (target) target.scrollIntoView({ block: "start" });
+    setDlg.focus({ preventScroll: true });
   }
 
   // Kaldes efter hver gentegning: kun de afledte tal, så felterne ikke mister fokus.
@@ -2516,9 +2516,12 @@ a.btn { text-decoration: none; }
   }
 
   // Fokus tilbage på tandhjulet, når panelet lukkes (Esc eller Luk)
+  var closedByKey = false;
+  setDlg.addEventListener("keydown", function (e) { if (e.key === "Escape") closedByKey = true; });
   setDlg.addEventListener("close", function () {
     var g = document.querySelector('#main [data-act="settings"].gear-btn');
-    if (g) g.focus();
+    if (g && closedByKey) g.focus();
+    closedByKey = false;
   });
 
   function applyCap(el) {
