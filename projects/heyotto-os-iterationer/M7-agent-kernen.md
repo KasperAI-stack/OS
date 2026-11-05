@@ -1,5 +1,7 @@
 # M7: Agent-kernen, HeyOtto OS' egen agent-indgang
 
+**Status (2026-11-05):** bygget på branchen `claude/m7-agent-kernen`: plan-trin 1, 2, 3, 7 og 8 (motor, kø, baggrundsfunktion, planlagt udløser, værktøjerne `data_read`, `forecast_run`, `calendar_list`, "Spørg Otto", aktivitetslog og indstillinger). Gmail (trin 4–5) hører til M8, omplanlægning (trin 6) til M9. Valgt indtil videre: navnet **Otto**, dagsbudget **20 kr.**, og "Lad Claude udføre" (routinen) bliver stående. Afvigelser: værktøjsnavne med `_` (Claude API tillader ikke punktum), og skills som `.mts`-tekstmoduler i stedet for `.md`, så de altid kommer med i funktionspakken. Se `dashboard/README.md` under "Otto: agenten".
+
 > "jeg vil bygge en agent-indgang, der spiller uden disse små tools. Det ville monday.com jo aldrig gøre på en feature"
 
 ## Beslutning

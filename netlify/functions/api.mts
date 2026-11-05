@@ -29,6 +29,11 @@
      POST   /api/push/subscribe              { subscription, label, tz } — slå notifikationer til på en enhed
      POST   /api/push/unsubscribe            { endpoint }
      POST   /api/push/test                   { endpoint } — send en prøve til én enhed
+     GET    /api/agent                       Otto: sat op?, indstillinger, dagens forbrug, slags og modeller
+     PUT    /api/agent/settings              { enabled?, budgetDkk?, usdDkk?, kinds?: { <id>: { enabled?, model? } } }
+     GET    /api/agent/runs                  de seneste kørsler (uden trin)
+     POST   /api/agent/runs                  { kind, input?, parent? } → læg en kørsel i kø og start den (kun Kasper)
+     GET    /api/agent/runs/:id              én kørsel med hvert trin, tokens og pris
 
    To måder at være logget ind på:
      * Kasper: adgangskoden fra miljøvariablen HEYOTTO_PASSWORD giver en signeret
@@ -48,6 +53,10 @@ import type { Config, Context } from "@netlify/functions";
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import * as google from "../lib/google.mts";
 import * as alarm from "../lib/alerts.mts";
+import * as agent from "../lib/agent/store.mts";
+import { KINDS, MODELS } from "../lib/agent/kinds.mts";
+import { enqueue, fire } from "../lib/agent/queue.mts";
+import { configured as agentConfigured } from "../lib/agent/runtime.mts";
 
 type Store = ReturnType<typeof getStore>;
 type Who = "dig" | "Claude";
@@ -655,6 +664,78 @@ async function alertRoutes(req: Request, store: Store, who: Who, path: string) {
   return fail(400, "Ukendt adresse eller metode: " + req.method + " " + path);
 }
 
+/* ---------- Otto: agent-kernen (M7) ----------
+   Selve kørslerne sker i baggrundsfunktionen (netlify/functions/agent-background.mts).
+   Her ligger status, indstillinger, loggen og "start en kørsel". Kun du kan starte
+   Otto og ændre indstillingerne. Claude (routinen) kan læse loggen. */
+
+const AGENT_PER_HOUR = 30;
+const AGENT_INPUT_MAX = 2000;
+const AGENT_NOT_SET_UP = "Otto er ikke sat op endnu: Claude API mangler. Slå AI Gateway til i Netlify, eller sæt ANTHROPIC_API_KEY. " +
+                         "Vejledningen står under Indstillinger → Otto.";
+
+// AI Gateway sætter nøglen i process.env, når funktionen starter
+const agentReady = () => agentConfigured((k) => env(k) || process.env[k]);
+
+async function agentStatus(store: agent.Store) {
+  const s = await agent.readSettings(store);
+  const spend = await agent.readSpend(store, agent.dayIn(s.tz));
+  return {
+    configured: agentReady(),
+    settings: { enabled: s.enabled, budgetDkk: s.budgetDkk, usdDkk: s.usdDkk, tz: s.tz, kinds: s.kinds },
+    today: { dkk: Math.round(spend.usd * s.usdDkk * 100) / 100, runs: spend.runs },
+    kinds: Object.values(KINDS).map((k) => ({
+      id: k.id, label: k.label, tools: k.tools, byHand: k.byHand, needsInput: k.needsInput,
+      schedule: k.schedule ? (k.schedule.weekdays ? "hverdage" : "alle dage") + " kl. " + k.schedule.hour : ""
+    })),
+    models: Object.entries(MODELS).map(([id, m]) => ({ id, label: m.label }))
+  };
+}
+
+async function startAgentRun(req: Request, store: agent.Store) {
+  const body = await readJson(req);
+  const kind = KINDS[typeof body?.kind === "string" ? body.kind : ""];
+  if (!kind || !kind.byHand) return fail(400, "Ukendt slags kørsel.");
+  const input = clip(body?.input, AGENT_INPUT_MAX);
+  if (kind.needsInput && !input) return fail(400, "Skriv dit spørgsmål først.");
+  if (!agentReady()) return fail(400, AGENT_NOT_SET_UP);
+  const s = await agent.readSettings(store);
+  if (!s.enabled) return fail(400, "Otto er slået fra under Indstillinger → Otto.");
+  if (!s.kinds[kind.id]?.enabled) return fail(400, `„${kind.label}“ er slået fra under Indstillinger → Otto.`);
+  const spend = await agent.readSpend(store, agent.dayIn(s.tz));
+  if (spend.usd * s.usdDkk >= s.budgetDkk) {
+    return fail(400, `Dagsbudgettet på ${s.budgetDkk} kr. er brugt. Hæv det under Indstillinger → Otto, eller vent til i morgen.`);
+  }
+  const lastHour = (await agent.runIds(store)).filter((id) => Date.now() - (dateOf(id)?.getTime() ?? 0) < 3_600_000).length;
+  if (lastHour >= AGENT_PER_HOUR) return fail(429, `Otto kan højst startes ${AGENT_PER_HOUR} gange i timen. Prøv igen om lidt.`);
+  let parent = clip(body?.parent, 60);
+  const p = parent ? await agent.readRun(store, parent) : null;
+  if (!p || p.kind !== kind.id) parent = "";
+  const run = await enqueue(store, kind.id, "dig", input, parent);
+  // Går startsignalet tabt, starter agent-schedule kørslen igen inden for et kvarter
+  const started = await fire(store, new URL(req.url).origin, run.id);
+  return json(200, { run, started });
+}
+
+async function agentRoutes(req: Request, store: agent.Store, who: Who, path: string) {
+  if (path === "/api/agent" && req.method === "GET") return json(200, await agentStatus(store));
+  if (path === "/api/agent/runs" && req.method === "GET") {
+    return json(200, { runs: (await agent.readRuns(store, 40)).map(agent.runSummary) });
+  }
+  const one = path.match(/^\/api\/agent\/runs\/([^/]+)$/);
+  if (one && req.method === "GET") {
+    const run = await agent.readRun(store, decodeURIComponent(one[1]));
+    return run ? json(200, { run }) : fail(410, "Kørslen findes ikke længere.");
+  }
+  if (who !== "dig") return fail(401, "Kun du kan starte Otto og ændre Ottos indstillinger — log ind i appen.");
+  if (path === "/api/agent/settings" && req.method === "PUT") {
+    await agent.updateSettings(store, await readJson(req));
+    return json(200, await agentStatus(store));
+  }
+  if (path === "/api/agent/runs" && req.method === "POST") return await startAgentRun(req, store);
+  return fail(400, "Ukendt adresse eller metode: " + req.method + " " + path);
+}
+
 /* ---------- Ruter ---------- */
 
 export default async (req: Request, context: Context) => {
@@ -699,6 +780,7 @@ export default async (req: Request, context: Context) => {
     if (path === "/api/google" || path.startsWith("/api/google/")) return await googleRoutes(req, store, who, path);
     if (path === "/api/calendar" || path === "/api/calendar/refresh") return await calendarRoutes(req, store, who, path);
     if (path === "/api/alerts" || path.startsWith("/api/alerts/") || path.startsWith("/api/push/")) return await alertRoutes(req, store, who, path);
+    if (path === "/api/agent" || path.startsWith("/api/agent/")) return await agentRoutes(req, store as unknown as agent.Store, who, path);
     return fail(400, "Ukendt adresse eller metode: " + method + " " + path);
   } catch (e) {
     if (e instanceof HttpError) return fail(e.status, e.message);
