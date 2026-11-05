@@ -686,6 +686,46 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
           border-radius: var(--r-inner); display: grid; gap: 10px; font-size: 12.5px; color: var(--ink-2); }
 .osteps code { display: block; margin-top: 3px; font-family: var(--mono); font-size: 11.5px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--muted); }
 .osteps .err { color: var(--danger-ink); }
+/* Sidebar: Tasks, Projekter og Rutiner kan foldes ud */
+.nsec { margin-bottom: 14px; }
+.nsec-hd { display: flex; align-items: center; gap: 4px; padding: 0 22px 6px 14px; }
+.nsec-tog { width: 22px; height: 22px; flex: 0 0 22px; display: inline-flex; align-items: center; justify-content: center;
+            background: none; border: 0; padding: 0; border-radius: 6px; color: var(--sidebar-muted); cursor: pointer; }
+.nsec-tog:hover { background: var(--sidebar-hover); color: var(--sidebar-fg); }
+.nsec-tog svg { width: 14px; height: 14px; transition: transform .15s ease; }
+.nsec-tog[aria-expanded="true"] svg { transform: rotate(90deg); }
+.nsec-lab { font-family: var(--font); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--sidebar-muted);
+            background: none; border: 0; padding: 0; cursor: pointer; text-decoration: none; }
+.nsec-lab:hover { color: var(--sidebar-fg); }
+.nsec-meta { margin-left: auto; font-size: 11px; color: var(--sidebar-muted); }
+.proj.sub { padding-top: 7px; padding-bottom: 7px; align-items: center; }
+.proj.sub .pname { font-size: 13.5px; }
+.proj.sub .dot { margin-top: 0; }
+.proj .pcount { margin-left: auto; font-size: 12px; color: var(--sidebar-muted); }
+/* Tasks-siden */
+.tviews { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.tvchip { font: inherit; font-size: 13px; font-weight: 500; padding: 5px 13px; border-radius: 999px; cursor: pointer;
+          background: var(--surface); border: 1px solid var(--border-strong); color: var(--ink-2); }
+.tvchip:hover { border-color: var(--ink); color: var(--ink); }
+.tvchip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.tquick { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.tquick input { flex: 1 1 220px; font: inherit; font-size: 14px; padding: 9px 12px; border-radius: var(--r-field);
+                border: 1.5px solid var(--border-strong); background: var(--surface-2); color: var(--ink); }
+.tquick input:focus { outline: 3px solid var(--field-ring); outline-offset: 0; border-color: var(--ink); }
+.tgroup { margin-top: 18px; }
+.tlist { list-style: none; margin: 0; padding: 0; }
+.trow { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.trow:last-child { border-bottom: 0; }
+.tchk { width: 17px; height: 17px; flex: 0 0 17px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.ttitle { flex: 1 1 auto; min-width: 0; font: inherit; font-size: 14px; color: var(--ink); background: none; border: 0; padding: 0; text-align: left; cursor: pointer; }
+.ttitle:hover { text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 3px; }
+.tmeta { font-size: 12px; color: var(--muted); }
+.tctx { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.tdue { font-size: 12.5px; color: var(--ink-2); white-space: nowrap; min-width: 78px; text-align: right; }
+.tdue.late { color: var(--danger-ink); font-weight: 600; }
+.caprut { display: flex; justify-content: space-between; gap: 10px; font-size: 13.5px; color: var(--ink-2); padding: 8px 0; border-bottom: 1px dashed var(--border-strong); }
+.caprut a { color: var(--muted); text-underline-offset: 2px; margin-left: 6px; }
+@media (max-width: 640px) { .trow { flex-wrap: wrap; } .tctx { order: 3; margin-left: 27px; } }
 /* Omplanlæg (M9) */
 .pmets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
 .pmet { border: 1px solid var(--border); border-radius: var(--r-inner); padding: 10px 12px; }
@@ -922,7 +962,6 @@ a.btn { text-decoration: none; }
       <span>HeyOtto OS</span>
     </div>
     <div id="navtop"></div>
-    <div class="nav-label">Projekter</div>
     <div id="projlist"></div>
     <div class="sidebar-foot" id="sidefoot"></div>
   </nav>
@@ -1093,19 +1132,48 @@ a.btn { text-decoration: none; }
         '<span><span class="pname">Indbakke</span><br><span class="pmeta">' +
           (inboxCount() ? plural(inboxCount(), "nyt forslag", "nye forslag") + " fra mail" : "Mail → opgaver") + "</span></span></button>";
 
-    var html = "";
-    DATA.projects.forEach(function (p) {
+    // Tre enheder: Tasks (alle), Projekter (de store ting) og Rutiner (det, der kommer igen).
+    // Drift og Ad hoc er ikke projekter: Ad hoc er "uden projekt", Drift hører til Rutiner.
+    var tasksHtml = TASKVIEWS.map(function (v) {
+      var n = DATA.tasks.filter(function (t) { return isLive(t) && v.test(t); }).length;
+      var key = v.id ? "tasks/" + v.id : "tasks";
+      return '<button class="proj sub" data-act="tasksview" data-v="' + v.id + '" aria-current="' + (active === key) + '">' +
+        '<span class="pname">' + v.label + '</span><span class="pcount num">' + n + "</span></button>";
+    }).join("");
+
+    var projHtml = "";
+    DATA.projects.filter(isRealProject).forEach(function (p) {
       var ts = tasksOf(p.id);
       var open = ts.filter(function (t) { var k = stat(t).key; return k !== "faerdig" && k !== "droppet"; }).length;
-      html += '<button class="proj" data-act="proj" data-id="' + esc(p.id) + '" aria-current="' + (p.id === active) + '">' +
+      projHtml += '<button class="proj" data-act="proj" data-id="' + esc(p.id) + '" aria-current="' + (p.id === active) + '">' +
                 '<span class="dot" style="background:' + healthDot(ts) + '"></span>' +
                 '<span><span class="pname">' + esc(p.name) + '</span><br>' +
                 '<span class="pmeta num">' + (ts.length ? open + " åbne · " + ts.length + " i alt" : "ingen opgaver") + '</span></span>' +
               '</button>';
     });
-    html += '<button class="proj add" data-act="newproj" type="button"><span class="plus">+</span>' +
+    projHtml += '<button class="proj add" data-act="newproj" type="button"><span class="plus">+</span>' +
             '<span class="pname">Nyt projekt</span></button>';
-    document.getElementById("projlist").innerHTML = html;
+
+    var routines = DATA.rutiner || [];
+    var rutHtml = routines.map(function (r) {
+      return '<button class="proj sub" data-act="routine" data-id="' + esc(r.id) + '">' +
+        '<span class="dot" style="background:' + (r.active === false ? "var(--sidebar-line)" : "var(--sidebar-muted)") + '"></span>' +
+        '<span><span class="pname">' + esc(r.name) + '</span><br><span class="pmeta">' + esc(routineWhen(r)) + "</span></span></button>";
+    }).join("");
+    var drift = DATA.projects.filter(function (p) { return p.kind === "drift"; })[0];
+    var driftOpen = drift ? tasksOf(drift.id).filter(isLive).length : 0;
+    if (drift && driftOpen) {
+      rutHtml += '<button class="proj sub" data-act="proj" data-id="' + esc(drift.id) + '" aria-current="' + (drift.id === active) + '">' +
+        '<span class="dot" style="background:var(--sidebar-line)"></span>' +
+        '<span><span class="pname">' + esc(drift.name) + '</span><br><span class="pmeta">' + plural(driftOpen, "fast opgave", "faste opgaver") + "</span></span></button>";
+    }
+    rutHtml += '<button class="proj add" data-act="newroutine" type="button"><span class="plus">+</span><span class="pname">Ny rutine</span></button>';
+
+    var liveN = DATA.tasks.filter(isLive).length;
+    document.getElementById("projlist").innerHTML =
+      sideSection("tasks", "Tasks", liveN, "#tasks", tasksHtml) +
+      sideSection("projekter", "Projekter", DATA.projects.filter(isRealProject).length, "", projHtml) +
+      sideSection("rutiner", "Rutiner", routines.filter(function (r) { return r.active !== false; }).length, "#rutiner", rutHtml);
     document.getElementById("sidefoot").innerHTML =
       "Opdateret<br><b class=\"num\">" + esc(DATA.meta.updated || "—") + "</b>" +
       (dirty ? '<br><span class="unsaved">● ugemte ændringer</span>' : "") +
@@ -1469,7 +1537,8 @@ a.btn { text-decoration: none; }
     projects: { key: function (x) { return x && x.id; },                     label: function (x) { return "Projekt „" + (x.name || x.id) + "“"; } },
     sprints:  { key: function (x) { return x && x.project + "|" + x.month; }, label: function (x) { return "Sprint " + x.month + " (" + x.project + ")"; } },
     tasks:    { key: function (x) { return x && x.id; },                     label: function (x) { return "Opgave „" + (x.title || x.id) + "“"; } },
-    uger:     { key: function (x) { return x && x.uge; },                    label: function (x) { return weekLabel(x.uge); } }
+    uger:     { key: function (x) { return x && x.uge; },                    label: function (x) { return weekLabel(x.uge); } },
+    rutiner:  { key: function (x) { return x && x.id; },                     label: function (x) { return "Rutine „" + (x.name || x.id) + "“"; } }
   };
   var MERGE_OBJS = { meta: "Data", kapacitet: "Indstillinger", epics: "Epics" };
   var FIELD_NAMES = { title: "titel", status: "status", hours: "timer", due: "deadline", owner: "ejer", note: "note",
@@ -1581,10 +1650,10 @@ a.btn { text-decoration: none; }
     });
   }
 
-  function save(merged) {
+  function save(merged, message) {
     DATA.meta.updated = TODAY_ISO;
     var sent = clone(DATA);
-    var said = merged ? "Gemt — flettet med ændringer fra et andet sted." : "Gemt";
+    var said = message || (merged ? "Gemt — flettet med ændringer fra et andet sted." : "Gemt");
     return api("PUT", "/api/data", { rev: DATA_REV, data: sent })
       .then(function (res) {
         DATA_REV = res.rev;
@@ -1792,7 +1861,9 @@ a.btn { text-decoration: none; }
                       '<datalist id="f-owners"><option value="Claude"></option></datalist>') +
       "</div>" +
       '<div class="fgrid">' +
-        field("Projekt", '<select id="f-project">' + opts(DATA.projects.map(function (p) { return { v: p.id, t: p.name }; }), t.project) + "</select>") +
+        field("Projekt", '<select id="f-project">' + opts(DATA.projects.map(function (p) {
+          return { v: p.id, t: p.kind === "adhoc" ? "Uden projekt" : p.name };
+        }), t.project) + "</select>", t.routine ? "fra rutinen „" + esc((routineById(t.routine) || {}).name || t.routine) + "“" : "") +
         field("Sprint", '<select id="f-sprint">' + opts(sprintList, t.sprint) + "</select>") +
       "</div>" +
       '<div class="fgrid">' +
@@ -1928,7 +1999,7 @@ a.btn { text-decoration: none; }
     var el = e.target.closest ? e.target.closest("[data-act]") : null;
     if (!el) return;
     var a = el.getAttribute("data-act");
-    if (ottoClick(a, el) || inboxClick(a, el) || planClick(a, el)) return;
+    if (ottoClick(a, el) || inboxClick(a, el) || planClick(a, el) || tasksClick(a, el)) return;
     if (a === "jump") {
       // Genvejsbjælken er ren scroll i siden. Den må ikke sætte adressen,
       // for hash'en bruges til at vælge projekt — et "#sprint" ville blive
@@ -2273,9 +2344,9 @@ a.btn { text-decoration: none; }
      grundindstillinger og rettes under tandhjulet (Indstillinger). */
 
   var KINDS = [
-    { key: "drift",   label: "Drift",     hint: "løbende arbejde" },
-    { key: "projekt", label: "Projekter", hint: "tidsbegrænset" },
-    { key: "adhoc",   label: "Ad hoc",    hint: "det uplanlagte" }
+    { key: "drift",   label: "Rutiner og drift", hint: "det, der kommer igen" },
+    { key: "projekt", label: "Projekter",        hint: "tidsbegrænset" },
+    { key: "adhoc",   label: "Ad hoc",           hint: "tasks uden projekt og det uplanlagte" }
   ];
   var KINDMAP = {}; KINDS.forEach(function (k) { KINDMAP[k.key] = k; });
 
@@ -2400,6 +2471,9 @@ a.btn { text-decoration: none; }
     var by = { drift: 0, projekt: 0, adhoc: 0 };
     var live = DATA.tasks.filter(function (t) { return num(t.hours) > 0 && isLive(t); });
     live.forEach(function (t) { by[kindOf(t)] += num(t.hours); });
+    // Rutinernes faste tid pr. uge (deres tasks har 0 timer)
+    var routineHours = FC && FC.routineWeeklyHours ? FC.routineWeeklyHours(DATA) : 0;
+    by.drift += routineHours;
 
     var weeks = DATA.uger || [];
     var measured = null;
@@ -2416,7 +2490,7 @@ a.btn { text-decoration: none; }
     var util = avail > 0 ? load / avail : 0;
 
     return {
-      avail: avail, ceiling: ceiling, plan: plan, by: by, buffer: buffer,
+      avail: avail, ceiling: ceiling, plan: plan, by: by, buffer: buffer, routineHours: routineHours,
       measured: measured, weeksLogged: weeks.length, live: live,
       load: load, free: plan - load, util: util,
       meetings: meetings, absence: absence, fromCal: !!cal
@@ -2482,16 +2556,20 @@ a.btn { text-decoration: none; }
   function capTasks(m) {
     var activeIds = {};
     m.live.forEach(function (t) { activeIds[t.id] = true; });
-    var rest = DATA.tasks.filter(function (t) { return !activeIds[t.id] && isLive(t); });
+    var rest = DATA.tasks.filter(function (t) { return !activeIds[t.id] && isLive(t) && !t.routine; });   // rutiners tid står under Rutiner
 
     var groups = KINDS.map(function (k) {
       var list = m.live.filter(function (t) { return kindOf(t) === k.key; })
                        .sort(function (a, b) { return num(b.hours) - num(a.hours); });
       var sum = list.reduce(function (s, t) { return s + num(t.hours); }, 0);
+      var rut = k.key === "drift" && m.routineHours > 0
+        ? '<div class="caprut"><span>Rutiner · ' + plural((DATA.rutiner || []).filter(function (r) { return r.active !== false; }).length, "aktiv", "aktive") +
+          ' <a href="#rutiner">Se rutiner</a></span><span class="num">' + fmt(m.routineHours) + " t</span></div>" : "";
+      if (k.key === "drift") sum += m.routineHours || 0;
       return '<div class="capgroup"><div class="caphd"><i style="background:var(--c-' + k.key + ')"></i>' +
         "<b>" + k.label + "</b><span class=\"ksub\">" + k.hint + "</span>" +
-        '<span class="num capsum">' + fmt(sum) + " t</span></div>" +
-        (list.length ? list.map(capRow).join("")
+        '<span class="num capsum">' + fmt(sum) + " t</span></div>" + rut +
+        (list.length || rut ? list.map(capRow).join("")
                      : '<p class="col-empty">Ingen aktive timer i denne kategori.</p>') + "</div>";
     }).join("");
 
@@ -2897,7 +2975,7 @@ a.btn { text-decoration: none; }
     return Math.round((b - a) / 86400000);
   }
   function nextDeadlineCell() {
-    var open = DATA.tasks.filter(function (t) { return isDate(t.due) && isLive(t); })
+    var open = DATA.tasks.filter(function (t) { return isDate(t.due) && isLive(t) && !t.routine; })
                          .sort(function (a, b) { return a.due < b.due ? -1 : (a.due > b.due ? 1 : 0); });
     var late = open.filter(overdue);
     var head = '<div class="vcell"><span class="vlabel">Næste deadline</span>';
@@ -3902,7 +3980,7 @@ a.btn { text-decoration: none; }
   function suggestion(id) { return INBOX ? INBOX.suggestions.filter(function (s) { return s.id === id; })[0] : null; }
 
   function taskPreset(s) {
-    var proj = projById(s.project) ? s.project : (projById("adhoc") ? "adhoc" : DATA.projects[0].id);
+    var proj = projById(s.project) ? s.project : generalProjectId();
     var note = (s.note ? s.note.slice(0, 300) + "\n" : "") + "Fra mail: " + s.url;
     return { project: proj, start: TODAY_ISO.slice(0, 7), title: s.title, due: s.due || "", note: note,
              remaining: s.estimate || undefined, source: { type: "gmail", id: s.threadId, url: s.url } };
@@ -4139,6 +4217,299 @@ a.btn { text-decoration: none; }
     fillPlan();
   });
 
+  /* ====================== Tasks, projekter og rutiner ======================
+     Tre enheder i sidebaren, som hver kan foldes ud:
+       Tasks      alle tasks: dem uden projekt, dem i projekter og dem fra rutiner
+       Projekter  de større ting med mål, sprints og tidslinje (kind "projekt")
+       Rutiner    det, der kommer igen. Hver forekomst bliver en task med deadline.
+     Data: Ad hoc-projektet (kind "adhoc") er "uden projekt", så gamle data passer.
+     Rutiner ligger i data.rutiner; deres tid tæller som fast tid pr. uge (som drift),
+     og deres tasks har 0 timer, så intet tælles to gange (dashboard/lib/forecast.mjs). */
+
+  var SIDEOPEN = { tasks: true, projekter: true, rutiner: true };
+  try {
+    var savedSide = JSON.parse(localStorage.getItem("mos-side") || "{}");
+    Object.keys(SIDEOPEN).forEach(function (k) { if (typeof savedSide[k] === "boolean") SIDEOPEN[k] = savedSide[k]; });
+  } catch (e) {}
+  var CHEVRON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+
+  function sideSection(key, label, count, href, items) {
+    var open = SIDEOPEN[key];
+    return '<div class="nsec">' +
+      '<div class="nsec-hd"><button class="nsec-tog" data-act="sidetog" data-key="' + key + '" type="button" aria-expanded="' + open + '" ' +
+        'aria-label="' + (open ? "Fold " + label + " sammen" : "Fold " + label + " ud") + '">' + CHEVRON + "</button>" +
+        (href ? '<a class="nsec-lab" href="' + href + '">' + label + "</a>"
+              : '<button class="nsec-lab" data-act="sidetog" data-key="' + key + '" type="button">' + label + "</button>") +
+        '<span class="nsec-meta num">' + count + "</span></div>" +
+      (open ? '<div class="nsec-body">' + items + "</div>" : "") + "</div>";
+  }
+
+  function isRealProject(p) { return p && p.kind !== "drift" && p.kind !== "adhoc"; }
+  function generalProjectId() {
+    var p = DATA.projects.filter(function (x) { return x.kind === "adhoc"; })[0];
+    if (!p) {   // findes altid i nye data, men kan være slettet i gamle
+      p = { id: "adhoc", name: "Uden projekt", kind: "adhoc", tagline: "Tasks uden projekt" };
+      DATA.projects.push(p);
+    }
+    return p.id;
+  }
+  function isGeneral(t) { var p = projById(t.project); return !p || p.kind === "adhoc"; }
+  function weekEndIso(add) { return FC.localIso(FC.addDays(FC.weekStart(new Date()), 6 + (add || 0))); }
+
+  var TASKVIEWS = [
+    { id: "",        label: "Alle tasks",   test: function () { return true; } },
+    { id: "uge",     label: "Denne uge",    test: function (t) { return (isDate(t.due) && t.due <= weekEndIso()) || num(t.hours) > 0; } },
+    { id: "uden",    label: "Uden projekt", test: function (t) { return isGeneral(t) && !t.routine; } },
+    { id: "rutiner", label: "Fra rutiner",  test: function (t) { return !!t.routine; } }
+  ];
+  function taskView(id) { return TASKVIEWS.filter(function (v) { return v.id === id; })[0] || TASKVIEWS[0]; }
+
+  var WEEKDAYS = ["", "mandag", "tirsdag", "onsdag", "torsdag", "fredag"];
+  function routineWhen(r) {
+    var every = (FC.EVERY && FC.EVERY[r.every]) || "Hver uge";
+    if (r.every === "uge" || r.every === "2uger") every += ", " + WEEKDAYS[Number(r.weekday) || 5];
+    if (r.every === "maaned") every += ", " + (Number(r.monthday) ? "d. " + Number(r.monthday) : "sidste dag");
+    return every + (num(r.hours) ? " · " + fmt(num(r.hours)) + " t" : "");
+  }
+  function routineById(id) { return (DATA.rutiner || []).filter(function (r) { return r.id === id; })[0] || null; }
+  function routineNext(r) {
+    var o = FC.occurrences(r, TODAY_ISO, FC.localIso(FC.addDays(new Date(), 70)));
+    return o[0] || "";
+  }
+
+  /* ----- Rutiner bliver til tasks -----
+     Når appen åbnes, og når en rutine gemmes: de forekomster, der falder i dag og de
+     næste 7 dage, bliver til tasks. Id'et er fast (r-<rutine>-<dato>), så to enheder
+     laver den samme task, og fletningen ser dem som én. last husker den seneste
+     forekomst, så en task, du har slettet, ikke kommer igen. */
+  var ROUTINE_DAYS = 7;
+  function materializeRoutines() {
+    var list = DATA.rutiner || [], made = 0;
+    if (!list.length || !FC.occurrences) return 0;
+    var gen = null;
+    list.forEach(function (r) {
+      if (!r || r.active === false) return;
+      // Daglige rutiner: kun dagens task, så listen ikke drukner. Andre: den næste uge.
+      var horizon = r.every === "dag" ? TODAY_ISO : FC.localIso(FC.addDays(new Date(), ROUTINE_DAYS));
+      var from = r.last && r.last >= TODAY_ISO ? FC.localIso(FC.addDays(FC.dateOnly(r.last), 1)) : TODAY_ISO;
+      FC.occurrences(r, from, horizon).slice(0, 30).forEach(function (occ) {
+        var id = "r-" + r.id + "-" + occ;
+        if (!taskById(id)) {
+          gen = gen || generalProjectId();
+          DATA.tasks.push({ id: id, title: r.name, project: r.project && projById(r.project) ? r.project : gen,
+                            sprint: "", start: occ.slice(0, 7), end: "", status: "Ikke startet", owner: r.owner || "",
+                            due: occ, epic: "", hours: 0, note: r.note || "", routine: r.id });
+          made++;
+        }
+        if (!r.last || occ > r.last) r.last = occ;
+      });
+    });
+    return made;
+  }
+
+  // Når en rutine ændres: fremtidige, urørte tasks fra den laves om efter den nye plan
+  function resetRoutineTasks(r) {
+    DATA.tasks = DATA.tasks.filter(function (t) {
+      return !(t.routine === r.id && t.due >= TODAY_ISO && stat(t).key === "ikke-startet");
+    });
+    r.last = "";
+  }
+
+  /* ----- Tasks-siden ----- */
+
+  function tasksHead(title, tagline) {
+    return '<div class="phead"><div><h1>' + esc(title) + '</h1><p class="tagline">' + esc(tagline) + "</p></div>" + headActions(true) + "</div>";
+  }
+
+  function taskContext(t) {
+    if (t.routine) { var r = routineById(t.routine); return "Rutine" + (r ? " · " + r.name : ""); }
+    var p = projById(t.project);
+    if (!p || p.kind === "adhoc") return "Uden projekt";
+    return p.name;
+  }
+
+  function renderTasks(v) {
+    var view = taskView(v);
+    renderSidebar(view.id ? "tasks/" + view.id : "tasks");
+    document.title = (dirty ? "● " : "") + "Tasks — HeyOtto OS";
+    var list = DATA.tasks.filter(function (t) { return isLive(t) && view.test(t); });
+    var today = TODAY_ISO, we = weekEndIso(), nwe = weekEndIso(7);
+    var buckets = [
+      { label: "Over deadline", test: function (t) { return isDate(t.due) && t.due < today; } },
+      { label: "I dag",         test: function (t) { return t.due === today; } },
+      { label: "Resten af ugen", test: function (t) { return isDate(t.due) && t.due > today && t.due <= we; } },
+      { label: "Næste uge",     test: function (t) { return isDate(t.due) && t.due > we && t.due <= nwe; } },
+      { label: "Senere",        test: function (t) { return isDate(t.due) && t.due > nwe; } },
+      { label: "Uden deadline", test: function (t) { return !isDate(t.due); } }
+    ];
+    var groups = buckets.map(function (b) {
+      var ts = list.filter(b.test).sort(function (a, c) {
+        return (a.due || "9") < (c.due || "9") ? -1 : (a.due || "9") > (c.due || "9") ? 1 : String(a.title).localeCompare(String(c.title), "da");
+      });
+      if (!ts.length) return "";
+      return '<div class="tgroup"><div class="sec-label">' + b.label + ' <span class="num">' + ts.length + "</span></div>" +
+        '<ul class="tlist">' + ts.map(taskRow).join("") + "</ul></div>";
+    }).join("");
+    document.getElementById("main").innerHTML =
+      tasksHead(view.id ? view.label : "Tasks", "Alt, der skal laves: tasks uden projekt, tasks i projekter og tasks fra rutiner.") +
+      '<div class="tviews">' + TASKVIEWS.map(function (x) {
+        return '<button class="tvchip" data-act="tasksview" data-v="' + x.id + '" aria-pressed="' + (x.id === view.id) + '" type="button">' + x.label + "</button>";
+      }).join("") + "</div>" +
+      '<section class="card"><div class="card-pad">' +
+        '<form class="tquick" id="tquick"><input id="tq" type="text" maxlength="120" placeholder="Ny task uden projekt … tryk Enter" aria-label="Ny task">' +
+          '<button class="btn" type="submit">Tilføj</button>' +
+          '<button class="btn" data-act="tasknew" type="button">Med detaljer</button></form>' +
+        (groups || '<p class="col-empty" style="margin-top:14px">Ingen åbne tasks her.</p>') +
+      "</div></section>";
+    wireTheme();
+  }
+
+  function taskRow(t) {
+    var late = isDate(t.due) && t.due < TODAY_ISO;
+    var st = stat(t);
+    var extra = [];
+    if (st.key !== "ikke-startet") extra.push(st.label);
+    if (num(t.remaining) > 0) extra.push(fmt(num(t.remaining)) + " t tilbage");
+    if (num(t.hours) > 0) extra.push(fmt(num(t.hours)) + " t/uge");
+    return '<li class="trow"><input type="checkbox" class="tchk" data-act="taskdone" data-id="' + esc(t.id) + '" aria-label="Markér „' + esc(t.title) + '“ som færdig">' +
+      '<button class="ttitle" data-act="task" data-id="' + esc(t.id) + '" type="button">' + esc(t.title) +
+        (extra.length ? ' <span class="tmeta">' + esc(extra.join(" · ")) + "</span>" : "") + "</button>" +
+      '<span class="tctx">' + esc(taskContext(t)) + "</span>" +
+      '<span class="tdue num' + (late ? " late" : "") + '">' + (isDate(t.due) ? FC.shortDate(t.due) : "") + "</span></li>";
+  }
+
+  function quickAdd(title) {
+    var gen = generalProjectId();
+    var id = slug("task-" + title, DATA.tasks.map(function (x) { return x.id; }));
+    DATA.tasks.push({ id: id, title: title, project: gen, sprint: "", start: TODAY_ISO.slice(0, 7), end: "",
+                      status: "Ikke startet", owner: "", due: "", epic: "", hours: 0, note: "" });
+    markDirty();
+    var input = document.getElementById("tq");
+    if (input) input.focus();
+  }
+
+  /* ----- Rutiner-siden ----- */
+
+  function renderRoutines() {
+    renderSidebar("rutiner");
+    document.title = (dirty ? "● " : "") + "Rutiner — HeyOtto OS";
+    var list = DATA.rutiner || [];
+    var rows = list.map(function (r) {
+      var nxt = routineNext(r), proj = r.project && projById(r.project);
+      var perWeek = FC.routineWeeklyHours({ rutiner: [Object.assign({}, r, { active: true })] });
+      return '<li class="vrow"><div class="vtxt"><b>' + esc(r.name) + (r.active === false ? ' <span class="tag">sat på pause</span>' : "") + "</b>" +
+        '<span class="vmeta">' + esc(routineWhen(r)) + (perWeek ? " · ca. " + fmt(perWeek) + " t/uge" : "") +
+          (proj ? " · " + esc(proj.name) : "") + (nxt && r.active !== false ? " · næste " + FC.shortDate(nxt) : "") + "</span></div>" +
+        '<button class="btn" data-act="routine" data-id="' + esc(r.id) + '" type="button">Rediger</button></li>';
+    }).join("");
+    var drift = DATA.projects.filter(function (p) { return p.kind === "drift"; })[0];
+    var driftTasks = drift ? tasksOf(drift.id).filter(isLive) : [];
+    var driftHtml = driftTasks.length
+      ? '<section class="card" style="margin-top:20px"><div class="card-hd"><h2>Faste opgaver i ' + esc(drift.name) + "</h2>" +
+          '<span class="hint">Løbende arbejde med timer pr. uge. Gør dem til rutiner, så de får en deadline hver gang.</span></div>' +
+        '<div class="card-pad"><ul class="vlist">' + driftTasks.map(function (t) {
+          return '<li class="vrow"><div class="vtxt"><b>' + esc(t.title) + '</b><span class="vmeta">' + fmt(num(t.hours)) + " t/uge</span></div>" +
+            '<button class="btn" data-act="drift2routine" data-id="' + esc(t.id) + '" type="button">Gør til rutine</button></li>';
+        }).join("") + "</ul></div></section>"
+      : "";
+    document.getElementById("main").innerHTML =
+      tasksHead("Rutiner", "Det, der kommer igen. Hver gang laver HeyOtto OS en task med deadline under Tasks.") +
+      '<section class="card"><div class="card-hd"><h2>Dine rutiner</h2>' +
+        '<button class="btn primary" data-act="newroutine" type="button">+ Ny rutine</button></div>' +
+        '<div class="card-pad">' +
+          (rows ? '<ul class="vlist">' + rows + "</ul>"
+                : '<p class="col-empty">Ingen rutiner endnu. Fx „Ugerapport hver fredag“ eller „Månedsrapport sidste dag i måneden“.</p>') +
+          '<p class="hint" style="margin-top:14px">Rutinens timer tæller som fast tid pr. uge i kapaciteten. Tasks fra rutiner laves for de næste ' + ROUTINE_DAYS +
+            " dage (daglige kun for i dag), og de har 0 timer, så tiden ikke tælles to gange. Senere kan Otto køre rutiner som flows.</p>" +
+        "</div></section>" + driftHtml;
+    wireTheme();
+  }
+
+  function editRoutine(id, preset) {
+    var isNew = !id;
+    var r = isNew ? Object.assign({ name: "", every: "uge", weekday: 5, monthday: 0, hours: 1, project: "", note: "", active: true }, preset || {})
+                  : routineById(id);
+    if (!r) return;
+    var projOpts = [{ v: "", t: "Uden projekt" }].concat(DATA.projects.filter(isRealProject).map(function (p) { return { v: p.id, t: p.name }; }));
+    var everyOpts = Object.keys(FC.EVERY).map(function (k) { return { v: k, t: FC.EVERY[k] }; });
+    var dayOpts = [1, 2, 3, 4, 5].map(function (d) { return { v: String(d), t: WEEKDAYS[d].charAt(0).toUpperCase() + WEEKDAYS[d].slice(1) }; });
+    var mdOpts = [{ v: "0", t: "Sidste dag i måneden" }];
+    for (var d = 1; d <= 28; d++) mdOpts.push({ v: String(d), t: d + "." });
+    openDialog(isNew ? "Ny rutine" : "Rediger rutine",
+      field("Navn", '<input id="r-name" type="text" maxlength="120" value="' + esc(r.name) + '">') +
+      '<div class="fgrid">' +
+        field("Gentages", '<select id="r-every">' + opts(everyOpts, r.every) + "</select>") +
+        field("Timer pr. gang", '<input id="r-hours" type="number" min="0" max="40" step="0.25" value="' + num(r.hours) + '">', "tæller som fast tid pr. uge") +
+      "</div>" +
+      '<div class="fgrid">' +
+        field("Ugedag", '<select id="r-weekday">' + opts(dayOpts, String(r.weekday || 5)) + "</select>", "ved hver uge og hver anden uge") +
+        field("Dag i måneden", '<select id="r-monthday">' + opts(mdOpts, String(r.monthday || 0)) + "</select>", "ved hver måned · weekend → fredagen før") +
+      "</div>" +
+      field("Projekt", '<select id="r-project">' + opts(projOpts, r.project || "") + "</select>", "valgfrit — ellers ligger tasks under „Uden projekt“") +
+      field("Note", '<textarea id="r-note" rows="2" maxlength="400">' + esc(r.note || "") + "</textarea>", "følger med hver task") +
+      '<label class="gcal" style="margin:4px 0 6px"><input type="checkbox" id="r-active"' + (r.active !== false ? " checked" : "") + "><span>Aktiv (sæt på pause ved at fjerne fluebenet)</span></label>",
+      function () {
+        var name = val("r-name");
+        if (!name) return "Rutinen skal have et navn.";
+        var o = isNew ? {} : r;
+        if (!isNew) resetRoutineTasks(o);
+        o.name = name; o.every = val("r-every"); o.hours = Math.max(0, num(val("r-hours")));
+        o.weekday = Number(val("r-weekday")) || 5; o.monthday = Number(val("r-monthday")) || 0;
+        o.project = val("r-project"); o.note = val("r-note");
+        o.active = !!dlg.querySelector("#r-active").checked;
+        if (isNew) {
+          if (!DATA.rutiner) DATA.rutiner = [];
+          o.id = slug(name, DATA.rutiner.map(function (x) { return x.id; }));
+          o.last = "";
+          DATA.rutiner.push(o);
+          if (preset && preset.onCreate) preset.onCreate(o);
+        }
+        materializeRoutines();
+        return null;
+      },
+      isNew ? null : function () {
+        if (!confirm("Slet rutinen „" + r.name + "“? Tasks, den allerede har lavet, bliver liggende.")) return "afbrudt";
+        DATA.rutiner = DATA.rutiner.filter(function (x) { return x.id !== r.id; });
+        return null;
+      });
+  }
+
+  // En fast drift-opgave (timer pr. uge) bliver til en ugentlig rutine. Den gamle sættes til Droppet.
+  function driftToRoutine(taskId) {
+    var t = taskById(taskId);
+    if (!t) return;
+    editRoutine(null, { name: t.title, hours: num(t.hours), note: t.note || "", onCreate: function () { t.status = "Droppet"; } });
+  }
+
+  function tasksClick(a, el) {
+    if (a === "sidetog") {
+      var k = el.getAttribute("data-key");
+      SIDEOPEN[k] = !SIDEOPEN[k];
+      try { localStorage.setItem("mos-side", JSON.stringify(SIDEOPEN)); } catch (e) {}
+      route();
+      return true;
+    }
+    if (a === "tasksview") { var v = el.getAttribute("data-v"); location.hash = v ? "tasks/" + v : "tasks"; return true; }
+    if (a === "taskdone") {
+      var t = taskById(el.getAttribute("data-id"));
+      if (t) { t.status = "Færdig"; markDirty(); flash("„" + t.title + "“ er færdig. Husk at trykke Gem."); }
+      return true;
+    }
+    if (a === "tasknew") { editTask(null, { project: generalProjectId(), start: TODAY_ISO.slice(0, 7) }); return true; }
+    if (a === "routine") { editRoutine(el.getAttribute("data-id")); return true; }
+    if (a === "newroutine") { editRoutine(null); return true; }
+    if (a === "drift2routine") { driftToRoutine(el.getAttribute("data-id")); return true; }
+    return false;
+  }
+
+  document.addEventListener("submit", function (e) {
+    if (!e.target || e.target.id !== "tquick") return;
+    e.preventDefault();
+    var input = document.getElementById("tq");
+    var title = input ? input.value.trim() : "";
+    if (title) quickAdd(title);
+  });
+
   /* ====================== Tema ====================== */
 
   function currentTheme() {
@@ -4182,6 +4553,8 @@ a.btn { text-decoration: none; }
     else if (h === "otto") renderOtto();
     else if (h === "indbakke") renderInbox();
     else if (h === "omplan") renderPlan();
+    else if (h === "tasks" || h.indexOf("tasks/") === 0) renderTasks(h.slice(6));
+    else if (h === "rutiner") renderRoutines();
     else if (!h || h === "kapacitet" || !projById(h)) renderCapacity();
     else render(h);
 
@@ -4280,6 +4653,10 @@ a.btn { text-decoration: none; }
       document.getElementById("app").hidden = false;
       try {
         loadDraft();
+        // Rutiner: læg dagens og ugens tasks ind (gemmes med det samme, hvis intet andet er ugemt)
+        var made = materializeRoutines();
+        if (made && !dirty) save(false, "Rutiner: " + plural(made, "ny task", "nye tasks") + " er lagt ind.");
+        else if (made) saveDraft();
         route();
       } catch (err) {
         crash(err, "Dashboardet kunne ikke tegnes", "Det skyldes næsten altid en fejl i data — bed Claude om at se på den.");

@@ -63,13 +63,14 @@ const ping: Tool = {
   }
 };
 
-const TASK_FIELDS = ["id", "title", "project", "sprint", "epic", "status", "owner", "priority", "start", "due", "hours", "remaining"];
+const TASK_FIELDS = ["id", "title", "project", "sprint", "epic", "status", "owner", "priority", "start", "due", "hours", "remaining", "routine"];
 
 const dataRead: Tool = {
   name: "data_read",
   cls: "read",
   description:
-    "Læser HeyOtto OS' data: projekter, sprints (denne måned og frem), opgaver og kapacitetsmodellen. " +
+    "Læser HeyOtto OS' data: projekter, sprints (denne måned og frem), opgaver (tasks), rutiner og kapacitetsmodellen. " +
+    "Tasks i projektet med kind \"adhoc\" er tasks uden projekt. En task med routine er én forekomst af en rutine. " +
     "Som standard kun åbne opgaver. Brug project for at se ét projekt, og includeDone for også at få færdige og droppede opgaver.",
   input_schema: {
     type: "object",
@@ -99,6 +100,10 @@ const dataRead: Tool = {
         .map((s: any) => ({ project: s.project, month: s.month, goal: str(s.goal, 300) })),
       tasks,
       truncated: tasks.length === MAX_TASKS,
+      rutiner: (Array.isArray(d.rutiner) ? d.rutiner : []).map((r: any) => ({
+        id: r.id, name: r.name, every: r.every, weekday: r.weekday, monthday: r.monthday,
+        hours: r.hours, project: r.project || "", active: r.active !== false
+      })),
       kapacitet: d.kapacitet
     };
   }
