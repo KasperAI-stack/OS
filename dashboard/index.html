@@ -687,17 +687,33 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .osteps code { display: block; margin-top: 3px; font-family: var(--mono); font-size: 11.5px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--muted); }
 .osteps .err { color: var(--danger-ink); }
 /* Sidebar: Tasks, Projekter og Rutiner kan foldes ud */
-.nsec { margin-bottom: 14px; }
-.nsec-hd { display: flex; align-items: center; gap: 4px; padding: 0 22px 6px 14px; }
-.nsec-tog { width: 22px; height: 22px; flex: 0 0 22px; display: inline-flex; align-items: center; justify-content: center;
-            background: none; border: 0; padding: 0; border-radius: 6px; color: var(--sidebar-muted); cursor: pointer; }
-.nsec-tog:hover { background: var(--sidebar-hover); color: var(--sidebar-fg); }
-.nsec-tog svg { width: 14px; height: 14px; transition: transform .15s ease; }
-.nsec-tog[aria-expanded="true"] svg { transform: rotate(90deg); }
-.nsec-lab { font-family: var(--font); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--sidebar-muted);
-            background: none; border: 0; padding: 0; cursor: pointer; text-decoration: none; }
-.nsec-lab:hover { color: var(--sidebar-fg); }
-.nsec-meta { margin-left: auto; font-size: 11px; color: var(--sidebar-muted); }
+.nsec { margin-bottom: 2px; }
+.nsec-main { align-items: center; }
+.nsec-main .pname { font-size: 14px; font-weight: 500; }
+.nsec-main .nsec-meta { margin-left: auto; }
+.nsec.open { margin-bottom: 10px; }
+.nsec-body { margin: 2px 0 0 14px; padding-left: 4px; border-left: 1px solid var(--sidebar-line); }
+/* Landingssider: nøgletal og projektkort */
+.pmets.lstats { grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0 0 20px; }
+.lstats .pmet .hint { display: block; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.pcard { border: 1px solid var(--border); border-radius: var(--r-card); background: var(--surface); padding: 18px 20px; cursor: pointer;
+         display: flex; flex-direction: column; gap: 10px; text-align: left; font: inherit; color: var(--ink); transition: border-color .15s, transform .15s; }
+.pcard:hover { border-color: var(--ink); transform: translateY(-1px); }
+.pcard:focus-visible { outline: 3px solid var(--field-ring); outline-offset: 2px; }
+.pcard-hd { display: flex; align-items: center; gap: 9px; }
+.pcard-hd b { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+.pcard-hd .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 9px; }
+.pcard-risk { margin-left: auto; border-color: var(--st-blokeret); color: var(--danger-ink); }
+.pcard-tag { margin: -4px 0 0; font-size: 13px; color: var(--muted); }
+.pbar { height: 6px; border-radius: 99px; background: var(--surface-2); border: 1px solid var(--border); overflow: hidden; }
+.pbar i { display: block; height: 100%; background: var(--ink); border-radius: 99px; }
+.pcard-row { display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; color: var(--ink-2); }
+.pcard-line { display: grid; gap: 2px; font-size: 13px; color: var(--ink-2); }
+.pcard-line .late { color: var(--danger-ink); font-weight: 600; }
+.pcard-new { align-items: center; justify-content: center; flex-direction: row; min-height: 150px; border-style: dashed; color: var(--muted); font-size: 14px; font-weight: 500; }
+.pcard-new .plus { font-size: 20px; }
+@media (max-width: 760px) { .pmets.lstats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .proj.sub { padding-top: 7px; padding-bottom: 7px; align-items: center; }
 .proj.sub .pname { font-size: 13.5px; }
 .proj.sub .dot { margin-top: 0; }
@@ -1171,9 +1187,9 @@ a.btn { text-decoration: none; }
 
     var liveN = DATA.tasks.filter(isLive).length;
     document.getElementById("projlist").innerHTML =
-      sideSection("tasks", "Tasks", liveN, "#tasks", tasksHtml) +
-      sideSection("projekter", "Projekter", DATA.projects.filter(isRealProject).length, "", projHtml) +
-      sideSection("rutiner", "Rutiner", routines.filter(function (r) { return r.active !== false; }).length, "#rutiner", rutHtml);
+      sideSection("tasks", "Tasks", plural(liveN, "åben", "åbne"), tasksHtml, active) +
+      sideSection("projekter", "Projekter", plural(DATA.projects.filter(isRealProject).length, "projekt", "projekter"), projHtml, active) +
+      sideSection("rutiner", "Rutiner", plural(routines.filter(function (r) { return r.active !== false; }).length, "aktiv", "aktive"), rutHtml, active);
     document.getElementById("sidefoot").innerHTML =
       "Opdateret<br><b class=\"num\">" + esc(DATA.meta.updated || "—") + "</b>" +
       (dirty ? '<br><span class="unsaved">● ugemte ændringer</span>' : "") +
@@ -4226,22 +4242,24 @@ a.btn { text-decoration: none; }
      Rutiner ligger i data.rutiner; deres tid tæller som fast tid pr. uge (som drift),
      og deres tasks har 0 timer, så intet tælles to gange (dashboard/lib/forecast.mjs). */
 
-  var SIDEOPEN = { tasks: true, projekter: true, rutiner: true };
-  try {
-    var savedSide = JSON.parse(localStorage.getItem("mos-side") || "{}");
-    Object.keys(SIDEOPEN).forEach(function (k) { if (typeof savedSide[k] === "boolean") SIDEOPEN[k] = savedSide[k]; });
-  } catch (e) {}
-  var CHEVRON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
-
-  function sideSection(key, label, count, href, items) {
-    var open = SIDEOPEN[key];
-    return '<div class="nsec">' +
-      '<div class="nsec-hd"><button class="nsec-tog" data-act="sidetog" data-key="' + key + '" type="button" aria-expanded="' + open + '" ' +
-        'aria-label="' + (open ? "Fold " + label + " sammen" : "Fold " + label + " ud") + '">' + CHEVRON + "</button>" +
-        (href ? '<a class="nsec-lab" href="' + href + '">' + label + "</a>"
-              : '<button class="nsec-lab" data-act="sidetog" data-key="' + key + '" type="button">' + label + "</button>") +
-        '<span class="nsec-meta num">' + count + "</span></div>" +
+  // Hver enhed er et punkt i sidebaren, der går til sin landingsside. Listen under
+  // (projekterne, rutinerne, task-visningerne) folder sig selv ud, mens man er i enheden.
+  function sideSection(key, label, meta, items, active) {
+    var open = sectionOf(active) === key;
+    return '<div class="nsec' + (open ? " open" : "") + '">' +
+      '<button class="proj nsec-main" data-act="gohash" data-h="' + key + '" aria-current="' + (active === key) + '" aria-expanded="' + open + '" type="button">' +
+        '<span class="pname">' + label + '</span><span class="pmeta nsec-meta num">' + meta + "</span></button>" +
       (open ? '<div class="nsec-body">' + items + "</div>" : "") + "</div>";
+  }
+
+  // Hvilken enhed hører den aktuelle side til?
+  function sectionOf(active) {
+    if (!active) return "";
+    if (active === "tasks" || active.indexOf("tasks/") === 0) return "tasks";
+    if (active === "projekter" || active === "rutiner") return active;
+    var p = projById(active);
+    if (p) return p.kind === "drift" ? "rutiner" : (isRealProject(p) ? "projekter" : "tasks");
+    return "";
   }
 
   function isRealProject(p) { return p && p.kind !== "drift" && p.kind !== "adhoc"; }
@@ -4352,6 +4370,18 @@ a.btn { text-decoration: none; }
     }).join("");
     document.getElementById("main").innerHTML =
       tasksHead(view.id ? view.label : "Tasks", "Alt, der skal laves: tasks uden projekt, tasks i projekter og tasks fra rutiner.") +
+      (function () {
+        var live = DATA.tasks.filter(isLive);
+        var late = live.filter(function (t) { return isDate(t.due) && t.due < TODAY_ISO; }).length;
+        var week = live.filter(taskView("uge").test).length;
+        var loose = live.filter(taskView("uden").test).length;
+        return statRow([
+          { label: "Åbne tasks", value: live.length },
+          { label: "Over deadline", value: late, bad: late > 0 },
+          { label: "Denne uge", value: week },
+          { label: "Uden projekt", value: loose }
+        ]);
+      })() +
       '<div class="tviews">' + TASKVIEWS.map(function (x) {
         return '<button class="tvchip" data-act="tasksview" data-v="' + x.id + '" aria-pressed="' + (x.id === view.id) + '" type="button">' + x.label + "</button>";
       }).join("") + "</div>" +
@@ -4388,6 +4418,63 @@ a.btn { text-decoration: none; }
     if (input) input.focus();
   }
 
+  /* ----- Landingssidernes nøgletal ----- */
+
+  function statRow(cells) {
+    return '<div class="pmets lstats">' + cells.map(function (c) {
+      return '<div class="pmet' + (c.bad ? " bad" : "") + '"><span class="vlabel">' + c.label + '</span><b class="num">' + c.value + "</b>" +
+        (c.sub ? '<span class="hint">' + c.sub + "</span>" : "") + "</div>";
+    }).join("") + "</div>";
+  }
+  function riskOf(t) { var f = taskForecast(t); return f && (f.status === "risiko" || f.status === "over"); }
+  function nextDue(list) {
+    return list.filter(function (t) { return isDate(t.due); }).sort(function (a, b) { return a.due < b.due ? -1 : a.due > b.due ? 1 : 0; })[0] || null;
+  }
+
+  /* ----- Projekter-siden ----- */
+
+  function renderProjects() {
+    renderSidebar("projekter");
+    document.title = (dirty ? "● " : "") + "Projekter — HeyOtto OS";
+    var projects = DATA.projects.filter(isRealProject);
+    var allLive = [], risky = 0, hours = 0;
+    var cards = projects.map(function (p) {
+      var ts = tasksOf(p.id), live = ts.filter(isLive);
+      var counted = ts.filter(function (t) { return stat(t).key !== "droppet"; });
+      var done = counted.filter(function (t) { return stat(t).key === "faerdig"; }).length;
+      var pct = counted.length ? Math.round(done / counted.length * 100) : 0;
+      var risk = live.filter(riskOf).length;
+      var h = live.reduce(function (s, t) { return s + num(t.hours); }, 0);
+      allLive = allLive.concat(live); risky += risk; hours += h;
+      var sp = pickSprint(DATA.sprints.filter(function (s) { return s.project === p.id; }));
+      var nd = nextDue(live);
+      return '<div class="pcard" data-act="proj" data-id="' + esc(p.id) + '" role="link" tabindex="0">' +
+        '<div class="pcard-hd"><span class="dot" style="background:' + healthDot(ts) + '"></span><b>' + esc(p.name) + "</b>" +
+          (risk ? '<span class="tag pcard-risk">' + risk + " i risiko</span>" : "") + "</div>" +
+        (p.tagline ? '<p class="pcard-tag">' + esc(p.tagline) + "</p>" : "") +
+        '<div class="pbar" aria-label="' + pct + ' % færdig"><i style="width:' + pct + '%"></i></div>' +
+        '<div class="pcard-row"><span>' + done + " af " + counted.length + " færdige</span><span>" + plural(live.length, "åben", "åbne") +
+          (h ? " · " + fmt(h) + " t/uge" : "") + "</span></div>" +
+        (sp ? '<div class="pcard-line"><span class="vlabel">' + esc(sp.tag) + " sprint · " + esc(miLabel(mi(sp.s.month), true)) + "</span>" +
+              (sp.s.goal ? "<span>" + esc(sp.s.goal) + "</span>" : '<span class="hint">intet mål skrevet</span>') + "</div>" : "") +
+        (nd ? '<div class="pcard-line"><span class="vlabel">Næste deadline</span><span' + (nd.due < TODAY_ISO ? ' class="late"' : "") + ">" +
+              FC.shortDate(nd.due) + " · " + esc(nd.title) + "</span></div>" : "") +
+        "</div>";
+    }).join("");
+    var nd = nextDue(allLive);
+    document.getElementById("main").innerHTML =
+      tasksHead("Projekter", "De større ting med et mål: sprints, tidslinje og fremdrift. Små engangsting hører under Tasks.") +
+      statRow([
+        { label: "Projekter", value: projects.length },
+        { label: "Åbne tasks", value: allLive.length, sub: fmt(hours) + " t/uge lige nu" },
+        { label: "I risiko", value: risky, bad: risky > 0, sub: "ifølge prognosen" },
+        { label: "Næste deadline", value: nd ? FC.shortDate(nd.due) : "—", sub: nd ? esc(nd.title) : "" }
+      ]) +
+      '<div class="pgrid">' + cards +
+        '<button class="pcard pcard-new" data-act="newproj" type="button"><span class="plus">+</span>Nyt projekt</button></div>';
+    wireTheme();
+  }
+
   /* ----- Rutiner-siden ----- */
 
   function renderRoutines() {
@@ -4412,8 +4499,20 @@ a.btn { text-decoration: none; }
             '<button class="btn" data-act="drift2routine" data-id="' + esc(t.id) + '" type="button">Gør til rutine</button></li>';
         }).join("") + "</ul></div></section>"
       : "";
+    var active = list.filter(function (r) { return r.active !== false; });
+    var upcoming = DATA.tasks.filter(function (t) { return t.routine && isLive(t) && isDate(t.due) && t.due <= weekEndIso(7); })
+      .sort(function (a, b) { return a.due < b.due ? -1 : a.due > b.due ? 1 : 0; });
+    var missed = upcoming.filter(function (t) { return t.due < TODAY_ISO; }).length;
     document.getElementById("main").innerHTML =
       tasksHead("Rutiner", "Det, der kommer igen. Hver gang laver HeyOtto OS en task med deadline under Tasks.") +
+      statRow([
+        { label: "Aktive rutiner", value: active.length, sub: list.length > active.length ? (list.length - active.length) + " på pause" : "" },
+        { label: "Fast tid", value: fmt(FC.routineWeeklyHours(DATA)) + " t", sub: "pr. uge i kapaciteten" },
+        { label: "Næste 2 uger", value: upcoming.length, sub: "tasks fra rutiner" },
+        { label: "Ikke gjort", value: missed, bad: missed > 0, sub: "over deadline" }
+      ]) +
+      (upcoming.length ? '<section class="card" style="margin-bottom:20px"><div class="card-hd"><h2>Kommende</h2><span class="hint">tasks fra dine rutiner</span></div>' +
+        '<div class="card-pad"><ul class="tlist">' + upcoming.map(taskRow).join("") + "</ul></div></section>" : "") +
       '<section class="card"><div class="card-hd"><h2>Dine rutiner</h2>' +
         '<button class="btn primary" data-act="newroutine" type="button">+ Ny rutine</button></div>' +
         '<div class="card-pad">' +
@@ -4482,13 +4581,7 @@ a.btn { text-decoration: none; }
   }
 
   function tasksClick(a, el) {
-    if (a === "sidetog") {
-      var k = el.getAttribute("data-key");
-      SIDEOPEN[k] = !SIDEOPEN[k];
-      try { localStorage.setItem("mos-side", JSON.stringify(SIDEOPEN)); } catch (e) {}
-      route();
-      return true;
-    }
+    if (a === "gohash") { location.hash = el.getAttribute("data-h"); return true; }
     if (a === "tasksview") { var v = el.getAttribute("data-v"); location.hash = v ? "tasks/" + v : "tasks"; return true; }
     if (a === "taskdone") {
       var t = taskById(el.getAttribute("data-id"));
@@ -4508,6 +4601,14 @@ a.btn { text-decoration: none; }
     var input = document.getElementById("tq");
     var title = input ? input.value.trim() : "";
     if (title) quickAdd(title);
+  });
+  // Projektkortene kan åbnes med tastaturet
+  document.addEventListener("keydown", function (e) {
+    var t = e.target;
+    if (t && t.classList && t.classList.contains("pcard") && t.getAttribute("data-act") === "proj" && (e.key === "Enter" || e.key === " ")) {
+      e.preventDefault();
+      location.hash = t.getAttribute("data-id");
+    }
   });
 
   /* ====================== Tema ====================== */
@@ -4555,6 +4656,7 @@ a.btn { text-decoration: none; }
     else if (h === "omplan") renderPlan();
     else if (h === "tasks" || h.indexOf("tasks/") === 0) renderTasks(h.slice(6));
     else if (h === "rutiner") renderRoutines();
+    else if (h === "projekter") renderProjects();
     else if (!h || h === "kapacitet" || !projById(h)) renderCapacity();
     else render(h);
 
