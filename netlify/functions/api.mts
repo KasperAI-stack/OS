@@ -23,6 +23,12 @@
      DELETE /api/google/accounts/:id         afbryd en konto (tilbagekaldes også hos Google)
      GET    /api/calendar                    { snapshot } — møder fra de forbundne kalendere
      POST   /api/calendar/refresh            hent kalenderne nu (højst én gang i minuttet)
+     GET    /api/alerts                      { state: { snoozed, prefs }, push: { publicKey, devices } }
+     PUT    /api/alerts/snooze               { key, until } — udsæt en alarm til en dato (null = fortryd)
+     PUT    /api/alerts/prefs                { daily?, instant? } — morgenoverblik og straks-beskeder
+     POST   /api/push/subscribe              { subscription, label, tz } — slå notifikationer til på en enhed
+     POST   /api/push/unsubscribe            { endpoint }
+     POST   /api/push/test                   { endpoint } — send en prøve til én enhed
 
    To måder at være logget ind på:
      * Kasper: adgangskoden fra miljøvariablen HEYOTTO_PASSWORD giver en signeret
@@ -41,6 +47,7 @@ import { getDeployStore, getStore } from "@netlify/blobs";
 import type { Config, Context } from "@netlify/functions";
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import * as google from "../lib/google.mts";
+import * as alarm from "../lib/alerts.mts";
 
 type Store = ReturnType<typeof getStore>;
 type Who = "dig" | "Claude";
@@ -604,6 +611,50 @@ async function calendarRoutes(req: Request, store: Store, who: Who, path: string
   return fail(405, "Brug GET /api/calendar eller POST /api/calendar/refresh.");
 }
 
+/* ---------- Alarmer og push ----------
+   Reglerne står i dashboard/lib/forecast.mjs, kørslen og lageret i netlify/lib/alerts.mts.
+   Udsættelser ligger på serveren, så de gælder på alle enheder. */
+
+const isoDay = (v: unknown) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
+
+async function alertRoutes(req: Request, store: Store, who: Who, path: string) {
+  if (path === "/api/alerts" && req.method === "GET") {
+    const st = await alarm.readState(store);
+    const subs = await alarm.readSubs(store);
+    return json(200, {
+      state: { snoozed: st.snoozed, prefs: st.prefs },
+      push: { publicKey: (await alarm.vapid(store)).publicKey,
+              devices: subs.map((s) => ({ label: s.label, createdAt: s.createdAt, endpoint: s.endpoint })) }
+    });
+  }
+  if (who !== "dig") return fail(401, "Kun du kan ændre alarmer og notifikationer — log ind i appen.");
+  const body = req.method === "GET" ? null : await readJson(req);
+  if (path === "/api/alerts/snooze" && req.method === "PUT") {
+    const key = typeof body?.key === "string" ? body.key.slice(0, 200) : "";
+    if (!key) return fail(400, "key mangler.");
+    if (body.until !== null && !isoDay(body.until)) return fail(400, "until skal være ÅÅÅÅ-MM-DD eller null.");
+    return json(200, { snoozed: (await alarm.snooze(store, key, body.until)).snoozed });
+  }
+  if (path === "/api/alerts/prefs" && req.method === "PUT") {
+    return json(200, { prefs: (await alarm.setPrefs(store, body || {})).prefs });
+  }
+  if (path === "/api/push/subscribe" && req.method === "POST") {
+    try { return json(200, { devices: await alarm.subscribe(store, body) }); }
+    catch (e) { return fail(400, e instanceof Error ? e.message : String(e)); }
+  }
+  if (path === "/api/push/unsubscribe" && req.method === "POST") {
+    return json(200, { devices: await alarm.unsubscribe(store, String(body?.endpoint || "")) });
+  }
+  if (path === "/api/push/test" && req.method === "POST") {
+    const endpoint = String(body?.endpoint || "");
+    const r = await alarm.sendAll(store, [{ title: "HeyOtto OS", body: "Sådan ser en notifikation fra Otto ud.", url: "/#kapacitet", tag: "test" }],
+                                  new URL(req.url).origin, undefined, endpoint);
+    if (!r.sent) return fail(400, r.removed ? "Enheden er ikke tilmeldt længere. Slå notifikationer til igen." : "Kunne ikke sende til enheden.");
+    return json(200, r);
+  }
+  return fail(400, "Ukendt adresse eller metode: " + req.method + " " + path);
+}
+
 /* ---------- Ruter ---------- */
 
 export default async (req: Request, context: Context) => {
@@ -647,6 +698,7 @@ export default async (req: Request, context: Context) => {
     if (path === "/api/claude/jobs" || /^\/api\/claude\/jobs\/[^/]+$/.test(path)) return await claudeJobs(req, store, who, path);
     if (path === "/api/google" || path.startsWith("/api/google/")) return await googleRoutes(req, store, who, path);
     if (path === "/api/calendar" || path === "/api/calendar/refresh") return await calendarRoutes(req, store, who, path);
+    if (path === "/api/alerts" || path.startsWith("/api/alerts/") || path.startsWith("/api/push/")) return await alertRoutes(req, store, who, path);
     return fail(400, "Ukendt adresse eller metode: " + method + " " + path);
   } catch (e) {
     if (e instanceof HttpError) return fail(e.status, e.message);
