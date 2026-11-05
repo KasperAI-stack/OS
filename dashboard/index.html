@@ -660,6 +660,95 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .set-sec code#g-uri { white-space: normal; overflow-wrap: anywhere; }
 .copyrow { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
 .conflicts { margin: 0 0 6px; padding-left: 18px; display: grid; gap: 8px; font-size: 13.5px; max-height: 50vh; overflow-y: auto; }
+/* ---------- Kalenderoverblik ----------
+   Møder i blæk-kontur, foreløbige skraveret, fokustid og "ledig" dæmpet,
+   fravær i grå flade. Deadlines som diamant, rød når overskredet. */
+.card-hd .cap-hint { margin-left: auto; }
+.cal-nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.cal-nav .icon-btn { font-size: 22px; line-height: 1; }
+.cal-nav .btn { padding: 5px 12px; font-size: 12.5px; }
+.cal-title { font-size: 15px; letter-spacing: -0.01em; margin: 0 auto 0 8px; }
+.cal-note { margin: -6px 0 12px; }
+.cw { border: 1px solid var(--border); border-radius: var(--r-inner); overflow: hidden; }
+.cw-row { display: grid; grid-template-columns: 52px repeat(var(--cols), minmax(0, 1fr)); }
+.cw-row > * { border-left: 1px solid var(--border); min-width: 0; }
+.cw-row > :first-child { border-left: 0; }
+.cw-head { border-bottom: 1px solid var(--border); background: var(--surface); }
+.cw-day { padding: 9px 8px; font-size: 12.5px; font-weight: 500; color: var(--ink-2); }
+.cw-day::first-letter { text-transform: uppercase; }
+.cw-day.today { color: var(--ink); font-weight: 700; }
+.cw-day.today::after { content: ""; display: block; height: 2px; background: var(--ink); margin-top: 6px; border-radius: 2px; }
+.cw-lab { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 8px 6px; line-height: 1.2; }
+.cw-all { border-bottom: 1px solid var(--border); }
+.cw-cell { padding: 5px; display: flex; flex-direction: column; gap: 4px; }
+.cw-scroll { max-height: 520px; overflow-y: auto; }
+.cw-gut { position: relative; }
+.cw-gut span { position: absolute; right: 6px; transform: translateY(-50%); font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.cw-gut span:first-child { transform: none; }
+.cw-col { position: relative; background-color: var(--lane);
+          background-image: linear-gradient(to bottom, var(--border) 1px, transparent 1px); background-size: 100% var(--hour); }
+.cw-work { position: absolute; left: 0; right: 0; background: var(--surface); opacity: .6; }
+.cw-now { position: absolute; left: 0; right: 0; height: 2px; background: var(--ink); z-index: 3; }
+.cw-now::before { content: ""; position: absolute; left: -4px; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--ink); }
+.ev { position: absolute; z-index: 2; text-align: left; font: inherit; font-size: 11.5px; line-height: 1.25; color: var(--ink);
+      background: var(--surface); border: 1px solid var(--ink); border-left-width: 3px; border-radius: 7px; padding: 3px 6px;
+      overflow: hidden; cursor: pointer; display: flex; flex-direction: column; gap: 1px; }
+.ev b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ev span { color: var(--ink-2); font-size: 10.5px; font-variant-numeric: tabular-nums; }
+.ev.short { flex-direction: row; align-items: center; padding-top: 1px; padding-bottom: 1px; }
+.ev:hover { box-shadow: 0 0 0 1px var(--ink); }
+.ev.tent { background-image: repeating-linear-gradient(135deg, transparent 0 5px, var(--hover) 5px 10px); border-style: dashed; border-left-style: solid; }
+.ev.focus { border-color: var(--border-strong); color: var(--muted); background: var(--surface-2); }
+.ev.free { border-color: var(--border-strong); border-style: dashed; color: var(--muted); }
+.ev.away { border-color: var(--st-faerdig); background: var(--surface-2); color: var(--ink-2); }
+.chip-ev { position: static; display: block; font-size: 11px; padding: 2px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dl { display: flex; align-items: center; gap: 6px; font: inherit; font-size: 11.5px; font-weight: 600; color: var(--ink); text-align: left;
+      background: none; border: 0; padding: 2px 0; cursor: pointer; min-width: 0; }
+.dl i { width: 8px; height: 8px; background: var(--ink); transform: rotate(45deg); flex: 0 0 8px; }
+.dl span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dl.over { color: var(--danger-ink); }
+.dl.over i { background: var(--st-blokeret); }
+.dl:hover span { text-decoration: underline; text-underline-offset: 2px; }
+.cw-foot { border-top: 1px solid var(--border); }
+.cw-free { padding: 8px; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.cw-free.warn { color: var(--danger-ink); }
+.tray { margin-top: 16px; border: 1px solid var(--border); border-radius: var(--r-inner); padding: 12px 14px; }
+.tray-hd { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; font-size: 13.5px; }
+.tray-hd .over { color: var(--danger-ink); font-weight: 600; }
+.tray-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.tchip { display: inline-flex; align-items: center; gap: 8px; font: inherit; font-size: 12.5px; color: var(--ink); background: var(--surface-2);
+         border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; cursor: pointer; max-width: 100%; }
+.tchip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tchip:hover { border-color: var(--ink); }
+.cm { border: 1px solid var(--border); border-radius: var(--r-inner); overflow: hidden; }
+.cm-head, .cm-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.cm-head span { padding: 8px; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); }
+.cm-cell { min-height: 92px; padding: 6px 7px; border-top: 1px solid var(--border); border-left: 1px solid var(--border); display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.cm-cell:nth-child(7n+1) { border-left: 0; }
+.cm-cell:nth-child(-n+7) { border-top: 0; }
+.cm-cell.out { background: var(--lane); }
+.cm-cell.out .cm-date { color: var(--muted); }
+.cm-date { font: inherit; font-size: 12.5px; font-weight: 600; color: var(--ink); background: none; border: 0; padding: 2px 6px; margin: -2px 0 0 -6px;
+           border-radius: 999px; cursor: pointer; align-self: flex-start; }
+.cm-date:hover { background: var(--hover); }
+.cm-cell.today .cm-date { background: var(--ink); color: var(--bg); }
+.cm-meet, .cm-away { font-size: 11px; color: var(--muted); }
+.cm-away { color: var(--ink-2); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm .more { font-size: 11px; color: var(--muted); }
+.agenda { display: grid; gap: 10px; }
+.ag-day { border: 1px solid var(--border); border-radius: var(--r-inner); padding: 10px 12px; }
+.ag-day.today { border-color: var(--ink); }
+.ag-hd { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; font-size: 13.5px; }
+.ag-hd b::first-letter { text-transform: uppercase; }
+.ag-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ag-ev { position: static; width: 100%; flex-direction: row; align-items: baseline; gap: 10px; font-size: 13px; padding: 6px 8px; }
+.ag-ev .ag-t { flex: 0 0 auto; color: var(--ink-2); font-size: 12px; }
+.ev-when { font-size: 14px; color: var(--ink-2); margin: -10px 0 6px; }
+.ev-when::first-letter { text-transform: uppercase; }
+@media print {
+  .cal-nav .icon-btn, .cal-nav .btn, .cal-nav .seg-ctl, .card-hd .seg-ctl { display: none !important; }
+  .cw-scroll { max-height: none; overflow: visible; }
+}
 .ceil-lbl[data-act] { cursor: pointer; }
 .ceil-lbl[data-act]:hover { color: var(--ink); }
 .vnext { color: inherit; font: inherit; text-align: left; background: none; border: 0; padding: 0; cursor: pointer; }
@@ -1564,7 +1653,7 @@ a.btn { text-decoration: none; }
     var isNew = !id;
     var t = isNew ? { id: "", project: preset.project, sprint: preset.sprint || "",
                       start: preset.sprint || "", end: preset.sprint || "",
-                      status: "Ikke startet", title: "", owner: "", due: "", epic: "", hours: 0, note: "" }
+                      status: "Ikke startet", title: preset.title || "", owner: "", due: preset.due || "", epic: "", hours: 0, note: preset.note || "" }
                   : DATA.tasks.filter(function (x) { return x.id === id; })[0];
     if (!t) return;
 
@@ -1742,6 +1831,27 @@ a.btn { text-decoration: none; }
       return;
     }
     if (a === "copyuri") { copyText(document.getElementById("g-uri").textContent, "Adressen er kopieret."); return; }
+    // Kalenderoverblikket: visning, ikke data — gør aldrig siden "ugemt"
+    if (a === "capview") { CALVIEW.view = el.getAttribute("data-v"); saveCalView(); route(); return; }
+    if (a === "calspan") {
+      CALVIEW.span = el.getAttribute("data-v");
+      // Behold den periode, man kigger på: ugen bliver til dens måned og omvendt
+      var an = calAnchor();
+      CALVIEW.anchor = CALVIEW.span === "maaned" ? new Date(an.getFullYear(), an.getMonth(), 1)
+        : (an.getMonth() === NOW.getMonth() && an.getFullYear() === NOW.getFullYear() ? weekStart(new Date()) : weekStart(an));
+      saveCalView(); route(); return;
+    }
+    if (a === "calnav") {
+      var dir = Number(el.getAttribute("data-d")), cur = calAnchor();
+      if (!dir) CALVIEW.anchor = null;
+      else CALVIEW.anchor = CALVIEW.span === "maaned" ? new Date(cur.getFullYear(), cur.getMonth() + dir, 1) : addDays(cur, 7 * dir);
+      route(); return;
+    }
+    if (a === "calday") {
+      CALVIEW.span = "uge"; CALVIEW.anchor = weekStart(dateOnly(el.getAttribute("data-date")));
+      saveCalView(); route(); return;
+    }
+    if (a === "calevent") { var ev = CAL_EVENTS[Number(el.getAttribute("data-ev"))]; if (ev) showEvent(ev); return; }
     if (a === "meetsrc") {
       DATA.kapacitet.meetingsSource = el.getAttribute("data-v");
       markDirty();
@@ -2089,28 +2199,44 @@ a.btn { text-decoration: none; }
   }
 
   // Timer med møder og fravær i ugen, der starter ws (en mandag), mandag–fredag i arbejdstiden.
-  function calWeekStats(ws) {
+  function workHours() {
     var c = DATA.kapacitet || {};
-    var h0 = num(c.workStart, 8), h1 = Math.max(num(c.workEnd, 17), h0 + 0.5);
+    var h0 = num(c.workStart, 8);
+    return { h0: h0, h1: Math.max(num(c.workEnd, 17), h0 + 0.5) };
+  }
+  // Et klokkeslæt på en bestemt dag. Regnet med uret, ikke med millisekunder, så sommertid ikke flytter det.
+  function atHour(day, h) {
+    return new Date(day.getFullYear(), day.getMonth(), day.getDate(), Math.floor(h), Math.round((h % 1) * 60)).getTime();
+  }
+  function evStart(e) { return e.allDay ? dateOnly(e.start).getTime() : Date.parse(e.start); }
+  function evEnd(e) { return e.allDay ? dateOnly(e.end || e.start).getTime() : Date.parse(e.end); }
+
+  // Møder, fravær og fri tid én dag (inden for arbejdstiden). Weekenden har ingen arbejdstid.
+  function calDayStats(day) {
+    var w = workHours(), wd = day.getDay();
+    var workDay = wd === 0 || wd === 6 ? 0 : w.h1 - w.h0;
+    if (!workDay || !CAL) return { meetings: 0, absence: 0, workDay: workDay, free: workDay };
+    var ds = atHour(day, w.h0), de = atHour(day, w.h1), A = [], M = [];
+    (CAL.events || []).forEach(function (e) {
+      var s = Math.max(evStart(e), ds), en = Math.min(evEnd(e), de);
+      if (!(en > s)) return;
+      if (isAbsence(e)) A.push([s, en]);
+      else if (isMeeting(e)) M.push([s, en]);
+    });
+    var a = sumIntervals(A.slice());
+    var m = sumIntervals(A.concat(M)) - a;      // et møde på en feriedag tæller ikke som møde
+    return { meetings: m, absence: a, workDay: workDay, free: Math.max(0, workDay - m - a) };
+  }
+
+  // Timer med møder og fravær i ugen, der starter ws (en mandag), mandag–fredag i arbejdstiden.
+  function calWeekStats(ws) {
     var meet = 0, away = 0;
     for (var i = 0; i < 5; i++) {
-      var day = new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + i);
-      var ds = day.getTime() + h0 * 3600000, de = day.getTime() + h1 * 3600000;
-      var A = [], M = [];
-      (CAL.events || []).forEach(function (e) {
-        var s, en;
-        if (e.allDay) { s = dateOnly(e.start).getTime(); en = dateOnly(e.end || e.start).getTime(); }
-        else { s = Date.parse(e.start); en = Date.parse(e.end); }
-        s = Math.max(s, ds); en = Math.min(en, de);
-        if (!(en > s)) return;
-        if (isAbsence(e)) A.push([s, en]);
-        else if (isMeeting(e)) M.push([s, en]);
-      });
-      var a = sumIntervals(A.slice());
-      away += a;
-      meet += sumIntervals(A.concat(M)) - a;   // et møde på en feriedag tæller ikke som møde
+      var s = calDayStats(new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + i));
+      meet += s.meetings; away += s.absence;
     }
-    return { meetings: meet, absence: away, workDay: h1 - h0 };
+    var w = workHours();
+    return { meetings: meet, absence: away, workDay: w.h1 - w.h0 };
   }
 
   function loadCalendar() {
@@ -2240,8 +2366,14 @@ a.btn { text-decoration: none; }
                      : '<p class="col-empty">Ingen aktive timer i denne kategori.</p>') + "</div>";
     }).join("");
 
-    return '<section class="card"><div class="card-hd"><h2>Aktive opgaver</h2>' +
-      '<span class="hint">' + m.live.length + " opgave" + (m.live.length === 1 ? "" : "r") + " trækker tid lige nu</span></div>" +
+    var toggle = '<span class="seg-ctl" role="group" aria-label="Visning">' +
+      '<button type="button" data-act="capview" data-v="liste" aria-pressed="' + (CALVIEW.view !== "kalender") + '">Liste</button>' +
+      '<button type="button" data-act="capview" data-v="kalender" aria-pressed="' + (CALVIEW.view === "kalender") + '">Kalender</button></span>';
+    var head = '<section class="card" id="aktive"><div class="card-hd"><h2>Aktive opgaver</h2>' +
+      '<span class="hint cap-hint">' + m.live.length + " opgave" + (m.live.length === 1 ? "" : "r") + " trækker tid lige nu</span>" + toggle + "</div>";
+    if (CALVIEW.view === "kalender") return head + '<div class="card-pad">' + calendarHtml(m) + "</div></section>";
+
+    return head +
       '<div class="card-pad">' + groups +
       '<p class="hint" style="margin-top:14px">Sæt kun timer på det, der reelt trækker tid <em>denne</em> uge. En opgave med deadline i marts trækker 0 nu — det er dét, der gør forskel på en opgaveliste og et kapacitetsregnskab.</p>' +
       (rest.length
@@ -2250,6 +2382,273 @@ a.btn { text-decoration: none; }
           '<div class="hist-body">' + rest.map(capRow).join("") + "</div></details>"
         : "") +
       "</div></section>";
+  }
+
+  /* ====================== Kalenderoverblik ======================
+     Toggle på "Aktive opgaver": samme opgaver i tid, sammen med møderne.
+     Uge: møder som blokke i arbejdstiden, deadlines og heldagshændelser øverst,
+     fri tid pr. dag nederst og ugens opgaver i en bakke. Måned: et gitter med
+     mødetimer og deadlines pr. dag. Under 640 px bliver ugen en dagsliste.
+     Valgene er visning, ikke data, og gemmes i browseren (mos-cal). */
+
+  var CALVIEW = { view: "liste", span: "uge", anchor: null };
+  try {
+    var savedCal = JSON.parse(localStorage.getItem("mos-cal") || "{}");
+    if (savedCal.view === "kalender") CALVIEW.view = "kalender";
+    if (savedCal.span === "maaned") CALVIEW.span = "maaned";
+  } catch (e) {}
+  function saveCalView() { try { localStorage.setItem("mos-cal", JSON.stringify({ view: CALVIEW.view, span: CALVIEW.span })); } catch (e) {} }
+
+  var NARROW = window.matchMedia ? window.matchMedia("(max-width: 640px)") : { matches: false };
+  if (NARROW.addEventListener) NARROW.addEventListener("change", function () { if (DATA && CALVIEW.view === "kalender") route(); });
+
+  var F_DAY = new Intl.DateTimeFormat("da-DK", { weekday: "short", day: "numeric", month: "short" });
+  var F_DAYLONG = new Intl.DateTimeFormat("da-DK", { weekday: "long", day: "numeric", month: "long" });
+  var F_TIME = new Intl.DateTimeFormat("da-DK", { hour: "2-digit", minute: "2-digit" });
+  var F_MONTH = new Intl.DateTimeFormat("da-DK", { month: "long", year: "numeric" });
+  var HOUR_PX = 44;
+  var CAL_EVENTS = [];   // hændelserne i den viste periode, så et klik kan finde dem igen
+
+  function localIso(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+  function calAnchor() {
+    if (!CALVIEW.anchor) CALVIEW.anchor = CALVIEW.span === "uge" ? weekStart(new Date()) : new Date(NOW.getFullYear(), NOW.getMonth(), 1);
+    return CALVIEW.anchor;
+  }
+
+  // Hændelser, der rører dagen. Afviste vises ikke.
+  function eventsOn(day) {
+    var a = day.getTime(), b = addDays(day, 1).getTime();
+    return ((CAL && CAL.events) || []).filter(function (e) {
+      return e.response !== "declined" && evStart(e) < b && evEnd(e) > a;
+    });
+  }
+  function deadlinesOn(iso) {
+    return DATA.tasks.filter(function (t) { return t.due === iso && isLive(t); });
+  }
+  function evRef(e) { CAL_EVENTS.push(e); return CAL_EVENTS.length - 1; }
+  function evClass(e) {
+    if (isAbsence(e)) return "ev away";
+    if (e.type === "focusTime") return "ev focus";
+    if (!e.busy) return "ev free";
+    if (e.response === "tentative" || e.response === "needsAction") return "ev tent";
+    return "ev";
+  }
+  function evLabel(e) {
+    return e.allDay ? e.title + ", hele dagen" : e.title + ", " + F_TIME.format(new Date(evStart(e))) + "–" + F_TIME.format(new Date(evEnd(e)));
+  }
+  function deadlineChip(t) {
+    var od = overdue(t);
+    return '<button class="dl' + (od ? " over" : "") + '" data-act="task" data-id="' + esc(t.id) + '" type="button" title="Deadline: ' + esc(t.title) + '">' +
+      '<i aria-hidden="true"></i><span>' + esc(t.title) + "</span></button>";
+  }
+  function allDayChip(e) {
+    return '<button class="' + evClass(e) + ' chip-ev" data-act="calevent" data-ev="' + evRef(e) + '" type="button" aria-label="' + esc(evLabel(e)) + '">' + esc(e.title) + "</button>";
+  }
+
+  // Overlappende møder lægges side om side: første ledige bane, og bredden deles i hver klynge.
+  function layoutDay(list) {
+    list.sort(function (a, b) { return a.s - b.s || b.e - a.e; });
+    var clusters = [], cur = null;
+    list.forEach(function (it) {
+      if (!cur || it.s >= cur.end) { cur = { items: [], lanes: [], end: it.e }; clusters.push(cur); }
+      var lane = 0;
+      while (cur.lanes[lane] != null && cur.lanes[lane] > it.s) lane++;
+      cur.lanes[lane] = it.e; it.lane = lane;
+      cur.items.push(it); cur.end = Math.max(cur.end, it.e);
+    });
+    clusters.forEach(function (c) { c.items.forEach(function (it) { it.lanes = c.lanes.length; }); });
+    return list;
+  }
+
+  function calNav(label, extra) {
+    var span = '<span class="seg-ctl" role="group" aria-label="Periode">' +
+      '<button type="button" data-act="calspan" data-v="uge" aria-pressed="' + (CALVIEW.span === "uge") + '">Uge</button>' +
+      '<button type="button" data-act="calspan" data-v="maaned" aria-pressed="' + (CALVIEW.span === "maaned") + '">Måned</button></span>';
+    return '<div class="cal-nav">' +
+      '<button class="icon-btn" data-act="calnav" data-d="-1" type="button" aria-label="Forrige" title="Forrige">‹</button>' +
+      '<button class="btn" data-act="calnav" data-d="0" type="button">I dag</button>' +
+      '<button class="icon-btn" data-act="calnav" data-d="1" type="button" aria-label="Næste" title="Næste">›</button>' +
+      '<b class="cal-title">' + esc(label) + "</b>" + span + "</div>" + (extra || "");
+  }
+
+  function calNotes(from, to) {
+    if (!calConnected()) {
+      return '<p class="hint cal-note">Kun deadlines vises. <button class="sf-inline" data-act="settings" data-section="forbindelser" type="button">Forbind Google Kalender</button> for at se dine møder.</p>';
+    }
+    if (!CAL.from || !CAL.to) return "";
+    var a = Date.parse(CAL.from), b = Date.parse(CAL.to);
+    if (from.getTime() < a || to.getTime() > b) return '<p class="hint cal-note">Møder hentes fra 7 dage tilbage til 12 uger frem. Uden for det vises kun deadlines.</p>';
+    return "";
+  }
+
+  function calendarHtml(m) {
+    CAL_EVENTS = [];
+    if (CALVIEW.span === "maaned") return monthHtml();
+    return NARROW.matches ? agendaHtml(m) : weekHtml(m);
+  }
+
+  function weekDays(ws) {
+    var days = [];
+    for (var i = 0; i < 7; i++) {
+      var d = addDays(ws, i), iso = localIso(d);
+      var weekend = i >= 5;
+      if (weekend && !eventsOn(d).length && !deadlinesOn(iso).length) continue;   // weekenden kun, når der er noget
+      days.push({ d: d, iso: iso, today: iso === TODAY_ISO });
+    }
+    return days;
+  }
+
+  function weekTitle(ws) {
+    var we = addDays(ws, 6);
+    return "Uge " + parseInt(isoWeek(ws).split("-W")[1], 10) + " · " + F_DAY.format(ws).replace(/^\S+\s/, "") + " – " + F_DAY.format(we).replace(/^\S+\s/, "");
+  }
+
+  // "Skal laves denne uge": opgaver med timer, mod ugens fri tid efter møder.
+  function trayHtml(m, ws) {
+    if (localIso(ws) !== localIso(weekStart(new Date()))) return "";
+    var free = 0;
+    for (var i = 0; i < 5; i++) free += calDayStats(addDays(ws, i)).free;
+    var tasks = m.live.slice().sort(function (a, b) { return num(b.hours) - num(a.hours); });
+    var sum = tasks.reduce(function (s, t) { return s + num(t.hours); }, 0);
+    return '<div class="tray"><div class="tray-hd"><b>Skal laves denne uge</b><span class="hint num">' + fmt(sum) + " t opgaver · " +
+      fmt(free) + " t fri tid efter møder" + (sum > free ? ' · <span class="over">' + fmt(sum - free) + " t for meget</span>" : "") + "</span></div>" +
+      (tasks.length ? '<div class="tray-list">' + tasks.map(function (t) {
+          return '<button class="tchip" data-act="task" data-id="' + esc(t.id) + '" type="button"><span>' + esc(t.title) + '</span><b class="num">' + fmt(num(t.hours)) + " t</b></button>";
+        }).join("") + "</div>"
+        : '<p class="hint">Ingen opgaver har timer på denne uge. Sæt timer i listen.</p>') + "</div>";
+  }
+
+  function weekHtml(m) {
+    var ws = calAnchor(), days = weekDays(ws), w = workHours();
+    // Timegitteret dækker arbejdstiden og strækkes, hvis der er møder før eller efter
+    var h0 = Math.floor(w.h0), h1 = Math.ceil(w.h1);
+    days.forEach(function (x) {
+      eventsOn(x.d).forEach(function (e) {
+        if (e.allDay) return;
+        var s = new Date(Math.max(evStart(e), x.d.getTime())), en = new Date(Math.min(evEnd(e), addDays(x.d, 1).getTime()));
+        h0 = Math.min(h0, s.getHours());
+        h1 = Math.max(h1, en.getHours() + (en.getMinutes() ? 1 : 0) || 24);
+      });
+    });
+    h0 = Math.max(0, Math.min(h0, 23)); h1 = Math.min(24, Math.max(h1, h0 + 1));
+    var cols = 'style="--cols:' + days.length + '"';
+
+    var head = '<div class="cw-row cw-head" ' + cols + '><span></span>' + days.map(function (x) {
+      return '<span class="cw-day' + (x.today ? " today" : "") + '">' + esc(F_DAY.format(x.d)) + "</span>";
+    }).join("") + "</div>";
+
+    var allday = '<div class="cw-row cw-all" ' + cols + '><span class="cw-lab">Hele dagen</span>' + days.map(function (x) {
+      var ev = eventsOn(x.d).filter(function (e) { return e.allDay; });
+      return '<div class="cw-cell">' + deadlinesOn(x.iso).map(deadlineChip).join("") + ev.map(allDayChip).join("") + "</div>";
+    }).join("") + "</div>";
+
+    var gut = "";
+    for (var h = h0; h < h1; h++) gut += '<span style="top:' + ((h - h0) * HOUR_PX) + 'px">' + String(h).padStart(2, "0") + "</span>";
+    var bodyH = (h1 - h0) * HOUR_PX;
+    var body = '<div class="cw-row cw-body" ' + cols + '><div class="cw-gut" style="height:' + bodyH + 'px">' + gut + "</div>" + days.map(function (x) {
+      var dayA = atHour(x.d, h0), dayB = atHour(x.d, h1), span = dayB - dayA;
+      // s/e er mødet klippet til gitterets timer; layoutDay giver bane og antal baner
+      var items = layoutDay(eventsOn(x.d).filter(function (ev) { return !ev.allDay; }).map(function (ev) {
+        return { ev: ev, s: Math.max(evStart(ev), dayA), e: Math.min(evEnd(ev), dayB) };
+      }).filter(function (it) { return it.e > it.s; }));
+      var work = '<div class="cw-work" style="top:' + ((atHour(x.d, w.h0) - dayA) / span * 100) + "%;height:" +
+                 ((atHour(x.d, w.h1) - atHour(x.d, w.h0)) / span * 100) + '%"></div>';
+      var blocks = items.map(function (it) {
+        var top = (it.s - dayA) / span * 100, hgt = Math.max((it.e - it.s) / span * 100, 2.2);
+        var left = it.lane / it.lanes * 100, wid = 100 / it.lanes;
+        var short = it.e - it.s <= 45 * 60000;
+        return '<button class="' + evClass(it.ev) + (short ? " short" : "") + '" data-act="calevent" data-ev="' + evRef(it.ev) + '" type="button" ' +
+          'style="top:' + top + "%;height:" + hgt + "%;left:calc(" + left + "% + 2px);width:calc(" + wid + '% - 4px)" aria-label="' + esc(evLabel(it.ev)) + '">' +
+          "<b>" + esc(it.ev.title) + "</b>" + (short ? "" : "<span>" + F_TIME.format(new Date(evStart(it.ev))) + "–" + F_TIME.format(new Date(evEnd(it.ev))) + "</span>") + "</button>";
+      }).join("");
+      var nowLine = "";
+      if (x.today && Date.now() > dayA && Date.now() < dayB) nowLine = '<div class="cw-now" style="top:' + ((Date.now() - dayA) / span * 100) + '%"></div>';
+      return '<div class="cw-col' + (x.today ? " today" : "") + '" style="height:' + bodyH + 'px;--hour:' + HOUR_PX + 'px">' + work + blocks + nowLine + "</div>";
+    }).join("") + "</div>";
+
+    var foot = '<div class="cw-row cw-foot" ' + cols + '><span class="cw-lab">Fri tid</span>' + days.map(function (x) {
+      var st = calDayStats(x.d), dl = deadlinesOn(x.iso).length;
+      var warn = dl && st.workDay && st.free < 2;
+      return '<span class="cw-free num' + (warn ? " warn" : "") + '"' + (warn ? ' title="Deadline på en dag med under 2 timer fri"' : "") + ">" +
+        (st.workDay ? fmt(st.free) + " t" : "—") + "</span>";
+    }).join("") + "</div>";
+
+    return calNav(weekTitle(ws)) + calNotes(ws, addDays(ws, 7)) +
+      '<div class="cw" role="grid" aria-label="Ugekalender">' + head + allday + '<div class="cw-scroll">' + body + "</div>" + foot + "</div>" +
+      trayHtml(m, ws);
+  }
+
+  // Under 640 px: én liste pr. dag i stedet for et timegitter
+  function agendaHtml(m) {
+    var ws = calAnchor(), days = weekDays(ws);
+    var list = days.map(function (x) {
+      var st = calDayStats(x.d);
+      var ev = eventsOn(x.d).sort(function (a, b) { return evStart(a) - evStart(b); });
+      var rows = deadlinesOn(x.iso).map(function (t) { return '<li class="ag-dl">' + deadlineChip(t) + "</li>"; }).join("") +
+        ev.map(function (e) {
+          return '<li><button class="ag-ev ' + evClass(e) + '" data-act="calevent" data-ev="' + evRef(e) + '" type="button">' +
+            '<span class="ag-t num">' + (e.allDay ? "Hele dagen" : F_TIME.format(new Date(Math.max(evStart(e), x.d.getTime())))) + "</span>" +
+            "<b>" + esc(e.title) + "</b></button></li>";
+        }).join("");
+      return '<div class="ag-day' + (x.today ? " today" : "") + '"><div class="ag-hd"><b>' + esc(F_DAYLONG.format(x.d)) + "</b>" +
+        (st.workDay ? '<span class="hint num">' + fmt(st.free) + " t fri</span>" : "") + "</div>" +
+        (rows ? '<ul class="ag-list">' + rows + "</ul>" : '<p class="hint">Intet i kalenderen.</p>') + "</div>";
+    }).join("");
+    return calNav(weekTitle(ws)) + calNotes(ws, addDays(ws, 7)) + '<div class="agenda">' + list + "</div>" + trayHtml(m, ws);
+  }
+
+  function monthHtml() {
+    var first = calAnchor(), start = weekStart(first);
+    var last = new Date(first.getFullYear(), first.getMonth() + 1, 0);
+    var end = addDays(weekStart(last), 7);
+    var names = ["man", "tir", "ons", "tor", "fre", "lør", "søn"];
+    var cells = "";
+    for (var d = start; d < end; d = addDays(d, 1)) {
+      var iso = localIso(d), inMonth = d.getMonth() === first.getMonth();
+      var ev = eventsOn(d), st = calDayStats(d);
+      var dls = deadlinesOn(iso);
+      var away = ev.filter(isAbsence);
+      var shown = dls.slice(0, 2).map(deadlineChip).join("") + (dls.length > 2 ? '<span class="more">+' + (dls.length - 2) + "</span>" : "");
+      cells += '<div class="cm-cell' + (inMonth ? "" : " out") + (iso === TODAY_ISO ? " today" : "") + '">' +
+        '<button class="cm-date num" data-act="calday" data-date="' + iso + '" type="button" aria-label="Vis ugen med ' + esc(F_DAYLONG.format(d)) + '">' + d.getDate() + "</button>" +
+        (away.length ? '<span class="cm-away">' + esc(away[0].title) + "</span>"
+          : (st.meetings ? '<span class="cm-meet num" title="Møder i arbejdstiden">' + fmt(st.meetings) + " t møder</span>" : "")) +
+        shown + "</div>";
+    }
+    var title = F_MONTH.format(first);
+    return calNav(title.charAt(0).toUpperCase() + title.slice(1)) + calNotes(start, end) +
+      '<div class="cm"><div class="cm-head">' + names.map(function (n) { return "<span>" + n + "</span>"; }).join("") + "</div>" +
+      '<div class="cm-grid">' + cells + "</div></div>";
+  }
+
+  // Et klik på et møde: detaljer, links og "Opret opgave fra mødet"
+  function showEvent(e) {
+    var when = e.allDay ? F_DAYLONG.format(dateOnly(e.start)) + " · hele dagen"
+      : F_DAYLONG.format(new Date(evStart(e))) + " · " + F_TIME.format(new Date(evStart(e))) + "–" + F_TIME.format(new Date(evEnd(e)));
+    var resp = { accepted: "Du har sagt ja", tentative: "Du har svaret måske", needsAction: "Du har ikke svaret", organizer: "Du er arrangør" }[e.response] || "";
+    var kind = isAbsence(e) ? "Fravær" : (e.type === "focusTime" ? "Fokustid" : (!e.busy ? "Vist som ledig" : ""));
+    var acc = ((CAL && CAL.accounts) || []).filter(function (a) { return a.id === e.account; })[0];
+    dlg.innerHTML = '<form method="dialog"><h3>' + esc(e.title) + "</h3>" +
+      '<p class="ev-when">' + esc(when) + "</p>" +
+      '<p class="hint">' + [kind, resp, e.attendees ? plural(e.attendees, "deltager", "deltagere") : "", acc ? acc.email : ""].filter(Boolean).map(esc).join(" · ") + "</p>" +
+      '<div class="dbtns">' +
+        (e.htmlLink ? '<a class="btn" href="' + esc(e.htmlLink) + '" target="_blank" rel="noopener">Åbn i Google Kalender</a>' : "") +
+        (e.meetUrl ? '<a class="btn" href="' + esc(e.meetUrl) + '" target="_blank" rel="noopener">Deltag</a>' : "") +
+        '<span style="flex:1"></span>' +
+        '<button type="button" class="btn" id="ev-close">Luk</button>' +
+        '<button type="button" class="btn primary" id="ev-task">Opret opgave fra mødet</button>' +
+      "</div></form>";
+    dlg.showModal();
+    dlg.querySelector("#ev-close").onclick = function () { dlg.close(); };
+    dlg.querySelector("#ev-task").onclick = function () {
+      dlg.close();
+      var proj = projById(CURRENT) || DATA.projects.filter(function (p) { return p.kind === "adhoc"; })[0] || DATA.projects[0];
+      var day = e.allDay ? e.start.slice(0, 10) : localIso(new Date(evStart(e)));
+      var hasSprint = proj && DATA.sprints.some(function (s) { return s.project === proj.id && s.month === day.slice(0, 7); });
+      editTask(null, { project: proj && proj.id, sprint: hasSprint ? day.slice(0, 7) : "", title: e.title, due: day,
+                       note: "Fra mødet " + when + (e.htmlLink ? "\n" + e.htmlLink : "") });
+    };
   }
 
   function capWeeks(m) {
