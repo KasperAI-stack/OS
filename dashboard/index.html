@@ -11,6 +11,11 @@
 <title>HeyOtto OS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" type="image/png" href="otto/hoved.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="otto/app-192.png">
+<meta name="theme-color" content="#0F0E13">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="HeyOtto">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Geist til alt, Geist Mono til små etiketter — se brand/hey-otto/guidelines.md.
@@ -749,6 +754,35 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   .cal-nav .icon-btn, .cal-nav .btn, .cal-nav .seg-ctl, .card-hd .seg-ctl { display: none !important; }
   .cw-scroll { max-height: none; overflow: visible; }
 }
+/* ---------- Otto siger: alarmer fra prognosen ----------
+   Rød er signalfarven (som blokeret og overskredet), gul står i blæk, grå er dæmpet. */
+.otto-says { margin: 0 0 22px; border: 1px solid var(--border); border-radius: var(--r-card); background: var(--surface); padding: 14px 20px 12px; }
+.otto-says.calm { padding: 12px 20px; }
+.otto-says.calm p { margin: 0; font-size: 13.5px; color: var(--ink-2); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.otto-says .i { width: 15px; height: 15px; vertical-align: -2px; }
+.os-hd { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.os-hd b { font-size: 15px; letter-spacing: -0.01em; }
+.os-list { list-style: none; margin: 0; padding: 0; }
+.oa { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 4px 12px; align-items: start; padding: 9px 0; border-top: 1px solid var(--border); }
+.oa:first-child { border-top: 0; }
+.oa-dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; background: var(--muted); }
+.oa-rod .oa-dot { background: var(--st-blokeret); }
+.oa-gul .oa-dot { background: var(--ink); }
+.oa-graa .oa-dot { background: transparent; border: 1.5px solid var(--plus); }
+.oa-txt { min-width: 0; }
+.oa-txt b { display: block; font-size: 13.5px; font-weight: 600; }
+.oa-rod .oa-txt b { color: var(--danger-ink); }
+.oa-txt span { display: block; font-size: 12.5px; color: var(--ink-2); margin-top: 1px; }
+.oa-acts { display: flex; gap: 12px; font-size: 12.5px; white-space: nowrap; padding-top: 1px; }
+.os-more { font-size: 12.5px; margin-top: 4px; }
+@media (max-width: 640px) { .oa { grid-template-columns: 10px minmax(0, 1fr); } .oa-acts { grid-column: 2; } }
+.salert { color: var(--danger-ink); font-weight: 700; }
+.salert .i { width: 11px; height: 11px; vertical-align: -1px; }
+.fc-line { font-size: 13px; color: var(--ink-2); background: var(--surface-2); border-radius: var(--r-field); padding: 9px 12px; margin: 0 0 14px; }
+.fc-line b { color: var(--ink); }
+.fc-line.fc-risiko b, .fc-line.fc-over b { color: var(--danger-ink); }
+.fc-line .hint { display: block; margin-top: 3px; }
+.dl.tight i { background: transparent; border: 1.5px solid var(--ink); }
 .ceil-lbl[data-act] { cursor: pointer; }
 .ceil-lbl[data-act]:hover { color: var(--ink); }
 .vnext { color: inherit; font: inherit; text-align: left; background: none; border: 0; padding: 0; cursor: pointer; }
@@ -968,6 +1002,8 @@ a.btn { text-decoration: none; }
       if (t.due && !isDate(t.due)) problems.push(id + ": due er ikke ÅÅÅÅ-MM-DD (" + t.due + ")");
       if (isMonth(t.start) && isMonth(t.end) && mi(t.end) < mi(t.start)) problems.push(id + ": end (" + t.end + ") ligger før start (" + t.start + ")");
       if (!span(t)) problems.push(id + ": hverken start eller sprint er en gyldig måned — kan ikke placeres på tidslinjen");
+      if (t.remaining != null && t.remaining !== "" && !(parseFloat(t.remaining) >= 0)) problems.push(id + ": remaining skal være et tal ≥ 0 (" + t.remaining + ")");
+      if (t.priority && FC.PRIORITIES.indexOf(t.priority) < 0) problems.push(id + ": ukendt prioritet „" + t.priority + "“ — brug høj, normal eller lav");
     }
     return problems;
   }
@@ -999,7 +1035,7 @@ a.btn { text-decoration: none; }
         '<span class="dot ' + tone + '"></span>' +
         '<span><span class="pname">Kapacitet</span><br>' +
         '<span class="pmeta num">' + (m.free < 0 ? "−" : "") + fmt(Math.abs(m.free)) + " t fri · " +
-        fmt(m.util * 100, 0) + " %</span></span></button>";
+        fmt(m.util * 100, 0) + " %" + alertBadge() + "</span></span></button>";
 
     var html = "";
     DATA.projects.forEach(function (p) {
@@ -1051,7 +1087,13 @@ a.btn { text-decoration: none; }
     var meta = [];
     if (t.epic) meta.push('<span class="ep" title="' + esc(epicName(t)) + '">' + esc(t.epic) + "</span>");
     if (t.owner) meta.push(esc(t.owner));
-    if (isDate(t.due)) meta.push('<span class="due' + (od ? " over" : "") + '">' + (od ? icon("alert") : "") + fmtDate(t.due) + "</span>");
+    if (isDate(t.due)) {
+      // Prognosen: når opgaven ikke deadline, markeres den som en overskredet
+      var f = taskForecast(t), risk = !od && f && f.status === "risiko";
+      var tip = f && f.finish && f.status !== "ok" ? ' title="Prognose: færdig ca. ' + esc(fmtDate(f.finish)) + '"'
+              : (risk ? ' title="Prognose: når ikke deadline"' : "");
+      meta.push('<span class="due' + (od || risk ? " over" : "") + '"' + tip + ">" + (od || risk ? icon("alert") : "") + fmtDate(t.due) + (risk ? " · i risiko" : "") + "</span>");
+    }
     return '<div class="tcard" data-act="task" data-id="' + esc(t.id) + '" tabindex="0" style="border-left-color:var(--' + st.css + ')">' +
              '<div class="tt">' + esc(t.title) + "</div>" +
              (meta.length ? '<div class="tm">' + meta.join(" · ") + "</div>" : "") +
@@ -1649,6 +1691,26 @@ a.btn { text-decoration: none; }
 
   function val(id) { var e = dlg.querySelector("#" + id); return e ? e.value.trim() : ""; }
 
+  var FC_WORDS = {
+    ok: "når deadline", stramt: "stramt", risiko: "når ikke deadline", over: "over deadline", mangler: "mangler et estimat"
+  };
+  // Prognosen for én opgave, som en linje i opgavedialogen
+  function forecastLine(t) {
+    if (!isLive(t)) return "";
+    var f = taskForecast(t);
+    if (!f) return "";
+    var txt;
+    if (f.status === "over") txt = "Over deadline (" + fmtDate(f.due) + ").";
+    else if (f.status === "mangler") txt = "Sæt timer tilbage, så kan prognosen regne med den.";
+    else if (!f.remaining) return "";
+    else if (!f.finish) txt = "Der er ikke tid nok de næste 12 uger" + (f.due ? " til deadline " + fmtDate(f.due) : "") + ".";
+    else txt = "Færdig ca. " + fmtDate(f.finish) + (f.due ? " · deadline " + fmtDate(f.due) : "") +
+               (f.status === "risiko" && f.deficit ? " · mangler ca. " + fmt(f.deficit) + " t" : "") + ".";
+    return '<p class="fc-line fc-' + f.status + '"><b>Prognose: ' + FC_WORDS[f.status] + ".</b> " + esc(txt) +
+      (f.status === "ok" || f.status === "stramt" || f.status === "risiko"
+        ? ' <span class="hint">Regnet ud fra timer tilbage, deadlines og din fri kapacitet pr. uge.</span>' : "") + "</p>";
+  }
+
   function editTask(id, preset) {
     var isNew = !id;
     var t = isNew ? { id: "", project: preset.project, sprint: preset.sprint || "",
@@ -1684,8 +1746,15 @@ a.btn { text-decoration: none; }
         field("Deadline", '<input id="f-due" type="date" value="' + esc(t.due) + '">', "valgfri — tegner en diamant på tidslinjen") +
         field("Epic", '<select id="f-epic">' + opts(epicList, t.epic) + "</select>") +
       "</div>" +
-      field("Timer pr. uge", '<input id="f-hours" type="number" min="0" max="40" step="0.5" value="' + num(t.hours) + '">',
-            "lige nu, ikke i alt — 0 hvis opgaven ikke trækker tid i denne uge") +
+      '<div class="fgrid">' +
+        field("Timer pr. uge", '<input id="f-hours" type="number" min="0" max="40" step="0.5" value="' + num(t.hours) + '">',
+              "lige nu — 0 hvis den ikke trækker tid i denne uge") +
+        field("Timer tilbage i alt", '<input id="f-remaining" type="number" min="0" max="2000" step="0.5" value="' + (t.remaining == null || t.remaining === "" ? "" : num(t.remaining)) + '" placeholder="fx 12">',
+              "estimat — bruges til prognosen") +
+      "</div>" +
+      field("Prioritet", '<select id="f-priority">' + opts(FC.PRIORITIES.map(function (p) { return { v: p, t: p.charAt(0).toUpperCase() + p.slice(1) }; }), t.priority || "normal") + "</select>",
+            "afgør rækkefølgen, når to opgaver har samme deadline") +
+      (isNew ? "" : forecastLine(t)) +
       field("Note", '<textarea id="f-note" rows="3" maxlength="400">' + esc(t.note) + "</textarea>",
             isNew ? "skriv Claude som ejer, så går Claude i gang med opgaven, når du har gemt" : "") +
       (isNew ? "" : '<div class="cbox" id="cbox" data-id="' + esc(t.id) + '">' + jobBox(t) + "</div>"),
@@ -1701,6 +1770,10 @@ a.btn { text-decoration: none; }
         o.project = val("f-project"); o.sprint = sprint;
         o.start = start; o.end = end; o.due = val("f-due");
         o.epic = val("f-epic"); o.hours = num(val("f-hours")); o.note = val("f-note");
+        var rem = val("f-remaining");
+        if (rem === "") delete o.remaining; else o.remaining = Math.max(0, num(rem));
+        var pr = val("f-priority");
+        if (pr && pr !== "normal") o.priority = pr; else delete o.priority;
         if (isNew) {
           o.id = slug(o.project.slice(0, 5) + "-" + title, DATA.tasks.map(function (x) { return x.id; }));
           DATA.tasks.push(o);
@@ -1831,6 +1904,22 @@ a.btn { text-decoration: none; }
       return;
     }
     if (a === "copyuri") { copyText(document.getElementById("g-uri").textContent, "Adressen er kopieret."); return; }
+    if (a === "ottoall") { OTTO_ALL = !OTTO_ALL; route(); return; }
+    if (a === "pushon")  { enablePush(el); return; }
+    if (a === "pushoff") { disablePush(el); return; }
+    if (a === "pushtest") { testPush(el); return; }
+    if (a === "snooze") {
+      var skey = el.getAttribute("data-key");
+      var until = FC.localIso(FC.addDays(new Date(), Number(el.getAttribute("data-days")) || 1));
+      var before = ALERTSTATE.snoozed[skey];
+      ALERTSTATE.snoozed[skey] = until; route();
+      flash("Udsat til " + fmtDate(until) + ".");
+      api("PUT", "/api/alerts/snooze", { key: skey, until: until }).catch(function (err) {
+        if (before) ALERTSTATE.snoozed[skey] = before; else delete ALERTSTATE.snoozed[skey];
+        route(); flash("Kunne ikke udsætte: " + err.message, true);
+      });
+      return;
+    }
     // Kalenderoverblikket: visning, ikke data — gør aldrig siden "ugemt"
     if (a === "capview") { CALVIEW.view = el.getAttribute("data-v"); saveCalView(); route(); return; }
     if (a === "calspan") {
@@ -2170,62 +2259,42 @@ a.btn { text-decoration: none; }
   var CAL = null;       // { fetchedAt, accounts, events } fra /api/calendar
   var GOOGLE = null;    // { configured, missing, redirectUri, accounts } fra /api/google
   var CAL_STALE_MS = 5 * 60000;
-  var ABSENCE_WORDS = /\b(ferie|fri|fridag|syg|sygdom|afspadsering|barsel|orlov|kursus)\b/i;
 
-  function weekStart(d) {
-    var t = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    t.setDate(t.getDate() - ((t.getDay() + 6) % 7));
-    return t;
-  }
+  // Reglerne for møder, fravær og arbejdstid bor i dashboard/lib/forecast.mjs (FC), som
+  // serveren også bruger til alarmer. Her er kun tynde indgange med appens data.
+  function weekStart(d) { return FC.weekStart(d); }
+  function dateOnly(s) { return FC.dateOnly(s); }
+  function isAbsence(e) { return FC.isAbsence(e); }
+  function evStart(e) { return FC.evStart(e); }
+  function evEnd(e) { return FC.evEnd(e); }
+  function atHour(day, h) { return FC.atHour(day, h); }
+  function workHours() { return FC.workHours(DATA.kapacitet); }
   function calConnected() { return !!(CAL && CAL.accounts && CAL.accounts.length); }
-  function calUsed() { return calConnected() && (DATA.kapacitet || {}).meetingsSource !== "fast"; }
+  function calUsed() { return FC.calendarUsed(DATA.kapacitet, CAL); }
+  function calDayStats(day) { return FC.dayStats(CAL && CAL.events, day, DATA.kapacitet); }
 
-  function dateOnly(s) { return new Date(Number(s.slice(0, 4)), Number(s.slice(5, 7)) - 1, Number(s.slice(8, 10))); }
-  function sumIntervals(list) {
-    list.sort(function (a, b) { return a[0] - b[0]; });
-    var tot = 0, cs = null, ce = null;
-    list.forEach(function (iv) {
-      if (cs === null || iv[0] > ce) { if (cs !== null) tot += ce - cs; cs = iv[0]; ce = iv[1]; }
-      else if (iv[1] > ce) ce = iv[1];
-    });
-    if (cs !== null) tot += ce - cs;
-    return tot / 3600000;
+  /* ----- Prognose og alarmer -----
+     Regnes én gang pr. gentegning (route nulstiller), ud fra data, kalender og "i dag".
+     Udsættelser ligger på serveren (alerts/state), så de gælder på alle enheder. */
+  var FC_CACHE = null;
+  var ALERTSTATE = { snoozed: {}, prefs: { daily: true, instant: true } };
+  var PUSHINFO = null;   // { publicKey, devices } fra /api/alerts
+  function prognosis() {
+    if (!FC_CACHE) {
+      var now = new Date(), cal = calUsed() ? CAL : null;
+      var fc = FC.forecast(DATA, cal, now);
+      var all = FC.alerts(DATA, cal, now, fc);
+      FC_CACHE = { fc: fc, all: all, active: FC.activeAlerts(all, ALERTSTATE.snoozed, fc.today) };
+    }
+    return FC_CACHE;
   }
-  function isAbsence(e) {
-    return e.type === "outOfOffice" || (e.allDay && e.busy && ABSENCE_WORDS.test(e.title || ""));
-  }
-  function isMeeting(e) {
-    return !e.allDay && e.busy && e.response !== "declined" && (e.type === "default" || e.type === "fromGmail");
-  }
-
-  // Timer med møder og fravær i ugen, der starter ws (en mandag), mandag–fredag i arbejdstiden.
-  function workHours() {
-    var c = DATA.kapacitet || {};
-    var h0 = num(c.workStart, 8);
-    return { h0: h0, h1: Math.max(num(c.workEnd, 17), h0 + 0.5) };
-  }
-  // Et klokkeslæt på en bestemt dag. Regnet med uret, ikke med millisekunder, så sommertid ikke flytter det.
-  function atHour(day, h) {
-    return new Date(day.getFullYear(), day.getMonth(), day.getDate(), Math.floor(h), Math.round((h % 1) * 60)).getTime();
-  }
-  function evStart(e) { return e.allDay ? dateOnly(e.start).getTime() : Date.parse(e.start); }
-  function evEnd(e) { return e.allDay ? dateOnly(e.end || e.start).getTime() : Date.parse(e.end); }
-
-  // Møder, fravær og fri tid én dag (inden for arbejdstiden). Weekenden har ingen arbejdstid.
-  function calDayStats(day) {
-    var w = workHours(), wd = day.getDay();
-    var workDay = wd === 0 || wd === 6 ? 0 : w.h1 - w.h0;
-    if (!workDay || !CAL) return { meetings: 0, absence: 0, workDay: workDay, free: workDay };
-    var ds = atHour(day, w.h0), de = atHour(day, w.h1), A = [], M = [];
-    (CAL.events || []).forEach(function (e) {
-      var s = Math.max(evStart(e), ds), en = Math.min(evEnd(e), de);
-      if (!(en > s)) return;
-      if (isAbsence(e)) A.push([s, en]);
-      else if (isMeeting(e)) M.push([s, en]);
-    });
-    var a = sumIntervals(A.slice());
-    var m = sumIntervals(A.concat(M)) - a;      // et møde på en feriedag tæller ikke som møde
-    return { meetings: m, absence: a, workDay: workDay, free: Math.max(0, workDay - m - a) };
+  function taskForecast(t) { return t && prognosis().fc.tasks[t.id]; }
+  function loadAlerts() {
+    return api("GET", "/api/alerts").then(function (r) {
+      ALERTSTATE = r.state || ALERTSTATE; PUSHINFO = r.push || null;
+      FC_CACHE = null; if (DATA) route();
+      rerenderSettingsSection("alarmer");
+    }).catch(function (e) { console.warn("Alarmerne kunne ikke hentes:", e.message); });
   }
 
   // Timer med møder og fravær i ugen, der starter ws (en mandag), mandag–fredag i arbejdstiden.
@@ -2438,8 +2507,9 @@ a.btn { text-decoration: none; }
     return e.allDay ? e.title + ", hele dagen" : e.title + ", " + F_TIME.format(new Date(evStart(e))) + "–" + F_TIME.format(new Date(evEnd(e)));
   }
   function deadlineChip(t) {
-    var od = overdue(t);
-    return '<button class="dl' + (od ? " over" : "") + '" data-act="task" data-id="' + esc(t.id) + '" type="button" title="Deadline: ' + esc(t.title) + '">' +
+    var f = taskForecast(t), od = overdue(t) || (f && f.status === "risiko");
+    var tip = "Deadline: " + t.title + (f && FC_WORDS[f.status] && f.status !== "ok" ? " — prognose: " + FC_WORDS[f.status] : "");
+    return '<button class="dl' + (od ? " over" : "") + (f && f.status === "stramt" ? " tight" : "") + '" data-act="task" data-id="' + esc(t.id) + '" type="button" title="' + esc(tip) + '">' +
       '<i aria-hidden="true"></i><span>' + esc(t.title) + "</span></button>";
   }
   function allDayChip(e) {
@@ -2700,6 +2770,7 @@ a.btn { text-decoration: none; }
         '<p class="tagline">Hvor mange timer er der reelt tilbage, når drift, projekter og det uplanlagte er trukket fra?</p></div>' +
         headActions(true) + "</div>" +
 
+      ottoSays() +
       '<section class="verdict">' +
         '<div class="vcell vfree"><span class="vlabel">Fri kapacitet</span>' +
           '<span class="v-otto"><img src="otto/' + OTTO_MOOD[tone].src + '" alt="' + OTTO_MOOD[tone].alt + '"></span>' +
@@ -2718,6 +2789,43 @@ a.btn { text-decoration: none; }
       "men den sætning der skal med, når chefen spørger.</p>";
 
     wireTheme();
+  }
+
+  /* ----- "Otto siger": alarmerne fra prognosen -----
+     De vigtigste først (rød → gul → grå), højst 5 ad gangen. Udsæt gemmes på serveren. */
+  var OTTO_ALL = false;
+  function alertBadge() {
+    if (!FC || !DATA) return "";
+    var red = prognosis().active.filter(function (a) { return a.level === 3; }).length;
+    return red ? ' · <span class="salert" title="' + plural(red, "rød alarm", "røde alarmer") + '">' + red + " " + icon("alert") + "</span>" : "";
+  }
+  function ottoSays() {
+    var p = prognosis(), list = p.active;
+    var withDue = DATA.tasks.some(function (t) { return isLive(t) && isDate(t.due); });
+    var snoozedN = p.all.length - list.length;
+    if (!list.length) {
+      if (!withDue) return "";
+      return '<section class="otto-says calm"><p>' + icon("spark") + "<b>Otto siger:</b> alle deadlines når i mål ifølge prognosen." +
+        (snoozedN ? ' <span class="hint">' + plural(snoozedN, "udsat alarm", "udsatte alarmer") + "</span>" : "") + "</p></section>";
+    }
+    var shown = OTTO_ALL ? list : list.slice(0, 5);
+    var lvl = { 3: "rod", 2: "gul", 1: "graa" };
+    var rows = shown.map(function (a) {
+      var open = a.taskId ? '<button class="sf-inline" data-act="task" data-id="' + esc(a.taskId) + '" type="button">Åbn</button>' : "";
+      return '<li class="oa oa-' + lvl[a.level] + '"><span class="oa-dot" aria-hidden="true"></span>' +
+        '<div class="oa-txt"><b>' + esc(a.title) + "</b><span>" + esc(a.why) + "</span></div>" +
+        '<div class="oa-acts">' + open +
+          '<button class="sf-inline" data-act="snooze" data-key="' + esc(a.key) + '" data-days="1" type="button">I morgen</button>' +
+          '<button class="sf-inline" data-act="snooze" data-key="' + esc(a.key) + '" data-days="7" type="button">Om en uge</button>' +
+        "</div></li>";
+    }).join("");
+    var red = list.filter(function (a) { return a.level === 3; }).length;
+    return '<section class="otto-says" aria-label="Otto siger"><div class="os-hd"><b>Otto siger</b>' +
+      '<span class="hint">' + (red ? plural(red, "ting kræver", "ting kræver") + " din opmærksomhed" : plural(list.length, "ting", "ting") + " at holde øje med") +
+      (snoozedN ? " · " + plural(snoozedN, "udsat", "udsatte") : "") + "</span></div>" +
+      '<ul class="os-list">' + rows + "</ul>" +
+      (list.length > 5 ? '<button class="sf-inline os-more" data-act="ottoall" type="button">' + (OTTO_ALL ? "Vis færre" : "Vis alle " + list.length) + "</button>" : "") +
+      "</section>";
   }
 
   // Tredje celle i verdict-rækken. Overskredne deadlines vejer tungest; ellers
@@ -2792,6 +2900,7 @@ a.btn { text-decoration: none; }
             numInput('id="cap-adhoc" data-cap="model" data-key="adhoc" max="40"', c.adhoc, m.measured != null ? " disabled" : "") +
           "</div></div>";
       } },
+    { id: "alarmer", title: "Alarmer", html: function () { return alarmsHtml(); } },
     { id: "forbindelser", title: "Forbindelser", html: function () { return connectionsHtml(); } },
     { id: "konto", title: "Konto og adgang", html: function () {
         return '<p class="hint" style="margin-top:0">Historik, Claudes nøgle og log ud.</p>' +
@@ -2802,6 +2911,99 @@ a.btn { text-decoration: none; }
           "</div>";
       } }
   ];
+
+  /* ----- Notifikationer (Web Push) -----
+     Hver enhed slås til for sig: browseren spørger om lov, og HeyOtto OS gemmer
+     enhedens adresse. Nøglerne (VAPID) laver serveren selv, så der er intet at sætte op.
+     På iPhone kræver det, at HeyOtto OS er lagt på hjemmeskærmen og åbnet derfra. */
+  var PUSHDEV = { checked: false, sub: null };
+  function pushSupported() { return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window; }
+  function isIOS() { return /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1); }
+  function deviceLabel() {
+    var ua = navigator.userAgent;
+    var os = /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Android/.test(ua) ? "Android" : /Windows/.test(ua) ? "Windows" : /Mac OS X/.test(ua) ? "Mac" : "Linux";
+    var br = /Edg\//.test(ua) ? "Edge" : /Firefox\//.test(ua) ? "Firefox" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "browser";
+    return os + " · " + br;
+  }
+  function b64ToBytes(s) {
+    var pad = "=".repeat((4 - s.length % 4) % 4), raw = atob((s + pad).replace(/-/g, "+").replace(/_/g, "/"));
+    var out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+  function checkDevice() {
+    if (!pushSupported()) { PUSHDEV = { checked: true, sub: null }; return Promise.resolve(); }
+    return navigator.serviceWorker.getRegistration("/").then(function (reg) { return reg ? reg.pushManager.getSubscription() : null; })
+      .then(function (sub) { PUSHDEV = { checked: true, sub: sub }; rerenderSettingsSection("alarmer"); })
+      .catch(function () { PUSHDEV = { checked: true, sub: null }; rerenderSettingsSection("alarmer"); });
+  }
+  function enablePush(btn) {
+    if (!PUSHINFO || !PUSHINFO.publicKey) { flash("Serveren har ikke sendt sin nøgle endnu. Prøv igen om lidt.", true); return; }
+    btn.disabled = true;
+    navigator.serviceWorker.register("/sw.js")
+      .then(function () { return Notification.requestPermission(); })
+      .then(function (perm) {
+        if (perm !== "granted") throw new Error(perm === "denied" ? "Notifikationer er blokeret i browseren. Slå dem til for siden i browserens indstillinger." : "Du lukkede spørgsmålet uden at sige ja.");
+        return navigator.serviceWorker.ready;
+      })
+      .then(function (reg) {
+        return reg.pushManager.getSubscription().then(function (s) {
+          return s || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(PUSHINFO.publicKey) });
+        });
+      })
+      .then(function (sub) {
+        var tz = "Europe/Copenhagen";
+        try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || tz; } catch (e) {}
+        return api("POST", "/api/push/subscribe", { subscription: sub.toJSON(), label: deviceLabel(), tz: tz });
+      })
+      .then(function () { flash("Notifikationer er slået til på denne enhed."); return loadAlerts().then(checkDevice); })
+      .catch(function (e) { flash(e.message || String(e), true); btn.disabled = false; });
+  }
+  function disablePush(btn) {
+    btn.disabled = true;
+    var sub = PUSHDEV.sub;
+    (sub ? sub.unsubscribe().catch(function () {}) : Promise.resolve())
+      .then(function () { return sub ? api("POST", "/api/push/unsubscribe", { endpoint: sub.endpoint }) : null; })
+      .then(function () { flash("Notifikationer er slået fra på denne enhed."); return loadAlerts().then(checkDevice); })
+      .catch(function (e) { flash("Kunne ikke slå fra: " + e.message, true); btn.disabled = false; });
+  }
+  function testPush(btn) {
+    if (!PUSHDEV.sub) return;
+    btn.disabled = true;
+    api("POST", "/api/push/test", { endpoint: PUSHDEV.sub.endpoint })
+      .then(function () { flash("Prøven er sendt. Den kommer om et øjeblik."); })
+      .catch(function (e) { flash(e.message, true); })
+      .then(function () { btn.disabled = false; });
+  }
+
+  function alarmsHtml() {
+    var p = ALERTSTATE.prefs || {};
+    var devices = (PUSHINFO && PUSHINFO.devices) || [];
+    var mine = PUSHDEV.sub && devices.some(function (d) { return d.endpoint === PUSHDEV.sub.endpoint; });
+    var dev;
+    if (!pushSupported()) {
+      dev = isIOS()
+        ? '<p class="hint" style="margin-top:0">På iPhone og iPad skal HeyOtto OS ligge på hjemmeskærmen: tryk <b>Del</b> → <b>Føj til hjemmeskærm</b>, åbn HeyOtto OS derfra, og slå notifikationer til her.</p>'
+        : '<p class="hint" style="margin-top:0">Denne browser kan ikke modtage notifikationer.</p>';
+    } else if (Notification.permission === "denied") {
+      dev = '<p class="hint" style="margin-top:0">Notifikationer er blokeret for HeyOtto OS i denne browser. Slå dem til i browserens indstillinger for siden, og genindlæs.</p>';
+    } else if (!PUSHDEV.checked) {
+      dev = '<p class="hint" style="margin-top:0">Tjekker denne enhed …</p>';
+    } else if (mine) {
+      dev = '<p style="margin:0 0 8px">' + icon("spark") + " Notifikationer er slået til på denne enhed (" + esc(deviceLabel()) + ").</p>" +
+        '<div class="set-links"><button class="btn" data-act="pushtest" type="button">Send en prøve</button>' +
+        '<button class="btn" data-act="pushoff" type="button">Slå fra på denne enhed</button></div>';
+    } else {
+      dev = '<div class="set-links"><button class="btn primary" data-act="pushon" type="button">Slå notifikationer til på denne enhed</button></div>';
+    }
+    var others = devices.filter(function (d) { return !(PUSHDEV.sub && d.endpoint === PUSHDEV.sub.endpoint); });
+    return '<p class="hint" style="margin-top:0">Alarmerne kommer fra prognosen: deadlines i risiko, opgaver der ikke er startet, blokerede opgaver og overbookede uger. De står også under „Otto siger“ på forsiden.</p>' +
+      '<label class="gcal"><input type="checkbox" data-pref="daily"' + (p.daily !== false ? " checked" : "") + "><span>Morgenoverblik kl. 7 på hverdage</span></label>" +
+      '<label class="gcal"><input type="checkbox" data-pref="instant"' + (p.instant !== false ? " checked" : "") + "><span>Besked med det samme ved nye røde alarmer (kl. 7–19)</span></label>" +
+      '<div style="margin-top:12px">' + dev + "</div>" +
+      (others.length ? '<p class="hint">Også slået til på: ' + others.map(function (d) { return esc(d.label); }).join(", ") + ".</p>" : "") +
+      '<p class="hint">Udsatte alarmer sendes ikke. Notifikationer kræver, at du slår dem til på hver enhed for sig.</p>';
+  }
 
   function awayNote(m) { return m.absence ? " · " + fmt(m.absence) + " t i kalenderen denne uge" : ""; }
 
@@ -2891,6 +3093,8 @@ a.btn { text-decoration: none; }
     if (!DATA) return;
     if (dlg.open) dlg.close();
     loadGoogle();
+    loadAlerts();
+    checkDevice();
     setDlg.innerHTML =
       '<div class="set-hd"><h3 id="set-title">Indstillinger</h3>' +
         '<button class="icon-btn" data-act="settingsclose" type="button" title="Luk" aria-label="Luk indstillinger">' + icon("x") + "</button></div>" +
@@ -2946,6 +3150,16 @@ a.btn { text-decoration: none; }
   }
   document.addEventListener("input", function (e) {
     if (e.target && e.target.getAttribute && e.target.getAttribute("data-cap")) applyCap(e.target);
+  });
+
+  // Alarm-præferencer gemmes med det samme på serveren (ikke en del af data)
+  document.addEventListener("change", function (e) {
+    var el = e.target;
+    if (!el || !el.getAttribute || !el.getAttribute("data-pref")) return;
+    var body = {}; body[el.getAttribute("data-pref")] = el.checked;
+    api("PUT", "/api/alerts/prefs", body)
+      .then(function (r) { ALERTSTATE.prefs = r.prefs; flash("Gemt."); })
+      .catch(function (err) { el.checked = !el.checked; flash("Kunne ikke gemme: " + err.message, true); });
   });
 
   // Hvilke kalendere tæller. Gemmes med det samme på serveren (det er ikke en del af data),
@@ -3260,6 +3474,7 @@ a.btn { text-decoration: none; }
   // dashboardet åbnes for. Fokus og markørposition bevares, så man kan taste
   // videre i et talfelt, selv om siden bliver tegnet forfra ved hvert tastetryk.
   function route() {
+    FC_CACHE = null;   // data, kalender eller udsættelser kan have ændret sig
     var a = document.activeElement;
     var id = a && a.id ? a.id : null;
     var key = a && a.getAttribute && a.getAttribute("data-cap")
@@ -3349,8 +3564,22 @@ a.btn { text-decoration: none; }
   }
 
   // Hent data fra skyen. Er man ikke logget ind, vises login-skærmen.
+  // Prognose- og kalenderreglerne (dashboard/lib/forecast.mjs) hentes én gang, sammen med data.
+  var FC = null;
+  var FC_LOAD = null;
+  function loadForecastModule() {
+    if (!FC_LOAD) FC_LOAD = import("./lib/forecast.mjs").then(function (m) { FC = m; return m; }, function (e) {
+      FC_LOAD = null;
+      var err = new Error("Prognosemodulet kunne ikke hentes (" + (e && e.message ? e.message : e) + ").");
+      err.status = 0;
+      throw err;
+    });
+    return FC_LOAD;
+  }
+
   function boot() {
-    return api("GET", "/api/data").then(function (res) {
+    return Promise.all([api("GET", "/api/data"), loadForecastModule()]).then(function (all) {
+      var res = all[0];
       DATA = res.data;
       DATA_REV = res.rev || "";
       BASE = clone(res.data);
@@ -3365,6 +3594,7 @@ a.btn { text-decoration: none; }
       }
       loadJobs();
       loadCalendar();
+      loadAlerts();
       googleReturn();
     }, function (err) {
       if (err.status === 401 || err.status === 503) { showLogin(err.status === 503 ? err.message : ""); return; }

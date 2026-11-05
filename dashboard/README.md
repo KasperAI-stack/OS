@@ -6,6 +6,8 @@ Et Scrum-/projektoverblik over de store initiativer, med kapacitet på forsiden.
 
 | Hvad | Hvor |
 |---|---|
+| Prognose og alarmregler (deles af app og server) | `dashboard/lib/forecast.mjs` |
+| Alarmer og push-notifikationer | `netlify/lib/alerts.mts`, kørt hver time af `netlify/functions/alerts-sync.mts`. Service worker: `dashboard/sw.js` |
 | Google-forbindelsen og kalendersynken | `netlify/lib/google.mts`, kørt hvert 15. minut af `netlify/functions/calendar-sync.mts` |
 | Appen (layout, logik, redigering) | `dashboard/index.html` — én HTML-fil, intet byggetrin, ingen biblioteker |
 | Otto-illustrationerne | `dashboard/otto/` — PNG'er med gennemsigtig baggrund |
@@ -119,6 +121,12 @@ Alle svar er JSON. Fejl er `{ "error": "dansk besked" }`.
 | `DELETE /api/google/accounts/:id` | Afbryd en konto. Adgangen trækkes også tilbage hos Google |
 | `GET /api/calendar` | `{ snapshot }`: møder fra 7 dage tilbage til 12 uger frem. Også for Claude |
 | `POST /api/calendar/refresh` | Hent kalenderne nu. Højst én gang i minuttet. Kun for dig |
+| `GET /api/alerts` | `{ state: { snoozed, prefs }, push: { publicKey, devices } }` |
+| `PUT /api/alerts/snooze` `{ key, until }` | Udsæt en alarm til en dato (`null` fortryder). Kun for dig |
+| `PUT /api/alerts/prefs` `{ daily?, instant? }` | Morgenoverblik og straks-beskeder til/fra. Kun for dig |
+| `POST /api/push/subscribe` `{ subscription, label, tz }` | Slå notifikationer til på en enhed. Kun for dig |
+| `POST /api/push/unsubscribe` `{ endpoint }` | Slå fra på en enhed |
+| `POST /api/push/test` `{ endpoint }` | Send en prøve til én enhed |
 
 Du er logget ind med enten session-cookien eller `Authorization: Bearer <nøgle>` (Claude). Ændringer med cookie skal komme fra appen selv: JSON og samme oprindelse. API'et svarer aldrig 403 eller 404. Netlify ville ved de koder lede efter en statisk side i stedet, så afvisninger er 400/401, og en forsvundet version er 410.
 
@@ -161,6 +169,42 @@ Kortet **Aktive opgaver** på forsiden har en toggle: **Liste** (som før) eller
 Klik på et møde for at se tid, dit svar og antal deltagere, med links til Google Kalender og Meet. **Opret opgave fra mødet** åbner en ny opgave med mødets titel og dato. Klik på en deadline for at åbne opgaven. På en telefon bliver ugen til en dagsliste.
 
 Uden en forbundet kalender viser kalenderen kun deadlines og et link til at forbinde. Møder findes fra 7 dage tilbage til 12 uger frem.
+
+## Prognose og alarmer
+
+Prognosen svarer på ét spørgsmål: **når alt sin deadline?** Den er et regnestykke uden AI, og den samme kode (`dashboard/lib/forecast.mjs`) bruges af appen og af serveren.
+
+- **Kapacitet pr. uge, 12 uger frem:** (arbejdsuge − møder − fravær − mail & admin − øvrigt fravær) × loft − drift − ad hoc-buffer. Møder og fravær kommer fra kalenderen, når den er forbundet. I den aktuelle uge tæller kun de arbejdsdage, der er tilbage.
+- **Rækkefølge:** åbne opgaver med **timer tilbage** fylder ugerne i deadline-rækkefølge (*Earliest Deadline First*). Ved samme deadline går **høj** prioritet før **lav**. Kan alt ikke nås i den rækkefølge, kan det ikke nås i nogen.
+- **Hver opgave får en status:** *når deadline*, *stramt* (færdig under 2 arbejdsdage før), *når ikke deadline* (med ca. hvor mange timer der mangler), *over deadline* eller *mangler et estimat*. Status og forventet færdigdato står i opgavedialogen. På kortene og i kalenderen markeres *i risiko* som overskredet.
+
+**Otto siger** øverst på forsiden viser alarmerne. De vigtigste står først, og der vises højst 5 ad gangen:
+
+| Alarm | Hvornår | Farve |
+|---|---|---|
+| Over deadline | deadline passeret, ikke færdig | rød |
+| Når ikke deadline | prognosen siger færdig efter deadline | rød |
+| Ikke startet | deadline inden for 3 arbejdsdage, status Ikke startet | rød |
+| Blokeret | blokeret, og deadline inden for en uge | rød |
+| Stram | færdig under 2 arbejdsdage før deadline | blæk |
+| Uge overbooket | møder, drift og buffer alene fylder mere end loftet (næste 4 uger) | blæk |
+| Mødetung deadline-dag | under 2 t fri på en dag med deadline (kræver kalender) | blæk |
+| Mangler estimat | deadline, men ingen timer tilbage | grå |
+
+Én alarm pr. opgave, den alvorligste. **I morgen** og **Om en uge** udsætter en alarm. Udsættelsen gemmes på serveren, så den gælder på alle enheder. Ændres deadlinen, er det en ny alarm. Antallet af røde alarmer står ved Kapacitet i sidebaren.
+
+### Notifikationer
+
+Under **Indstillinger → Alarmer** slår du notifikationer til på den enhed, du sidder ved. Browseren spørger om lov, og du skal gøre det på hver enhed for sig. Serveren tjekker hver time:
+
+- **Morgenoverblik** kl. 7 på hverdage, hvis der er noget at sige.
+- **Besked med det samme** mellem 7 og 19, når der er kommet nye røde alarmer.
+
+Begge dele kan slås fra. Udsatte alarmer sendes ikke, og samme alarm sendes ikke to gange. Tiden regnes i den tidszone, enheden havde, da notifikationer blev slået til.
+
+**Intet at sætte op.** HeyOtto OS laver selv sine push-nøgler (VAPID) og gemmer dem krypteret i Netlify Blobs. Afsenderen er sitets egen adresse. Det virker derfor i en ny installation uden miljøvariabler.
+
+**iPhone og iPad:** notifikationer virker kun, når HeyOtto OS ligger på hjemmeskærmen. Tryk *Del → Føj til hjemmeskærm*, og åbn appen derfra. Siden har et manifest og et app-ikon (`dashboard/manifest.webmanifest`, `otto/app-192.png` og `otto/app-512.png`). Service workeren (`dashboard/sw.js`) viser kun notifikationer og cacher ikke noget.
 
 ## Indstillinger
 
@@ -248,6 +292,8 @@ Et epic-filter fra ét projekt tømmer ikke et andet: gælder filteret ikke for 
 | `due` | `"ÅÅÅÅ-MM-DD"` eller tom | Den eneste rigtige dato. Tegner en diamant og markerer overskredet |
 | `epic` | nøgle fra `epics` | Valgfri. Lille mærke på kortet, fuldt navn som tooltip |
 | `hours` | tal | Timer pr. uge **lige nu**. 0 hvis opgaven ikke trækker tid i denne uge |
+| `remaining` | tal eller udeladt | Timer **tilbage i alt** (estimat). Bruges af prognosen. Udeladt = ikke estimeret |
+| `priority` | `"høj"` / `"lav"` eller udeladt | Afgør rækkefølgen ved samme deadline. Udeladt = normal |
 
 Projekter har desuden `kind` (`drift` / `projekt` / `adhoc`), som afgør hvilken bås deres timer havner i på forsiden. `kapacitet` og `uger` holder modellens tal og ugeloggen. I `kapacitet` styrer `meetingsSource` (`"kalender"` / `"fast"`) om møderne regnes fra kalenderen, og `workStart`/`workEnd` (timer, standard 8 og 17) er arbejdstiden, møderne klippes til.
 

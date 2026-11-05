@@ -57,6 +57,8 @@ The full contract is in `dashboard/README.md` under "Datakontrakten". The rules 
 - **status** is exactly one of: `"Ikke startet"`, `"I gang"`, `"Blokeret"`, `"Færdig"`, `"Droppet"`.
 - **sprint / start / end** are months (`"YYYY-MM"`). **due** is a date (`"YYYY-MM-DD"`) or `""`.
 - **hours** is hours per week *right now*, not in total. If the task doesn't take time this week, it's 0.
+- **remaining** (optional) is the estimated hours left *in total*. The forecast and alerts use it. Leave it out when unknown; never guess it. If Kasper gives an estimate, store it as a number.
+- **priority** (optional) is `"høj"` or `"lav"`. Leave it out for normal.
 - **id** is short and unique, and is never changed. Follow the project's existing pattern (e.g. `web-12`).
 - **project** must be an existing project `id`.
 - **sprint** must exist for that project and month. Add the sprint (`{project, month, goal}`) if it doesn't.
