@@ -36,6 +36,9 @@
      GET    /api/agent/runs/:id              én kørsel med hvert trin, tokens og pris
      GET    /api/inbox                       { suggestions, handled, mail } — Ottos forslag fra mail
      PUT    /api/inbox/:id                   { status: "oprettet" | "ignoreret" | "ny", taskId? } (kun Kasper)
+     GET    /api/plans                       Ottos seneste planforslag (M9)
+     GET    /api/plans/:id                   ét forslag (id = kørslens id)
+     PUT    /api/plans/:id                   { status: "anvendt" | "kasseret" } (kun Kasper)
 
    To måder at være logget ind på:
      * Kasper: adgangskoden fra miljøvariablen HEYOTTO_PASSWORD giver en signeret
@@ -60,6 +63,7 @@ import { KINDS, MODELS } from "../lib/agent/kinds.mts";
 import { enqueue, fire } from "../lib/agent/queue.mts";
 import { configured as agentConfigured } from "../lib/agent/runtime.mts";
 import * as inbox from "../lib/inbox.mts";
+import * as plans from "../lib/plans.mts";
 
 type Store = ReturnType<typeof getStore>;
 type Who = "dig" | "Claude";
@@ -689,7 +693,8 @@ async function agentStatus(store: agent.Store) {
     today: { dkk: Math.round(spend.usd * s.usdDkk * 100) / 100, runs: spend.runs },
     kinds: Object.values(KINDS).map((k) => ({
       id: k.id, label: k.label, tools: k.tools, byHand: k.byHand, needsInput: k.needsInput,
-      schedule: k.schedule ? (k.schedule.weekdays ? "hverdage" : "alle dage") + " kl. " + k.schedule.hour : ""
+      schedule: k.schedule ? (k.schedule.weekday === 1 ? "mandag" : k.schedule.weekdays ? "hverdage" : "alle dage") + " kl. " + k.schedule.hour +
+                            (k.schedule.onlyIfRisk ? ", kun når noget er i risiko" : "") : ""
     })),
     models: Object.entries(MODELS).map(([id, m]) => ({ id, label: m.label }))
   };
@@ -774,6 +779,27 @@ async function inboxRoutes(req: Request, store: agent.Store, who: Who, path: str
   return fail(400, "Ukendt adresse eller metode: " + req.method + " " + path);
 }
 
+/* ---------- Planforslag: omplanlæg med Otto (M9) ----------
+   Start: POST /api/agent/runs { kind: "omplanlaeg", input? }. Forslaget gemmes under
+   kørslens id. Ændringerne lægges ind i data af appen, når du trykker Anvend. */
+
+async function planRoutes(req: Request, store: agent.Store, who: Who, path: string) {
+  if (path === "/api/plans" && req.method === "GET") return json(200, { plans: await plans.latestPlans(store as any, 10) });
+  const one = path.match(/^\/api\/plans\/([^/]+)$/);
+  if (one && req.method === "GET") {
+    const p = await plans.readPlan(store as any, decodeURIComponent(one[1]));
+    return p ? json(200, { plan: p }) : fail(410, "Forslaget findes ikke (Otto lavede måske intet forslag, fordi alt når i mål).");
+  }
+  if (one && req.method === "PUT") {
+    if (who !== "dig") return fail(401, "Kun du kan anvende eller kassere et forslag — log ind i appen.");
+    const body = await readJson(req);
+    if (!["anvendt", "kasseret"].includes(body?.status)) return fail(400, 'status skal være "anvendt" eller "kasseret".');
+    const p = await plans.setPlanStatus(store as any, decodeURIComponent(one[1]), body.status);
+    return p ? json(200, { plan: p }) : fail(410, "Forslaget findes ikke længere.");
+  }
+  return fail(400, "Ukendt adresse eller metode: " + req.method + " " + path);
+}
+
 /* ---------- Ruter ---------- */
 
 export default async (req: Request, context: Context) => {
@@ -820,6 +846,7 @@ export default async (req: Request, context: Context) => {
     if (path === "/api/alerts" || path.startsWith("/api/alerts/") || path.startsWith("/api/push/")) return await alertRoutes(req, store, who, path);
     if (path === "/api/agent" || path.startsWith("/api/agent/")) return await agentRoutes(req, store as unknown as agent.Store, who, path);
     if (path === "/api/inbox" || path.startsWith("/api/inbox/")) return await inboxRoutes(req, store as unknown as agent.Store, who, path);
+    if (path === "/api/plans" || path.startsWith("/api/plans/")) return await planRoutes(req, store as unknown as agent.Store, who, path);
     return fail(400, "Ukendt adresse eller metode: " + method + " " + path);
   } catch (e) {
     if (e instanceof HttpError) return fail(e.status, e.message);

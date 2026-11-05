@@ -1,5 +1,7 @@
 # M9: Omplanlæg med Claude, så alt kommer i mål
 
+**Status (2026-11-05):** bygget på branchen `claude/m9-omplanlaeg` som kørslen `omplanlaeg` i Otto (M7), ikke som en separat `plan-background.mts`. Svar på det åbne spørgsmål (valgt indtil videre): Otto **må** foreslå at droppe opgaver, men de står uden flueben. Ugeforslaget mandag kl. 7 er med som kørslen `ugeforslag`, slået fra som standard, og kører kun, når noget er i risiko. Anvend gemmer med det samme (kan fortrydes i Historik). Standardmodel: Sonnet 5.5 med høj effort.
+
 > "claude skal kunne omstrukturere mine tasks og belastning så alt kommer i mål"
 
 Bygger på prognosen fra M6 (den regner før/efter) og kører som en kørsel i OS-agenten (M7).

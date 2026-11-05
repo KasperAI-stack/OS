@@ -5,8 +5,8 @@
      * en kørsel, der har stået i kø i over 2 minutter (startsignalet gik tabt), startes igen
      * en kørsel, der har "kørt" i over 16 minutter, markeres som fejlet
 
-   M7 har én planlagt slags: morgenbriefen (hverdage kl. 7, slået fra som standard).
-   M8 tilføjer indbakken og M9 ugeplanen. */
+   Planlagte slags: morgenbriefen (hverdage kl. 7) og ugeforslaget (mandag kl. 7, kun når
+   noget er i risiko). Begge er slået fra som standard. */
 
 import { getStore } from "@netlify/blobs";
 import type { Config } from "@netlify/functions";
@@ -14,6 +14,11 @@ import { KINDS } from "../lib/agent/kinds.mts";
 import { enqueue, fire } from "../lib/agent/queue.mts";
 import { STALE_QUEUE_MS, STALE_RUN_MS, configured } from "../lib/agent/runtime.mts";
 import { dayIn, readRuns, readSettings, saveRun, saveSettings, type Store } from "../lib/agent/store.mts";
+import { metrics } from "../lib/plans.mts";
+import { readSnapshot } from "../lib/google.mts";
+import { readState } from "../lib/alerts.mts";
+
+const WEEKDAY: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
 
 export default async () => {
   const origin = Netlify.env.get("URL") || "";
@@ -44,9 +49,18 @@ export default async () => {
   for (const k of Object.values(KINDS)) {
     if (!k.schedule || !s.kinds[k.id]?.enabled) continue;
     if (k.schedule.weekdays && weekend) continue;
+    if (k.schedule.weekday !== undefined && WEEKDAY[parts.weekday] !== k.schedule.weekday) continue;
     if (hour !== k.schedule.hour || s.lastScheduled[k.id] === today) continue;
     s.lastScheduled[k.id] = today;
     await saveSettings(store, s);
+    // Ugeforslaget: kun når noget er i risiko eller overbooket. Ellers koster det intet.
+    if (k.schedule.onlyIfRisk) {
+      process.env.TZ = s.tz;
+      const data = await store.get("data", { type: "json" });
+      if (!data || !Array.isArray(data.tasks)) continue;
+      const m = metrics(data, await readSnapshot(store as any), now, (await readState(store as any)).snoozed);
+      if (!m.red && !m.overbookedWeeks) { log.push(k.id + ": intet i risiko"); continue; }
+    }
     const run = await enqueue(store, k.id, "planlagt");
     await fire(store, origin, run.id);
     log.push(k.id + ": " + run.id);

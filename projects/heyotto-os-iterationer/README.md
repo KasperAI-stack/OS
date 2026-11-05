@@ -6,9 +6,9 @@ Status (2026-11-05):
 - **M4** er bygget på branchen `claude/m4-google-kalender` (bygger på M1–M3). Det er testet lokalt, men ikke mod rigtig Google, før en OAuth-klient er sat op.
 - **M5** (kalenderoverblikket) er bygget på branchen `claude/m5-kalenderoverblik`.
 - **M6** (prognose og alarmer, inkl. push-notifikationer) er bygget på branchen `claude/m6-prognose-alarmer`.
-- **M7** (agent-kernen: Otto med motor, værktøjer med rettigheder, log, dagsbudget, Spørg Otto og morgenbrief) er bygget på branchen `claude/m7-agent-kernen`. Testet lokalt med en falsk Claude, ikke mod rigtig Claude API endnu.
-- **M8** (mail → opgaver) er bygget på branchen `claude/m8-mail-opgaver` (bygger på M7) med en **"Hent mails"-knap** i stedet for kørslen hvert 15. minut.
-- M9–M10 er planlagt.
+- **M7** (Otto, agent-kernen) og **M8** (Indbakke med "Hent mails") er merget og live (PR #13 og #14).
+- **M9** (omplanlæg med Otto, inkl. ugeforslag mandag) er bygget på branchen `claude/m9-omplanlaeg`.
+- M10 er planlagt.
 
 **Krav fra Kasper (2026-11-05):** det skal være nemt at sætte kalender og Gmail op for andre konti. Derfor er intet bundet til én konto. Man kan forbinde flere Google-konti, og opsætningen står i appen med den præcise redirect-adresse. En anden person kan sætte sit eget HeyOtto OS op med samme trin. Numrene er byggerækkefølgen: hver iteration bygger kun på dem med lavere numre. Hver fil har en analyse af den nuværende kode, en anbefalet løsning, konkrete trin, åbne spørgsmål og en definition af "færdig".
 
