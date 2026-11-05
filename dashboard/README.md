@@ -277,6 +277,18 @@ Vælg én af to måder:
 
 Kørsler, hvis startsignal går tabt, startes igen af `agent-schedule.mts` inden for et kvarter. Planlagte funktioner kører kun på produktion.
 
+## Tasks, Projekter og Rutiner
+
+Sidebaren har tre enheder under Kapacitet, Spørg Otto og Indbakke. Hver har sin egen landingsside, og listen under folder sig selv ud, mens du er i enheden. Der er ingen pile at trykke på.
+
+| Enhed | Landingsside | Liste i sidebaren |
+|---|---|---|
+| **Tasks** | `#tasks`: nøgletal (åbne, over deadline, denne uge, uden projekt), hurtig tilføjelse og alle åbne tasks grupperet efter deadline | Alle tasks · Denne uge · Uden projekt · Fra rutiner |
+| **Projekter** | `#projekter`: nøgletal og et kort pr. projekt med fremdrift, åbne tasks, timer pr. uge, sprint og mål, næste deadline og antal i risiko | Projekterne + Nyt projekt |
+| **Rutiner** | `#rutiner`: nøgletal (aktive, fast tid pr. uge, kommende, ikke gjort), kommende tasks fra rutiner og dine rutiner | Rutinerne, Drift og Ny rutine |
+
+Et projekt hører til Projekter, Drift til Rutiner, og "Uden projekt" (kind `adhoc`) til Tasks.
+
 ## Indstillinger
 
 Tandhjulet øverst til højre på alle sider åbner **Indstillinger**. Her ligger grundtallene bag kapaciteten: arbejdsuge, faste møder, mail & admin, øvrigt fravær, planlægningsloftet og ad hoc-estimatet. Når to uger er registreret i ugeloggen, låses estimatet, og bufferen måles i stedet. Du kan også åbne indstillingerne fra loft-mærket i belastningsbjælken.
