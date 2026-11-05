@@ -8,6 +8,7 @@ Et Scrum-/projektoverblik over de store initiativer, med kapacitet på forsiden.
 |---|---|
 | Prognose og alarmregler (deles af app og server) | `dashboard/lib/forecast.mjs` |
 | Alarmer og push-notifikationer | `netlify/lib/alerts.mts`, kørt hver time af `netlify/functions/alerts-sync.mts`. Service worker: `dashboard/sw.js` |
+| Otto, agent-kernen (Claude API + egne værktøjer) | `netlify/lib/agent/` (motor, værktøjer, slags, skills, lager). Kørsler i `netlify/functions/agent-background.mts`, planen i `agent-schedule.mts` |
 | Google-forbindelsen og kalendersynken | `netlify/lib/google.mts`, kørt hvert 15. minut af `netlify/functions/calendar-sync.mts` |
 | Appen (layout, logik, redigering) | `dashboard/index.html` — én HTML-fil, intet byggetrin, ingen biblioteker |
 | Otto-illustrationerne | `dashboard/otto/` — PNG'er med gennemsigtig baggrund |
@@ -127,6 +128,11 @@ Alle svar er JSON. Fejl er `{ "error": "dansk besked" }`.
 | `POST /api/push/subscribe` `{ subscription, label, tz }` | Slå notifikationer til på en enhed. Kun for dig |
 | `POST /api/push/unsubscribe` `{ endpoint }` | Slå fra på en enhed |
 | `POST /api/push/test` `{ endpoint }` | Send en prøve til én enhed |
+| `GET /api/agent` | Otto: `{ configured, settings, today, kinds, models }` |
+| `PUT /api/agent/settings` `{ enabled?, budgetDkk?, usdDkk?, kinds? }` | Ottos indstillinger. Kun for dig |
+| `GET /api/agent/runs` | De seneste 40 kørsler, uden trin. Også for Claude |
+| `POST /api/agent/runs` `{ kind, input?, parent? }` | Start en kørsel (`ping`, `spoerg`, `morgenbrief`). Højst 30 i timen. Kun for dig |
+| `GET /api/agent/runs/:id` | Én kørsel med hvert trin, tokens og pris |
 
 Du er logget ind med enten session-cookien eller `Authorization: Bearer <nøgle>` (Claude). Ændringer med cookie skal komme fra appen selv: JSON og samme oprindelse. API'et svarer aldrig 403 eller 404. Netlify ville ved de koder lede efter en statisk side i stedet, så afvisninger er 400/401, og en forsvundet version er 410.
 
@@ -205,6 +211,40 @@ Begge dele kan slås fra. Udsatte alarmer sendes ikke, og samme alarm sendes ikk
 **Intet at sætte op.** HeyOtto OS laver selv sine push-nøgler (VAPID) og gemmer dem krypteret i Netlify Blobs. Afsenderen er sitets egen adresse. Det virker derfor i en ny installation uden miljøvariabler.
 
 **iPhone og iPad:** notifikationer virker kun, når HeyOtto OS ligger på hjemmeskærmen. Tryk *Del → Føj til hjemmeskærm*, og åbn appen derfra. Siden har et manifest og et app-ikon (`dashboard/manifest.webmanifest`, `otto/app-192.png` og `otto/app-512.png`). Service workeren (`dashboard/sw.js`) viser kun notifikationer og cacher ikke noget.
+
+## Otto: agenten (M7)
+
+Otto er HeyOtto OS' egen agent. Den kører på serveren og kalder Claude API direkte med OS'ets egne værktøjer. Der bruges ingen Claude Code Routines og ingen claude.ai-forbindelser.
+
+- **Spørg Otto** (i sidebaren): et chatfelt. Otto læser data, prognose og kalender og svarer. Otto kan ikke ændre noget, så ændringer foreslår den, og du laver dem selv. Opfølgende spørgsmål husker de seneste 5 i samtalen.
+- **Aktivitet** (samme side): hver kørsel med udløser, svar, hvert værktøjskald (input og forkortet output), tokens og pris. Klik på en kørsel for at se trinene.
+- **Morgenbrief**: dagens overblik kl. 7 på hverdage, sendt som notifikation. Slået fra som standard.
+- **Indstillinger → Otto (agent)**: til/fra, dagsbudget i kr., dollarkurs, hvilke kørsler der er slået til, og model pr. kørsel. **Test Otto** laver den billigste kørsel (Haiku + `ping`).
+
+**Sikkerhed, håndhævet i koden:**
+
+| Klasse | Værktøjer i M7 | Effekt |
+|---|---|---|
+| `read` | `ping`, `data_read`, `forecast_run`, `calendar_list` | Ingen |
+| `propose` | (kommer i M8 og M9) | Skriver kun i forslagslagre uden for data |
+| `write` | (ingen endnu) | Kun når automatik er slået til for kørslen |
+
+Der findes ingen klasse til handlinger udenfor (mail, invitationer, kampagner), og serveren starter ikke, hvis et værktøj har en ukendt klasse. Hver slags kørsel får kun sine egne værktøjer (`netlify/lib/agent/kinds.mts`), og et kald til andre værktøjer afvises i løkken. Agenten kan ikke starte kørsler selv: udløsere er kun planen og dig. Baggrundsfunktionen kræver en HMAC-signatur.
+
+**Grænser:** højst 20 trin, 400.000 tokens og 10 minutter pr. kørsel, 30 kørsler i timen fra appen, og et **dagsbudget** (standard 20 kr.). Budgettet tjekkes før hvert kald til Claude. Når det er brugt, stopper Otto til næste dag, og du får én notifikation. Prisen regnes ud fra Claudes listepriser i `kinds.mts` og omregnes med dollarkursen fra indstillingerne.
+
+**Modeller (standard):** Haiku 5.5 til testen, Sonnet 5.5 til morgenbriefen og Opus 5.5 til Spørg Otto. De faste instruktioner caches (prompt caching), så gentagne kørsler bliver billigere.
+
+**Skills** (instruktionerne til hver slags kørsel) ligger i `netlify/lib/agent/skills/` som tekst i `.mts`-filer, så de versioneres i git og følger med, når Netlify pakker funktionerne.
+
+### Sæt Claude API op (én gang pr. installation)
+
+Vælg én af to måder:
+
+1. **Netlify AI Gateway** (nemmest): Netlify sætter `ANTHROPIC_API_KEY` og `ANTHROPIC_BASE_URL` for funktionerne og trækker forbruget fra dine Netlify-kreditter. Det kræver en plan med kreditter og mindst ét produktionsdeploy. Gatewayen tager højst 200.000 tokens input pr. kald.
+2. **Din egen nøgle**: lav en API-nøgle på platform.claude.com, og sæt den som `ANTHROPIC_API_KEY` (hemmelig) i Netlify. Så bruges den i stedet for gatewayen. Lav et nyt deploy bagefter.
+
+Kørsler, hvis startsignal går tabt, startes igen af `agent-schedule.mts` inden for et kvarter. Planlagte funktioner kører kun på produktion.
 
 ## Indstillinger
 

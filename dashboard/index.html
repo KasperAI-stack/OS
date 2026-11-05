@@ -665,6 +665,28 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .set-sec code#g-uri { white-space: normal; overflow-wrap: anywhere; }
 .copyrow { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
 .conflicts { margin: 0 0 6px; padding-left: 18px; display: grid; gap: 8px; font-size: 13.5px; max-height: 50vh; overflow-y: auto; }
+/* ---------- Otto: Spørg Otto, aktivitet og indstillinger (M7) ---------- */
+.oselect, .oask textarea { font: inherit; border-radius: var(--r-field); border: 1.5px solid var(--border-strong); background: var(--surface-2); color: var(--ink); }
+.oselect { font-size: 13px; padding: 5px 8px; max-width: 210px; }
+.oask textarea { display: block; width: 100%; font-size: 14px; padding: 10px 12px; resize: vertical; line-height: 1.45; min-height: 64px; }
+.oask textarea:hover:not(:disabled), .oselect:hover { border-color: var(--plus); }
+.oask textarea:focus, .oselect:focus { outline: 3px solid var(--field-ring); outline-offset: 0; border-color: var(--ink); }
+.oask-ft { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.oask-ft .hint { margin-right: auto; flex: 1 1 220px; }
+.othread { display: grid; gap: 12px; margin-bottom: 18px; }
+.oc-q { justify-self: end; max-width: 85%; background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px 14px 4px 14px;
+      padding: 9px 13px; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.oc-a { max-width: 95%; font-size: 14.5px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); }
+.oc-a.err { color: var(--danger-ink); }
+.oc-a .hint { white-space: normal; margin-top: 6px; }
+.orun { cursor: pointer; }
+.orun:hover .vtxt b { text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 3px; }
+.orun .vmeta { display: block; }
+.osteps { list-style: none; margin: 0 0 12px; padding: 12px 14px; background: var(--surface-2); border: 1px solid var(--border);
+          border-radius: var(--r-inner); display: grid; gap: 10px; font-size: 12.5px; color: var(--ink-2); }
+.osteps code { display: block; margin-top: 3px; font-family: var(--mono); font-size: 11.5px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--muted); }
+.osteps .err { color: var(--danger-ink); }
+.okind { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; flex-wrap: wrap; }
 /* ---------- Kalenderoverblik ----------
    Møder i blæk-kontur, foreløbige skraveret, fokustid og "ledig" dæmpet,
    fravær i grå flade. Deadlines som diamant, rød når overskredet. */
@@ -1035,7 +1057,10 @@ a.btn { text-decoration: none; }
         '<span class="dot ' + tone + '"></span>' +
         '<span><span class="pname">Kapacitet</span><br>' +
         '<span class="pmeta num">' + (m.free < 0 ? "−" : "") + fmt(Math.abs(m.free)) + " t fri · " +
-        fmt(m.util * 100, 0) + " %" + alertBadge() + "</span></span></button>";
+        fmt(m.util * 100, 0) + " %" + alertBadge() + "</span></span></button>" +
+      '<button class="proj" data-act="otto" aria-current="' + (active === "otto") + '">' +
+        '<span class="dot" style="background:var(--accent)"></span>' +
+        '<span><span class="pname">Spørg Otto</span><br><span class="pmeta">Agenten · læser, ændrer intet</span></span></button>';
 
     var html = "";
     DATA.projects.forEach(function (p) {
@@ -1869,6 +1894,7 @@ a.btn { text-decoration: none; }
     var el = e.target.closest ? e.target.closest("[data-act]") : null;
     if (!el) return;
     var a = el.getAttribute("data-act");
+    if (ottoClick(a, el)) return;
     if (a === "jump") {
       // Genvejsbjælken er ren scroll i siden. Den må ikke sætte adressen,
       // for hash'en bruges til at vælge projekt — et "#sprint" ville blive
@@ -2902,6 +2928,7 @@ a.btn { text-decoration: none; }
       } },
     { id: "alarmer", title: "Alarmer", html: function () { return alarmsHtml(); } },
     { id: "forbindelser", title: "Forbindelser", html: function () { return connectionsHtml(); } },
+    { id: "otto", title: "Otto (agent)", html: function () { return ottoSettingsHtml(); } },
     { id: "konto", title: "Konto og adgang", html: function () {
         return '<p class="hint" style="margin-top:0">Historik, Claudes nøgle og log ud.</p>' +
           '<div class="set-links">' +
@@ -3094,6 +3121,7 @@ a.btn { text-decoration: none; }
     if (dlg.open) dlg.close();
     loadGoogle();
     loadAlerts();
+    loadAgent();
     checkDevice();
     setDlg.innerHTML =
       '<div class="set-hd"><h3 id="set-title">Indstillinger</h3>' +
@@ -3449,6 +3477,286 @@ a.btn { text-decoration: none; }
     } catch (e) { input.select(); document.execCommand("copy"); done(); }
   }
 
+  /* ====================== Otto: agent-kernen (M7) ======================
+     Otto er OS'ets egen agent: Claude API og OS'ets egne værktøjer, kørt på serveren
+     (netlify/lib/agent/). Spørg Otto læser alt, men ændrer intet. Hver kørsel kan ses
+     under Aktivitet med hvert værktøjskald og prisen. Indstillingerne ligger på
+     serveren, ikke i data, så de gemmes med det samme. */
+
+  var AGENT = null;          // /api/agent: sat op?, indstillinger, dagens forbrug, slags, modeller
+  var ORUNS = null;          // de seneste kørsler (uden trin)
+  var OCHAT = [];            // denne samtale: [{ q, run }]
+  var OOPEN = {};            // kørsler, der er foldet ud i Aktivitet: id → kørsel eller "henter"
+  var OBUSY = { "i kø": 1, "kører": 1 };
+  var OTRIGGER = { dig: "startet af dig", planlagt: "planlagt", "hændelse": "hændelse" };
+  var KRFMT = new Intl.NumberFormat("da-DK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function kr(v) { return KRFMT.format(v || 0) + " kr."; }
+  function ottoText(s) { return esc(s || "").replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>"); }
+  function toolCount(run) { return (run.steps || []).filter(function (s) { return s.type === "tool"; }).length; }
+  function kindLabel(id) {
+    var k = AGENT && AGENT.kinds ? AGENT.kinds.filter(function (x) { return x.id === id; })[0] : null;
+    return k ? k.label : id;
+  }
+
+  function loadAgent() {
+    return api("GET", "/api/agent")
+      .then(function (r) { AGENT = r; })
+      .catch(function (e) { AGENT = { error: e.message }; })
+      .then(function () { rerenderSettingsSection("otto"); fillOtto(); fillRuns(); });
+  }
+  function loadRuns() {
+    return api("GET", "/api/agent/runs").then(function (r) { ORUNS = r.runs || []; fillRuns(); })
+      .catch(boxError("oruns", "Ottos aktivitet"));
+  }
+
+  // Følger én kørsel, til den er færdig. Den kører i baggrunden på serveren.
+  function watchRun(id, onUpdate) {
+    var tries = 0;
+    (function poll() {
+      api("GET", "/api/agent/runs/" + encodeURIComponent(id)).then(function (r) {
+        var busy = !!OBUSY[r.run.status] && tries++ < 300;
+        onUpdate(r.run, busy);
+        if (busy) setTimeout(poll, tries < 20 ? 1500 : 4000);
+      }).catch(function (e) {
+        if (e.status === 401) { showLogin("Du er blevet logget ud. Log ind igen."); return; }
+        if (e.status !== 410 && tries++ < 300) { setTimeout(poll, 4000); return; }
+        onUpdate({ id: id, status: "fejlet", error: e.message, output: "", steps: [] }, false);
+      });
+    })();
+  }
+
+  function renderOtto() {
+    renderSidebar("otto");
+    document.title = (dirty ? "● " : "") + "Otto — HeyOtto OS";
+    document.getElementById("main").innerHTML =
+      pageHead("Spørg Otto", "Spørg om projekter, deadlines, kapacitet og kalender. Otto kan læse alt, men ikke ændre noget.") +
+      '<section class="card"><div class="card-pad" id="ochat"></div></section>' +
+      '<section class="card" style="margin-top:20px"><div class="card-hd"><h2>Aktivitet</h2><span class="hint" id="otoday"></span></div>' +
+        '<div class="card-pad" id="oruns"><p class="hint">Henter …</p></div></section>';
+    wireTheme();
+    fillOtto();
+    loadAgent();
+    loadRuns();
+  }
+
+  function fillOtto(focus) {
+    var box = document.getElementById("ochat");
+    if (!box) return;
+    var today = document.getElementById("otoday");
+    if (today && AGENT && AGENT.today) {
+      today.textContent = "I dag " + kr(AGENT.today.dkk) + " af " + kr(AGENT.settings.budgetDkk) + " · " + plural(AGENT.today.runs, "kørsel", "kørsler");
+    }
+    if (AGENT && AGENT.error) { box.innerHTML = '<p class="hint">Kunne ikke hente Otto: ' + esc(AGENT.error) + "</p>"; return; }
+    if (AGENT && !AGENT.configured) {
+      box.innerHTML = '<p class="kp-lead">Otto er ikke sat op endnu</p>' +
+        '<p class="hint">Otto bruger Claude API. Det sættes op én gang, enten med Netlify AI Gateway eller din egen nøgle.</p>' +
+        '<p style="margin-top:12px"><button class="btn primary" data-act="settings" data-section="otto" type="button">Se hvordan</button></p>';
+      return;
+    }
+    var old = document.getElementById("oq");
+    var draft = old ? old.value : "";
+    var thread = OCHAT.map(function (c) {
+      var r = c.run, a;
+      if (!r || OBUSY[r.status]) {
+        var last = r && (r.steps || []).filter(function (s) { return s.type === "tool"; }).pop();
+        a = '<div class="oc-a"><span class="hint">' + icon("spark") + " " +
+            (!r ? "Sender …" : r.status === "i kø" ? "Otto starter …" : "Otto tænker" + (last ? " (" + esc(last.name) + ")" : "") + " …") + "</span></div>";
+      } else if (r.status === "færdig") {
+        a = '<div class="oc-a">' + ottoText(r.output) + '<p class="hint">' + plural(toolCount(r), "værktøjskald", "værktøjskald") + " · " + kr(r.costDkk) + "</p></div>";
+      } else {
+        a = '<div class="oc-a err">' + esc(r.error || "Noget gik galt.") + "</div>" + (r.output ? '<div class="oc-a">' + ottoText(r.output) + "</div>" : "");
+      }
+      return '<div class="oc-q">' + esc(c.q) + "</div>" + a;
+    }).join("");
+    var busy = OCHAT.some(function (c) { return !c.run || OBUSY[c.run.status]; });
+    var dis = busy ? " disabled" : "";
+    box.innerHTML = (thread ? '<div class="othread" aria-live="polite">' + thread + "</div>"
+        : '<p class="hint" style="margin:0 0 12px">Fx „Når jeg alle deadlines i november?“, „Hvad bør jeg starte med i dag?“ eller „Hvor travl er næste uge?“</p>') +
+      '<form class="oask" id="oaskform"><label class="flab" for="oq">' + (OCHAT.length ? "Spørg videre" : "Dit spørgsmål") + "</label>" +
+        '<textarea id="oq" rows="2" maxlength="2000"' + dis + "></textarea>" +
+        '<div class="oask-ft"><span class="hint">Otto læser data, prognose og kalender. Ændringer foreslår Otto, og dem laver du selv. Enter sender, Shift+Enter giver ny linje.</span>' +
+          (OCHAT.length ? '<button class="btn" type="button" data-act="ottonew"' + dis + ">Ny samtale</button>" : "") +
+          '<button class="btn primary" type="submit"' + dis + ">" + icon("spark") + "Spørg</button></div></form>";
+    var ta = document.getElementById("oq");
+    ta.value = draft;
+    if (focus) ta.focus();
+  }
+
+  function askOtto(q) {
+    var parent = "";
+    for (var i = OCHAT.length - 1; i >= 0; i--) {
+      if (OCHAT[i].run && OCHAT[i].run.status === "færdig") { parent = OCHAT[i].run.id; break; }
+    }
+    var item = { q: q, run: null };
+    OCHAT.push(item);
+    fillOtto();
+    api("POST", "/api/agent/runs", { kind: "spoerg", input: q, parent: parent })
+      .then(function (r) {
+        item.run = r.run;
+        fillOtto();
+        watchRun(r.run.id, function (run, busy) {
+          item.run = run;
+          fillOtto(!busy);
+          if (!busy) { loadRuns(); loadAgent(); }
+        });
+      })
+      .catch(function (e) {
+        if (e.status === 401) { showLogin("Du er blevet logget ud. Log ind igen."); return; }
+        item.run = { status: "fejlet", error: e.message, output: "", steps: [] };
+        fillOtto(true);
+        var ta = document.getElementById("oq");
+        if (ta && !ta.value) ta.value = q;   // så spørgsmålet kan sendes igen
+      });
+  }
+
+  function fillRuns() {
+    var box = document.getElementById("oruns");
+    if (!box || !ORUNS) return;
+    if (!ORUNS.length) { box.innerHTML = '<p class="col-empty">Otto har ikke kørt endnu.</p>'; return; }
+    box.innerHTML = '<ul class="vlist">' + ORUNS.map(function (r) {
+      var open = OOPEN[r.id];
+      var line = r.status === "færdig" && r.output ? '<span class="vmeta">' + esc(r.output.split("**").join("").slice(0, 160)) + (r.output.length > 160 ? " …" : "") + "</span>"
+        : r.error ? '<span class="vmeta" style="color:var(--danger-ink)">' + esc(r.error) + "</span>" : "";
+      return '<li class="vrow orun" data-act="ottorun" data-id="' + esc(r.id) + '" role="button" tabindex="0" aria-expanded="' + !!open + '">' +
+          '<div class="vtxt"><b>' + esc(kindLabel(r.kind)) + (r.input ? ": " + esc(r.input) : "") + "</b>" +
+          '<span class="vmeta">' + esc(TIMEFMT.format(new Date(r.createdAt))) + " · " + esc(OTRIGGER[r.trigger] || r.trigger) + " · " +
+            plural(r.tools, "værktøjskald", "værktøjskald") + " · " + kr(r.costDkk) + "</span>" + line + "</div>" +
+          '<span class="tag' + (OBUSY[r.status] ? " now" : "") + '">' + esc(r.status) + "</span></li>" +
+        (open ? "<li>" + stepsHtml(open) + "</li>" : "");
+    }).join("") + "</ul>";
+  }
+
+  function fmtTok(t) {
+    t = t || {};
+    var f = function (n) { return (n || 0).toLocaleString("da-DK"); };
+    return f(t.input) + " tokens ind · " + f(t.output) + " ud" + (t.cacheRead ? " · " + f(t.cacheRead) + " fra cache" : "");
+  }
+
+  // Hvert trin i en kørsel: Claudes svar og hvert værktøjskald med input og (forkortet) output
+  function stepsHtml(run) {
+    if (run === "henter") return '<p class="hint" style="margin-bottom:12px">Henter …</p>';
+    var rows = (run.steps || []).map(function (s) {
+      if (s.type === "model") {
+        return "<li><b>Claude</b> · " + fmtTok(s.tokens) + " · " + (s.ms / 1000).toFixed(1).replace(".", ",") + " s" +
+          (s.text ? "<code>" + esc(s.text) + "</code>" : "") + "</li>";
+      }
+      return "<li><b>Værktøj: " + esc(s.name) + "</b> · " + s.ms + " ms<code>ind: " + esc(s.input || "{}") + "</code>" +
+        (s.error ? '<code class="err">fejl: ' + esc(s.error) + "</code>" : "<code>ud: " + esc(s.output || "") + "</code>") + "</li>";
+    }).join("");
+    return '<ul class="osteps">' + (rows || "<li>Ingen trin.</li>") +
+      "<li><b>I alt</b> · " + esc(run.model) + " · " + fmtTok(run.usage) + " · " + kr(run.costDkk) + "</li></ul>";
+  }
+
+  function toggleRun(id) {
+    if (OOPEN[id]) { delete OOPEN[id]; fillRuns(); return; }
+    OOPEN[id] = "henter";
+    fillRuns();
+    api("GET", "/api/agent/runs/" + encodeURIComponent(id))
+      .then(function (r) { if (OOPEN[id]) { OOPEN[id] = r.run; fillRuns(); } })
+      .catch(function (e) { delete OOPEN[id]; fillRuns(); flash("Kunne ikke hente kørslen: " + e.message, true); });
+  }
+
+  function testOtto(btn) {
+    btn.disabled = true;
+    api("POST", "/api/agent/runs", { kind: "ping" }).then(function (r) {
+      flash("Otto er startet …");
+      watchRun(r.run.id, function (run, busy) {
+        if (busy) return;
+        btn.disabled = false;
+        loadAgent();
+        if (run.status === "færdig") flash("Otto svarer: " + run.output);
+        else flash("Testen fejlede: " + (run.error || run.status), true);
+      });
+    }).catch(function (e) { btn.disabled = false; flash(e.message, true); });
+  }
+
+  // Klik, der hører til Otto. Giver true, når klikket er håndteret.
+  function ottoClick(a, el) {
+    if (a === "otto") { location.hash = "otto"; return true; }
+    if (a === "ottorun") { toggleRun(el.getAttribute("data-id")); return true; }
+    if (a === "ottonew") { OCHAT = []; fillOtto(true); return true; }
+    if (a === "ottotest") { testOtto(el); return true; }
+    return false;
+  }
+
+  document.addEventListener("submit", function (e) {
+    if (!e.target || e.target.id !== "oaskform") return;
+    e.preventDefault();
+    var ta = document.getElementById("oq");
+    var q = ta ? ta.value.trim() : "";
+    if (!q) { if (ta) ta.focus(); return; }
+    ta.value = "";
+    askOtto(q);
+  });
+  document.addEventListener("keydown", function (e) {
+    var t = e.target;
+    if (t && t.id === "oq" && e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+      e.preventDefault();
+      var f = document.getElementById("oaskform");
+      if (f && f.requestSubmit) f.requestSubmit();
+    }
+    // Rækkerne i Aktivitet kan foldes ud med tastaturet
+    if (t && t.getAttribute && t.getAttribute("data-act") === "ottorun" && (e.key === "Enter" || e.key === " ")) {
+      e.preventDefault();
+      toggleRun(t.getAttribute("data-id"));
+    }
+  });
+
+  // Ottos indstillinger gemmes med det samme på serveren (ikke en del af data)
+  document.addEventListener("change", function (e) {
+    var el = e.target;
+    if (!el || !el.getAttribute) return;
+    var f = el.getAttribute("data-agent"), k = el.getAttribute("data-agentkind");
+    if (!f && !k) return;
+    var body = {};
+    if (f === "enabled") body.enabled = el.checked;
+    else if (f) body[f] = parseFloat(String(el.value).replace(",", "."));
+    else {
+      body.kinds = {};
+      body.kinds[k] = {};
+      body.kinds[k][el.getAttribute("data-field")] = el.type === "checkbox" ? el.checked : el.value;
+    }
+    api("PUT", "/api/agent/settings", body)
+      .then(function (r) { AGENT = r; flash("Gemt."); rerenderSettingsSection("otto"); fillOtto(); })
+      .catch(function (err) { flash("Kunne ikke gemme: " + err.message, true); loadAgent(); });
+  });
+
+  function ottoSettingsHtml() {
+    if (!AGENT) return '<p class="hint" style="margin-top:0">Henter …</p>';
+    if (AGENT.error) return '<p class="hint" style="margin-top:0">Kunne ikke hente Otto: ' + esc(AGENT.error) + "</p>";
+    var s = AGENT.settings;
+    var setup = AGENT.configured
+      ? '<p class="hint" style="margin-top:0">' + icon("spark") + " Claude API er forbundet. Otto læser data, prognose og kalender. " +
+        "Otto kan ikke sende mails, svare på invitationer eller ændre kalenderen. Det er låst i koden.</p>"
+      : '<p style="margin:0 0 10px">Otto bruger Claude API, som betales pr. forbrug. Det sættes op én gang, på én af to måder:</p>' +
+        '<ol class="steps">' +
+          "<li><b>Netlify AI Gateway</b> (nemmest): Netlify giver funktionerne adgang til Claude uden en nøgle og trækker forbruget fra dine Netlify-kreditter. " +
+            "Det er slået til som standard på planer med kreditter og virker efter første produktionsdeploy. Lav et nyt deploy (<i>Deploys → Trigger deploy</i>), og genindlæs.</li>" +
+          '<li><b>Din egen nøgle</b>: lav en API-nøgle på <a href="https://platform.claude.com" target="_blank" rel="noopener">platform.claude.com</a>, ' +
+            "og tilføj den i Netlify (<i>Project configuration → Environment variables</i>) som <code>ANTHROPIC_API_KEY</code>, markeret som hemmelig. Lav så et nyt deploy.</li>" +
+        "</ol>";
+    var kinds = AGENT.kinds.map(function (k) {
+      var ks = s.kinds[k.id] || {};
+      return '<div class="okind"><label class="gcal"><input type="checkbox" data-agentkind="' + esc(k.id) + '" data-field="enabled"' + (ks.enabled ? " checked" : "") + ">" +
+          "<span>" + esc(k.label) + (k.schedule ? ' <span class="hint">· ' + esc(k.schedule) + "</span>" : "") + "</span></label>" +
+        '<select class="oselect" data-agentkind="' + esc(k.id) + '" data-field="model" aria-label="Model til ' + esc(k.label) + '">' +
+          AGENT.models.map(function (m) { return '<option value="' + esc(m.id) + '"' + (m.id === ks.model ? " selected" : "") + ">" + esc(m.label) + "</option>"; }).join("") +
+        "</select></div>";
+    }).join("");
+    return setup +
+      '<label class="gcal" style="margin-top:8px"><input type="checkbox" data-agent="enabled"' + (s.enabled ? " checked" : "") + "><span>Otto er slået til</span></label>" +
+      '<div class="krow" style="margin-top:8px"><label class="klab" for="otto-budget">Dagsbudget<span class="ksub">Brugt i dag: ' + kr(AGENT.today.dkk) +
+          " · " + plural(AGENT.today.runs, "kørsel", "kørsler") + "</span></label>" +
+        '<span><input type="number" id="otto-budget" data-agent="budgetDkk" min="0" max="1000" step="5" value="' + s.budgetDkk + '"> kr.</span></div>' +
+      '<div class="krow"><label class="klab" for="otto-kurs">Dollarkurs<span class="ksub">Claude API koster i dollar. Prisen regnes om med denne kurs.</span></label>' +
+        '<span><input type="number" id="otto-kurs" data-agent="usdDkk" min="1" max="20" step="0.05" value="' + s.usdDkk + '"> kr.</span></div>' +
+      '<div class="gcals" style="margin-top:12px"><span class="flab">Kørsler og model</span>' + kinds + "</div>" +
+      '<div class="set-links" style="margin-top:12px"><button class="btn" data-act="ottotest" type="button"' + (AGENT.configured ? "" : " disabled") + ">Test Otto</button>" +
+        '<a class="btn" href="#otto" data-act="settingsclose">Spørg Otto og aktivitet</a></div>' +
+      '<p class="hint">Prisen regnes ud fra Claudes listepriser. Når dagsbudgettet er brugt, stopper Otto til næste dag, og du får en notifikation. ' +
+        "Morgenbriefen kommer som notifikation, når den er slået til.</p>";
+  }
+
   /* ====================== Tema ====================== */
 
   function currentTheme() {
@@ -3489,6 +3797,7 @@ a.btn { text-decoration: none; }
     if (h !== "claude") NEWKEY = null;   // en ny nøgle vises kun, mens man er på siden
     if (h === "versioner") renderVersions();
     else if (h === "claude") renderClaude();
+    else if (h === "otto") renderOtto();
     else if (!h || h === "kapacitet" || !projById(h)) renderCapacity();
     else render(h);
 
