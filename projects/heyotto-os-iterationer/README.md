@@ -4,7 +4,8 @@ Status (2026-11-05):
 
 - **M1–M3** er bygget. PR #6.
 - **M4** er bygget på branchen `claude/m4-google-kalender` (bygger på M1–M3). Det er testet lokalt, men ikke mod rigtig Google, før en OAuth-klient er sat op.
-- M5–M10 er planlagt.
+- **M5** (kalenderoverblikket) er bygget på branchen `claude/m5-kalenderoverblik`.
+- M6–M10 er planlagt.
 
 **Krav fra Kasper (2026-11-05):** det skal være nemt at sætte kalender og Gmail op for andre konti. Derfor er intet bundet til én konto. Man kan forbinde flere Google-konti, og opsætningen står i appen med den præcise redirect-adresse. En anden person kan sætte sit eget HeyOtto OS op med samme trin. Numrene er byggerækkefølgen: hver iteration bygger kun på dem med lavere numre. Hver fil har en analyse af den nuværende kode, en anbefalet løsning, konkrete trin, åbne spørgsmål og en definition af "færdig".
 

@@ -144,6 +144,24 @@ fri kapacitet = (tilgængelige timer × planlægningsloft) − drift − projekt
 
 Øverst står tre tal: **fri kapacitet**, **belægning** og **næste deadline**. Den sidste er den nærmeste åbne opgave med deadline. Er noget allerede overskredet, står antallet i rødt i stedet, og et klik åbner opgaven.
 
+## Kalenderoverblikket
+
+Kortet **Aktive opgaver** på forsiden har en toggle: **Liste** (som før) eller **Kalender**, der viser de samme opgaver i tid sammen med dine møder. Valget er visning, ikke data. Det huskes i browseren og gør aldrig siden „ugemt“.
+
+**Uge** (standard):
+
+- **Øverst** står deadlines som diamanter (røde, når de er overskredet) og heldagshændelser som *Ferie*.
+- **I midten** står møderne som blokke i deres tid. Overlappende møder står side om side, og foreløbige er skraveret. Fokustid og „Ledig“ er dæmpede, og afviste vises ikke. Gitteret dækker arbejdstiden og strækker sig, hvis der er møder før eller efter. En linje viser, hvad klokken er nu.
+- **Nederst** står den fri tid pr. dag efter møder og fravær. Den er rød, hvis der er en deadline på en dag med under 2 timer fri.
+- I den aktuelle uge kommer **Skal laves denne uge** til sidst: opgaverne med timer og summen holdt op mod ugens fri tid.
+- Weekenden vises kun, når der er noget i den.
+
+**Måned:** et gitter med mødetimer, fravær og deadlines pr. dag. Klik på en dato for at se ugen.
+
+Klik på et møde for at se tid, dit svar og antal deltagere, med links til Google Kalender og Meet. **Opret opgave fra mødet** åbner en ny opgave med mødets titel og dato. Klik på en deadline for at åbne opgaven. På en telefon bliver ugen til en dagsliste.
+
+Uden en forbundet kalender viser kalenderen kun deadlines og et link til at forbinde. Møder findes fra 7 dage tilbage til 12 uger frem.
+
 ## Indstillinger
 
 Tandhjulet øverst til højre på alle sider åbner **Indstillinger**. Her ligger grundtallene bag kapaciteten: arbejdsuge, faste møder, mail & admin, øvrigt fravær, planlægningsloftet og ad hoc-estimatet. Når to uger er registreret i ugeloggen, låses estimatet, og bufferen måles i stedet. Du kan også åbne indstillingerne fra loft-mærket i belastningsbjælken.
@@ -164,7 +182,7 @@ HeyOtto OS kan forbinde én eller flere Google-konti, fx en privat og en til arb
 - **Fravær**: "Ikke til stede"-hændelser og heldagshændelser som *Ferie*, *Syg* eller *Kursus*. Et møde på en feriedag tæller ikke som møde.
 - Fokustid, arbejdssted og hændelser markeret "Ledig" tæller ikke.
 
-I Indstillinger kan du vælge mellem **Kalenderen** og **Fast tal** og sætte arbejdstiden. Under **Forbindelser** vælger du, hvilke kalendere der tæller pr. konto. Den primære og dem, du selv ejer, er slået til fra start. Helligdage og andres delte kalendere er slået fra.
+I Indstillinger kan du vælge mellem **Kalenderen** og **Fast tal** og sætte arbejdstiden. Under **Forbindelser** vælger du, hvilke kalendere der tæller pr. konto. Du kommer også dertil fra linket **Forbind Google** (eller **Google forbundet**) nederst i sidebaren. Den primære og dem, du selv ejer, er slået til fra start. Helligdage og andres delte kalendere er slået fra.
 
 **Kun læsning.** Scopet er `calendar.readonly`. HeyOtto OS kan aldrig oprette, ændre eller svare på noget. Der gemmes kun titel, tidspunkt, type, dit svar og antal deltagere, ikke beskrivelser eller deltagernes adresser. Refresh-tokens krypteres (AES-256-GCM) i Netlify Blobs og sendes aldrig til browseren. **Afbryd** trækker også adgangen tilbage hos Google.
 
