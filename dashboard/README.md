@@ -133,6 +133,8 @@ Alle svar er JSON. Fejl er `{ "error": "dansk besked" }`.
 | `GET /api/agent/runs` | De seneste 40 kørsler, uden trin. Også for Claude |
 | `POST /api/agent/runs` `{ kind, input?, parent? }` | Start en kørsel (`ping`, `spoerg`, `morgenbrief`). Højst 30 i timen. Kun for dig |
 | `GET /api/agent/runs/:id` | Én kørsel med hvert trin, tokens og pris |
+| `GET /api/inbox` | `{ suggestions, handled, mail }`: Ottos forslag fra mail, og hvilke konti der har givet adgang til mail |
+| `PUT /api/inbox/:id` `{ status, taskId? }` | Markér et forslag `oprettet` / `ignoreret` (eller `ny`). Kun for dig |
 
 Du er logget ind med enten session-cookien eller `Authorization: Bearer <nøgle>` (Claude). Ændringer med cookie skal komme fra appen selv: JSON og samme oprindelse. API'et svarer aldrig 403 eller 404. Netlify ville ved de koder lede efter en statisk side i stedet, så afvisninger er 400/401, og en forsvundet version er 410.
 
@@ -226,7 +228,8 @@ Otto er HeyOtto OS' egen agent. Den kører på serveren og kalder Claude API dir
 | Klasse | Værktøjer i M7 | Effekt |
 |---|---|---|
 | `read` | `ping`, `data_read`, `forecast_run`, `calendar_list` | Ingen |
-| `propose` | (kommer i M8 og M9) | Skriver kun i forslagslagre uden for data |
+| `read` (mail, M8) | `gmail_new`, `gmail_read` | Ingen |
+| `propose` | `inbox_suggest_task`, `inbox_skip` (M8). Omplanlægning kommer i M9 | Skriver kun i forslagslagre uden for data |
 | `write` | (ingen endnu) | Kun når automatik er slået til for kørslen |
 
 Der findes ingen klasse til handlinger udenfor (mail, invitationer, kampagner), og serveren starter ikke, hvis et værktøj har en ukendt klasse. Hver slags kørsel får kun sine egne værktøjer (`netlify/lib/agent/kinds.mts`), og et kald til andre værktøjer afvises i løkken. Agenten kan ikke starte kørsler selv: udløsere er kun planen og dig. Baggrundsfunktionen kræver en HMAC-signatur.
@@ -236,6 +239,18 @@ Der findes ingen klasse til handlinger udenfor (mail, invitationer, kampagner), 
 **Modeller (standard):** Haiku 5.5 til testen, Sonnet 5.5 til morgenbriefen og Opus 5.5 til Spørg Otto. De faste instruktioner caches (prompt caching), så gentagne kørsler bliver billigere.
 
 **Skills** (instruktionerne til hver slags kørsel) ligger i `netlify/lib/agent/skills/` som tekst i `.mts`-filer, så de versioneres i git og følger med, når Netlify pakker funktionerne.
+
+### Indbakke: mail → opgaver (M8)
+
+**Indbakke** i sidebaren. Tryk **Hent mails**, så læser Otto de seneste 3 dages mails fra de Google-konti, der har givet adgang til mail. Kampagner, sociale, opdateringer, fora og sendte mails springes over allerede i søgningen. For hver mail, hvor nogen venter på dig, laver Otto et forslag med titel, kort resumé, projekt, deadline (kun hvis mailen nævner en) og et estimat.
+
+- **Opret** laver opgaven med det samme og gemmer. **Ret og opret** åbner opgavedialogen udfyldt. **Ignorér** skjuler forslaget. **Åbn mail** åbner tråden i Gmail.
+- Nye opgaver får 0 timer i denne uge, Ottos estimat som *timer tilbage*, link til tråden i noten og `source: { type: "gmail", id, url }`.
+- En tråd, Otto har vurderet, kommer ikke igen, medmindre der kommer et nyt svar i den.
+- Kørslen har kun værktøjerne `data_read`, `gmail_new`, `gmail_read`, `inbox_suggest_task` og `inbox_skip`. Forslag kan kun laves til tråde, `gmail_new` har vist i samme kørsel. En mail med "instruktioner" kan derfor højst give et forkert forslag.
+- Mailtekst gemmes aldrig, kun Ottos resumé og trådens afsender, emne og dato. Kun læsning (`gmail.readonly`): HeyOtto OS kan ikke sende, slette, arkivere eller mærke mail.
+
+**Opsætning:** slå **Gmail API** til i Google Cloud-projektet (*APIs & Services → Library*). Tryk så **Giv adgang til mail** i Indbakken eller under Indstillinger → Forbindelser, og sæt flueben ved Gmail hos Google.
 
 ### Sæt Claude API op (én gang pr. installation)
 

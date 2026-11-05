@@ -686,6 +686,16 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
           border-radius: var(--r-inner); display: grid; gap: 10px; font-size: 12.5px; color: var(--ink-2); }
 .osteps code { display: block; margin-top: 3px; font-family: var(--mono); font-size: 11.5px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--muted); }
 .osteps .err { color: var(--danger-ink); }
+/* Indbakke (M8) */
+.isugs { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.isug { border: 1px solid var(--border); border-radius: var(--r-inner); padding: 14px 16px; }
+.isug .vmeta { display: block; font-size: 12.5px; color: var(--muted); }
+.isug-hd { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 2px; }
+.isug-hd b { font-weight: 600; font-size: 15px; }
+.isug-note { margin: 6px 0 4px; font-size: 13.5px; color: var(--ink-2); white-space: pre-wrap; }
+.ihandled { margin-top: 16px; font-size: 13px; }
+.ihandled summary { cursor: pointer; color: var(--muted); margin-bottom: 8px; }
+.sf-link-ink { font: inherit; color: var(--ink); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .okind { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; flex-wrap: wrap; }
 /* ---------- Kalenderoverblik ----------
    Møder i blæk-kontur, foreløbige skraveret, fokustid og "ledig" dæmpet,
@@ -1060,7 +1070,11 @@ a.btn { text-decoration: none; }
         fmt(m.util * 100, 0) + " %" + alertBadge() + "</span></span></button>" +
       '<button class="proj" data-act="otto" aria-current="' + (active === "otto") + '">' +
         '<span class="dot" style="background:var(--accent)"></span>' +
-        '<span><span class="pname">Spørg Otto</span><br><span class="pmeta">Agenten · læser, ændrer intet</span></span></button>';
+        '<span><span class="pname">Spørg Otto</span><br><span class="pmeta">Agenten · læser, ændrer intet</span></span></button>' +
+      '<button class="proj" data-act="indbakke" aria-current="' + (active === "indbakke") + '">' +
+        '<span class="dot" style="background:' + (inboxCount() ? "var(--accent)" : "var(--sidebar-muted)") + '"></span>' +
+        '<span><span class="pname">Indbakke</span><br><span class="pmeta">' +
+          (inboxCount() ? plural(inboxCount(), "nyt forslag", "nye forslag") + " fra mail" : "Mail → opgaver") + "</span></span></button>";
 
     var html = "";
     DATA.projects.forEach(function (p) {
@@ -1739,8 +1753,9 @@ a.btn { text-decoration: none; }
   function editTask(id, preset) {
     var isNew = !id;
     var t = isNew ? { id: "", project: preset.project, sprint: preset.sprint || "",
-                      start: preset.sprint || "", end: preset.sprint || "",
-                      status: "Ikke startet", title: preset.title || "", owner: "", due: preset.due || "", epic: "", hours: 0, note: preset.note || "" }
+                      start: preset.start || preset.sprint || "", end: preset.sprint || "",
+                      status: "Ikke startet", title: preset.title || "", owner: "", due: preset.due || "", epic: "", hours: 0, note: preset.note || "",
+                      remaining: preset.remaining }
                   : DATA.tasks.filter(function (x) { return x.id === id; })[0];
     if (!t) return;
 
@@ -1801,7 +1816,9 @@ a.btn { text-decoration: none; }
         if (pr && pr !== "normal") o.priority = pr; else delete o.priority;
         if (isNew) {
           o.id = slug(o.project.slice(0, 5) + "-" + title, DATA.tasks.map(function (x) { return x.id; }));
+          if (preset.source) o.source = preset.source;   // fx { type: "gmail", id, url } fra Indbakken
           DATA.tasks.push(o);
+          if (preset.onCreate) preset.onCreate(o);
         }
         return null;
       },
@@ -1894,7 +1911,7 @@ a.btn { text-decoration: none; }
     var el = e.target.closest ? e.target.closest("[data-act]") : null;
     if (!el) return;
     var a = el.getAttribute("data-act");
-    if (ottoClick(a, el)) return;
+    if (ottoClick(a, el) || inboxClick(a, el)) return;
     if (a === "jump") {
       // Genvejsbjælken er ren scroll i siden. Den må ikke sætte adressen,
       // for hash'en bruges til at vælge projekt — et "#sprint" ville blive
@@ -3056,9 +3073,14 @@ a.btn { text-decoration: none; }
       return '<div class="gacc"><div class="gacc-hd"><b>' + esc(a.email) + "</b>" +
           '<button class="btn" data-act="gdisconnect" data-id="' + esc(a.id) + '" data-email="' + esc(a.email) + '" type="button">Afbryd</button></div>' +
         '<div class="hint">' + status + "</div>" +
-        (cals ? '<div class="gcals"><span class="flab">Kalendere, der tæller</span>' + cals + "</div>" : "") + "</div>";
+        (cals ? '<div class="gcals"><span class="flab">Kalendere, der tæller</span>' + cals + "</div>" : "") +
+        // Mail (M8): et ekstra samtykke på samme konto. Google spørger, hvilken konto.
+        ((a.scopes || []).indexOf("gmail") >= 0
+          ? '<div class="hint" style="margin-top:8px">Gmail · kun læsning, til Indbakken</div>'
+          : '<div class="set-links" style="margin-top:8px"><a class="btn" data-act="gconnect" href="/api/google/connect?scopes=calendar,gmail">Giv adgang til mail</a></div>') +
+        "</div>";
     }).join("");
-    return '<p class="hint" style="margin-top:0">Google Kalender · kun læsning. HeyOtto OS kan aldrig ændre eller svare på noget i kalenderen.</p>' +
+    return '<p class="hint" style="margin-top:0">Google Kalender og Gmail · kun læsning. HeyOtto OS kan aldrig ændre eller svare på noget i kalenderen og aldrig sende, slette eller arkivere mail.</p>' +
       list +
       '<div class="set-links"><a class="btn primary" data-act="gconnect" href="/api/google/connect?scopes=calendar">+ ' +
         (GOOGLE.accounts.length ? "Forbind en konto til" : "Forbind Google Kalender") + "</a>" +
@@ -3071,7 +3093,7 @@ a.btn { text-decoration: none; }
     return '<p style="margin:0 0 10px">Google er ikke sat op i dette HeyOtto OS endnu. Det gøres én gang, af den der ejer installationen. Tager ca. 10 minutter.</p>' +
       '<ol class="steps">' +
         '<li>Åbn <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">Google Cloud</a>, og lav et projekt, fx „HeyOtto OS“.</li>' +
-        '<li>Under <i>APIs &amp; Services → Library</i>: slå <b>Google Calendar API</b> til.</li>' +
+        '<li>Under <i>APIs &amp; Services → Library</i>: slå <b>Google Calendar API</b> til, og <b>Gmail API</b>, hvis Indbakken skal kunne læse mail.</li>' +
         "<li>Under <i>Google Auth Platform</i> (OAuth consent screen): vælg <b>External</b>, skriv app-navn og din e-mail. " +
           "Tryk derefter <b>Publish app</b>, så adgangen ikke udløber efter 7 dage. Google viser en advarsel om en „ikke verificeret app“ første gang — det er forventet til eget brug.</li>" +
         "<li>Under <i>Clients</i> (Credentials): <b>Create client → Web application</b>. Tilføj denne adresse under <b>Authorized redirect URIs</b>:" +
@@ -3757,6 +3779,174 @@ a.btn { text-decoration: none; }
         "Morgenbriefen kommer som notifikation, når den er slået til.</p>";
   }
 
+  /* ====================== Indbakke: mail → opgaver (M8) ======================
+     "Hent mails" starter en Otto-kørsel (slagsen indbakke), der læser nye mails og laver
+     forslag. Forslagene ligger på serveren uden for data. Opret laver en almindelig
+     opgave og gemmer med det samme; Ignorér husker tråden, så den ikke kommer igen. */
+
+  var INBOX = null;    // { suggestions, handled, mail: { accounts } }
+  var IPULL = null;    // den kørsel, "Hent mails" har startet
+  function inboxCount() { return INBOX && INBOX.suggestions ? INBOX.suggestions.length : 0; }
+  function hasMail() { return !!(INBOX && INBOX.mail && INBOX.mail.accounts.some(function (a) { return a.gmail; })); }
+
+  function loadInbox() {
+    return api("GET", "/api/inbox").then(function (r) {
+      INBOX = r;
+      if (!DATA) return;
+      var h = fromHash();
+      renderSidebar(!h ? "kapacitet" : h);
+      fillInbox();
+    }).catch(function (e) { console.warn("Indbakken kunne ikke hentes:", e.message); });
+  }
+
+  function renderInbox() {
+    renderSidebar("indbakke");
+    document.title = (dirty ? "● " : "") + "Indbakke — HeyOtto OS";
+    document.getElementById("main").innerHTML =
+      pageHead("Indbakke", "Otto læser dine mails og foreslår opgaver. Du bestemmer, hvad der bliver oprettet.") +
+      '<section class="card"><div class="card-hd"><h2>Forslag fra mail</h2>' +
+        '<button class="btn primary" data-act="inboxpull" id="ipull" type="button">' + icon("spark") + "Hent mails</button></div>" +
+        '<div class="card-pad" id="ibox"><p class="hint">Henter …</p></div></section>';
+    wireTheme();
+    fillInbox();
+    loadInbox();
+  }
+
+  function mailDate(s) {
+    var d = new Date(s);
+    return isNaN(d) ? "" : TIMEFMT.format(d);
+  }
+  function senderName(from) { return String(from || "").replace(/\s*<[^>]+>\s*$/, "").replace(/^"|"$/g, "") || from; }
+
+  function fillInbox() {
+    var box = document.getElementById("ibox");
+    if (!box) return;
+    var btn = document.getElementById("ipull");
+    var pulling = IPULL && OBUSY[IPULL.status];
+    if (btn) btn.disabled = !INBOX || !hasMail() || !!pulling;
+    if (!INBOX) { box.innerHTML = '<p class="hint">Henter …</p>'; return; }
+
+    if (!hasMail()) {
+      var accs = INBOX.mail.accounts;
+      box.innerHTML = '<p class="kp-lead">Giv Otto adgang til at læse mail</p>' +
+        '<ol class="steps">' +
+          '<li>Slå <b>Gmail API</b> til i dit Google Cloud-projekt: <a href="https://console.cloud.google.com/apis/library/gmail.googleapis.com" target="_blank" rel="noopener">åbn Gmail API</a> → <b>Enable</b>.</li>' +
+          "<li>" + (accs.length
+            ? 'Tryk <b>Giv adgang til mail</b>, vælg kontoen, og sæt flueben ved Gmail. Google viser advarslen om en „ikke verificeret app“ igen. Det er forventet til eget brug.' +
+              '<div class="set-links" style="margin-top:8px"><a class="btn primary" data-act="gconnect" href="/api/google/connect?scopes=calendar,gmail">Giv adgang til mail</a></div>'
+            : 'Forbind først en Google-konto under <button class="sf-link-ink" data-act="settings" data-section="forbindelser" type="button">Indstillinger → Forbindelser</button>.') + "</li>" +
+        "</ol>" +
+        '<p class="hint">Kun læsning. Otto kan aldrig sende, slette eller arkivere mail. Mailtekst gemmes ikke, kun Ottos korte resumé.</p>';
+      return;
+    }
+
+    var status = "";
+    if (IPULL) {
+      var last = (IPULL.steps || []).filter(function (s) { return s.type === "tool"; }).pop();
+      status = pulling
+        ? '<p class="hint" style="margin:0 0 14px">' + icon("spark") + " Otto læser dine mails" + (last ? " (" + esc(last.name) + ")" : "") + " …</p>"
+        : IPULL.status === "færdig"
+          ? '<p class="hint" style="margin:0 0 14px">' + esc(IPULL.output || "Færdig.") + " · " + kr(IPULL.costDkk) + "</p>"
+          : '<p class="hint" style="margin:0 0 14px;color:var(--danger-ink)">' + esc(IPULL.error || "Det gik galt.") + "</p>";
+    }
+
+    var list = INBOX.suggestions.map(function (s) {
+      var p = projById(s.project);
+      var meta = [];
+      if (s.due) meta.push("deadline " + FC.shortDate(s.due));
+      if (s.estimate) meta.push("ca. " + fmt(s.estimate) + " t (Ottos estimat)");
+      if (s.confidence < 0.5) meta.push("Otto er i tvivl");
+      return '<li class="isug"><div class="isug-hd"><b>' + esc(s.title) + "</b>" +
+          '<span class="tag">' + esc(p ? p.name : "Ad hoc") + "</span></div>" +
+        '<span class="vmeta">' + esc(senderName(s.from)) + " · " + esc(s.subject || "(intet emne)") + (mailDate(s.date) ? " · " + esc(mailDate(s.date)) : "") + "</span>" +
+        (s.note ? '<p class="isug-note">' + esc(s.note) + "</p>" : "") +
+        (meta.length ? '<span class="vmeta">' + esc(meta.join(" · ")) + "</span>" : "") +
+        '<div class="set-links" style="margin-top:10px">' +
+          '<button class="btn primary" data-act="inboxdirect" data-id="' + esc(s.id) + '" type="button">Opret</button>' +
+          '<button class="btn" data-act="inboxedit" data-id="' + esc(s.id) + '" type="button">Ret og opret</button>' +
+          '<button class="btn" data-act="inboxignore" data-id="' + esc(s.id) + '" type="button">Ignorér</button>' +
+          '<a class="btn" href="' + esc(s.url) + '" target="_blank" rel="noopener">Åbn mail</a>' +
+        "</div></li>";
+    }).join("");
+
+    var handled = (INBOX.handled || []).map(function (s) {
+      return '<li class="vrow"><div class="vtxt"><b>' + esc(s.title) + '</b><span class="vmeta">' + esc(senderName(s.from)) + " · " + esc(s.subject) + "</span></div>" +
+        '<span class="tag">' + esc(s.status) + "</span></li>";
+    }).join("");
+
+    box.innerHTML = status +
+      (list ? '<ul class="isugs">' + list + "</ul>"
+            : '<p class="col-empty">Ingen nye forslag. Tryk <b>Hent mails</b>, så læser Otto de seneste 3 dages mails.</p>') +
+      (handled ? '<details class="ihandled"><summary>Behandlet (' + INBOX.handled.length + ")</summary><ul class=\"vlist\">" + handled + "</ul></details>" : "") +
+      '<p class="hint" style="margin-top:14px">Otto springer kampagner, sociale, opdateringer og sendte mails over. Nye opgaver får 0 timer i denne uge, så de ikke trækker tid, før du siger det.</p>';
+  }
+
+  function suggestion(id) { return INBOX ? INBOX.suggestions.filter(function (s) { return s.id === id; })[0] : null; }
+
+  function taskPreset(s) {
+    var proj = projById(s.project) ? s.project : (projById("adhoc") ? "adhoc" : DATA.projects[0].id);
+    var note = (s.note ? s.note.slice(0, 300) + "\n" : "") + "Fra mail: " + s.url;
+    return { project: proj, start: TODAY_ISO.slice(0, 7), title: s.title, due: s.due || "", note: note,
+             remaining: s.estimate || undefined, source: { type: "gmail", id: s.threadId, url: s.url } };
+  }
+
+  function markSuggestion(s, status, taskId) {
+    INBOX.suggestions = INBOX.suggestions.filter(function (x) { return x.id !== s.id; });
+    s.status = status;
+    INBOX.handled = [s].concat(INBOX.handled || []);
+    fillInbox();
+    renderSidebar("indbakke");
+    return api("PUT", "/api/inbox/" + encodeURIComponent(s.id), { status: status, taskId: taskId || "" })
+      .catch(function (e) { flash("Kunne ikke gemme forslagets status: " + e.message, true); loadInbox(); });
+  }
+
+  function pullMail(btn) {
+    btn.disabled = true;
+    api("POST", "/api/agent/runs", { kind: "indbakke" }).then(function (r) {
+      IPULL = r.run;
+      fillInbox();
+      watchRun(r.run.id, function (run, busy) {
+        IPULL = run;
+        fillInbox();
+        if (!busy) loadInbox();
+      });
+    }).catch(function (e) {
+      if (e.status === 401) { showLogin("Du er blevet logget ud. Log ind igen."); return; }
+      btn.disabled = false;
+      flash(e.message, true);
+    });
+  }
+
+  function inboxClick(a, el) {
+    if (a === "indbakke") { location.hash = "indbakke"; return true; }
+    if (a === "inboxpull") { pullMail(el); return true; }
+    var s = el.getAttribute && suggestion(el.getAttribute("data-id"));
+    if (!s && /^inbox(direct|edit|ignore)$/.test(a)) return true;
+    if (a === "inboxignore") { markSuggestion(s, "ignoreret"); flash("Ignoreret. Tråden kommer ikke igen, medmindre der kommer et nyt svar."); return true; }
+    if (a === "inboxdirect") {
+      var pr = taskPreset(s);
+      var o = { id: slug(pr.project.slice(0, 5) + "-" + s.title, DATA.tasks.map(function (x) { return x.id; })),
+                title: s.title, project: pr.project, sprint: "", start: pr.start, end: "", status: "Ikke startet",
+                owner: "", due: pr.due, epic: "", hours: 0, note: pr.note, source: pr.source };
+      if (s.estimate) o.remaining = s.estimate;
+      DATA.tasks.push(o);
+      markDirty();
+      save();
+      markSuggestion(s, "oprettet", o.id);
+      return true;
+    }
+    if (a === "inboxedit") {
+      var preset = taskPreset(s);
+      preset.onCreate = function (o) {
+        markSuggestion(s, "oprettet", o.id);
+        setTimeout(function () { save(); }, 0);   // efter dialogen har lukket og markeret ændringen
+      };
+      editTask(null, preset);
+      return true;
+    }
+    return false;
+  }
+
   /* ====================== Tema ====================== */
 
   function currentTheme() {
@@ -3798,6 +3988,7 @@ a.btn { text-decoration: none; }
     if (h === "versioner") renderVersions();
     else if (h === "claude") renderClaude();
     else if (h === "otto") renderOtto();
+    else if (h === "indbakke") renderInbox();
     else if (!h || h === "kapacitet" || !projById(h)) renderCapacity();
     else render(h);
 
@@ -3904,6 +4095,7 @@ a.btn { text-decoration: none; }
       loadJobs();
       loadCalendar();
       loadAlerts();
+      loadInbox();
       googleReturn();
     }, function (err) {
       if (err.status === 401 || err.status === 503) { showLogin(err.status === 503 ? err.message : ""); return; }
