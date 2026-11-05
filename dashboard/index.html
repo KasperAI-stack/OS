@@ -640,6 +640,25 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .set-ft .hint { margin-right: auto; }
 .sf-inline { font: inherit; color: var(--ink); background: none; border: 0; padding: 0; cursor: pointer;
              text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 2px; }
+.whours { display: inline-flex; align-items: center; gap: 6px; }
+.whours input[type="number"] { width: 64px; }
+.gacc { border: 1px solid var(--border); border-radius: var(--r-inner); padding: 12px 14px; margin-bottom: 10px; }
+.gacc-hd { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.gacc-hd b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gacc .hint { margin-top: 0; }
+.gerr { color: var(--danger-ink); }
+.gerr .i { width: 13px; height: 13px; vertical-align: -2px; margin-right: 4px; }
+.gcals { margin-top: 10px; display: grid; gap: 6px; }
+.gcals .flab { margin-bottom: 0; }
+.gcal { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink-2); cursor: pointer; }
+.gcal input { width: 16px; height: 16px; accent-color: var(--accent); margin: 0; }
+.gcal i { width: 9px; height: 9px; border-radius: 3px; flex: 0 0 9px; }
+.steps { margin: 0 0 8px; padding-left: 20px; font-size: 13.5px; color: var(--ink-2); display: grid; gap: 8px; }
+.steps a { color: var(--ink); text-decoration-color: var(--accent); text-underline-offset: 2px; }
+.set-sec code { font-family: var(--mono); font-size: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; color: var(--ink); white-space: nowrap; }
+.set-sec code#g-uri { white-space: normal; overflow-wrap: anywhere; }
+.copyrow { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.conflicts { margin: 0 0 6px; padding-left: 18px; display: grid; gap: 8px; font-size: 13.5px; max-height: 50vh; overflow-y: auto; }
 .ceil-lbl[data-act] { cursor: pointer; }
 .ceil-lbl[data-act]:hover { color: var(--ink); }
 .vnext { color: inherit; font: inherit; text-align: left; background: none; border: 0; padding: 0; cursor: pointer; }
@@ -1241,7 +1260,109 @@ a.btn { text-decoration: none; }
 
   var DATA = null;
   var DATA_REV = "";
+  var BASE = null;      // det, serveren havde ved DATA_REV — grundlaget for fletning
   var dirty = false;
+
+  /* ----- Fletning -----
+     Gemmer et andet sted imens (telefonen, Claude, senere agenten), afviser
+     serveren med 409. I stedet for bare at sige det, hentes den nye version, og
+     dine ændringer flettes ind pr. projekt, sprint, opgave og uge:
+       kun ændret hos dig → din værdi · kun ændret derude → deres
+       ændret begge steder i samme felt → konflikt, som du afgør.
+     Rækkefølgen følger serverens version; det, du har tilføjet, kommer bagefter. */
+
+  function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
+  function same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+
+  var MERGE_LISTS = {
+    projects: { key: function (x) { return x && x.id; },                     label: function (x) { return "Projekt „" + (x.name || x.id) + "“"; } },
+    sprints:  { key: function (x) { return x && x.project + "|" + x.month; }, label: function (x) { return "Sprint " + x.month + " (" + x.project + ")"; } },
+    tasks:    { key: function (x) { return x && x.id; },                     label: function (x) { return "Opgave „" + (x.title || x.id) + "“"; } },
+    uger:     { key: function (x) { return x && x.uge; },                    label: function (x) { return weekLabel(x.uge); } }
+  };
+  var MERGE_OBJS = { meta: "Data", kapacitet: "Indstillinger", epics: "Epics" };
+  var FIELD_NAMES = { title: "titel", status: "status", hours: "timer", due: "deadline", owner: "ejer", note: "note",
+    sprint: "sprint", start: "start", end: "slut", epic: "epic", project: "projekt", name: "navn", tagline: "beskrivelse",
+    goal: "mål", kind: "type", contract: "arbejdsuge", meetings: "faste møder", admin: "mail & admin", other: "fravær",
+    ceiling: "loft", adhoc: "ad hoc", drift: "drift", projekt: "projekter" };
+
+  function mergeFields(b, l, r, where, conflicts, theirs) {
+    b = b || {}; l = l || {}; r = r || {};
+    var out = {}, keys = {};
+    [b, l, r].forEach(function (o) { Object.keys(o).forEach(function (k) { keys[k] = true; }); });
+    Object.keys(keys).forEach(function (k) {
+      var bv = b[k], lv = l[k], rv = r[k], v;
+      if (same(lv, bv)) v = rv;
+      else if (same(rv, bv) || same(lv, rv)) v = lv;
+      else {
+        conflicts.push({ where: where, field: FIELD_NAMES[k] || k, mine: lv, theirs: rv });
+        v = theirs ? rv : lv;
+      }
+      if (v !== undefined) out[k] = v;
+    });
+    return out;
+  }
+
+  function mergeData(base, local, remote, theirs) {
+    var out = clone(remote), conflicts = [];
+    Object.keys(MERGE_OBJS).forEach(function (k) {
+      out[k] = mergeFields(base[k], local[k], remote[k], MERGE_OBJS[k], conflicts, theirs);
+    });
+    Object.keys(MERGE_LISTS).forEach(function (name) {
+      var spec = MERGE_LISTS[name], idx = function (list) {
+        var m = {}; (list || []).forEach(function (x) { m[spec.key(x)] = x; }); return m;
+      };
+      var B = idx(base[name]), L = idx(local[name]), R = idx(remote[name]), result = [], seen = {};
+      (remote[name] || []).forEach(function (r) {
+        var k = spec.key(r), b = B[k], l = L[k];
+        seen[k] = true;
+        if (!b) { result.push(l ? mergeFields({}, l, r, spec.label(r), conflicts, theirs) : r); return; }
+        if (!l) {                                   // slettet hos dig
+          if (same(r, b)) return;
+          conflicts.push({ where: spec.label(r), field: "slettet hos dig, ændret et andet sted", mine: "slettet", theirs: "beholdt" });
+          if (theirs) result.push(r);
+          return;
+        }
+        result.push(same(l, b) ? r : (same(r, b) ? l : mergeFields(b, l, r, spec.label(l), conflicts, theirs)));
+      });
+      (local[name] || []).forEach(function (l) {
+        var k = spec.key(l);
+        if (seen[k]) return;
+        if (!B[k]) { result.push(l); return; }      // nyt hos dig
+        if (same(l, B[k])) return;                  // slettet derude, urørt hos dig
+        conflicts.push({ where: spec.label(l), field: "slettet et andet sted, ændret hos dig", mine: "beholdt", theirs: "slettet" });
+        if (!theirs) result.push(l);
+      });
+      out[name] = result;
+    });
+    // Datoen for seneste gem er aldrig en rigtig konflikt
+    conflicts = conflicts.filter(function (c) { return !(c.where === "Data" && c.field === "updated"); });
+    return { data: out, conflicts: conflicts };
+  }
+
+  function showValue(v) {
+    if (v === undefined || v === null || v === "") return "(tom)";
+    return typeof v === "object" ? JSON.stringify(v) : String(v);
+  }
+
+  // Konflikter afgøres samlet: dine værdier eller de nye. Begge versioner findes bagefter i Historik.
+  function askConflicts(conflicts, done) {
+    var rows = conflicts.slice(0, 12).map(function (c) {
+      return "<li><b>" + esc(c.where) + "</b> · " + esc(c.field) + '<br><span class="hint">Din: ' + esc(showValue(c.mine)) +
+             " · Den nye: " + esc(showValue(c.theirs)) + "</span></li>";
+    }).join("") + (conflicts.length > 12 ? "<li>… og " + (conflicts.length - 12) + " mere</li>" : "");
+    if (setDlg.open) setDlg.close();
+    dlg.innerHTML = '<form method="dialog"><h3>Ændret begge steder</h3>' +
+      '<p class="hint" style="margin:-8px 0 12px">Mens du arbejdede, blev data gemt et andet sted. Det meste er flettet sammen, ' +
+      "men " + plural(conflicts.length, "felt", "felter") + " er ændret både her og derude. Hvilken version skal gælde?</p>" +
+      '<ul class="conflicts">' + rows + "</ul>" +
+      '<div class="dbtns"><span style="flex:1"></span>' +
+        '<button type="button" class="btn" id="c-theirs">Brug de nye</button>' +
+        '<button type="button" class="btn primary" id="c-mine">Behold mine</button></div></form>';
+    dlg.showModal();
+    dlg.querySelector("#c-mine").onclick = function () { dlg.close(); done(false); };
+    dlg.querySelector("#c-theirs").onclick = function () { dlg.close(); done(true); };
+  }
 
   // Fælles indgang til API'et. En fejl bliver til en Error med status og den
   // danske besked, serveren har skrevet.
@@ -1269,24 +1390,44 @@ a.btn { text-decoration: none; }
     });
   }
 
-  function save() {
+  function save(merged) {
     DATA.meta.updated = TODAY_ISO;
-    return api("PUT", "/api/data", { rev: DATA_REV, data: DATA })
+    var sent = clone(DATA);
+    var said = merged ? "Gemt — flettet med ændringer fra et andet sted." : "Gemt";
+    return api("PUT", "/api/data", { rev: DATA_REV, data: sent })
       .then(function (res) {
         DATA_REV = res.rev;
+        BASE = sent;
         dirty = false; clearDraft(); route();
         // Opgaver med Claude som ejer sætter Claude i gang (se api.mts)
         var c = res.claude;
-        if (!c) { flash("Gemt"); return; }
+        if (!c) { flash(said); return; }
         var started = c.started ? "Claude er sat i gang med " + plural(c.started, "opgave", "opgaver") + ". " : "";
-        if (c.skipped && c.skipped.length) flash("Gemt. " + started + c.skipped.join(" "), true);
-        else flash(("Gemt. " + started).trim());
+        if (c.skipped && c.skipped.length) flash(said + " " + started + c.skipped.join(" "), true);
+        else flash((said + " " + started).trim());
         loadJobs();
       })
       .catch(function (e) {
         if (e.status === 401) { showLogin("Du er blevet logget ud. Log ind igen — dine ændringer ligger klar."); return; }
+        // Første gang: flet med den nye version og prøv igen. Anden gang i træk: sig det.
+        if (e.status === 409 && !merged && BASE) return rebase();
         flash("Kunne ikke gemme: " + e.message, true);
       });
+  }
+
+  function rebase() {
+    return api("GET", "/api/data").then(function (res) {
+      var apply = function (theirs) {
+        var m = mergeData(BASE, DATA, res.data, theirs);
+        DATA = m.data; BASE = res.data; DATA_REV = res.rev || "";
+        saveDraft();
+        return save(true);
+      };
+      var first = mergeData(BASE, DATA, res.data, false);
+      if (!first.conflicts.length) return apply(false);
+      route();
+      askConflicts(first.conflicts, apply);
+    }, function (e) { flash("Kunne ikke hente den nye version: " + e.message, true); });
   }
 
   function flash(msg, bad) {
@@ -1313,7 +1454,8 @@ a.btn { text-decoration: none; }
   var DRAFT = null;
 
   function saveDraft() {
-    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ts: Date.now(), rev: DATA_REV, data: DATA })); } catch (e) {}
+    // base gemmes med, så en kladde kan flettes ind i nyere data i stedet for at erstatte dem
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ts: Date.now(), rev: DATA_REV, data: DATA, base: BASE })); } catch (e) {}
   }
   function clearDraft() {
     DRAFT = null;
@@ -1345,8 +1487,11 @@ a.btn { text-decoration: none; }
       "<p>Der ligger ændringer i browseren, som aldrig blev gemt — lavet " +
       esc(draftAge(DRAFT.ts)) + ". De går tabt, hvis du kasserer dem.</p>" +
       (DRAFT.rev !== DATA_REV
-        ? "<p style=\"margin-top:6px\"><b>Obs:</b> data er ændret i skyen siden — fx på en anden enhed eller af Claude. " +
-          "Gendanner og gemmer du, erstatter dine ændringer de nye. Den nuværende version kan altid findes i Historik.</p>"
+        ? (DRAFT.base
+            ? "<p style=\"margin-top:6px\">Data er ændret i skyen siden — fx på en anden enhed eller af Claude. " +
+              "Gendanner du, flettes dine ændringer ind i de nye, og du bliver spurgt, hvis noget er ændret begge steder.</p>"
+            : "<p style=\"margin-top:6px\"><b>Obs:</b> data er ændret i skyen siden — fx på en anden enhed eller af Claude. " +
+              "Gendanner og gemmer du, erstatter dine ændringer de nye. Den nuværende version kan altid findes i Historik.</p>")
         : "") +
       '<p style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">' +
         '<button class="btn primary" data-act="draftrestore" type="button">Gendan ændringerne</button>' +
@@ -1571,10 +1716,44 @@ a.btn { text-decoration: none; }
       VIEWOPTS = { group: "none", show: "all", sort: "start", epic: "" };
       saveView(); route(); return;
     }
+    if (a === "gconnect" && dirty) {
+      // Forbindelsen sker på Googles side, så siden forlades et øjeblik
+      e.preventDefault();
+      flash("Gem dine ændringer først — du sendes et øjeblik over til Google for at logge ind.", true);
+      return;
+    }
+    if (a === "gconnect") return;
+    if (a === "gdisconnect") {
+      if (!confirm("Afbryd " + el.getAttribute("data-email") + "? Møderne fra kontoen forsvinder fra HeyOtto OS, og adgangen trækkes tilbage hos Google.")) return;
+      api("DELETE", "/api/google/accounts/" + encodeURIComponent(el.getAttribute("data-id")), {})
+        .then(function () { flash("Kontoen er afbrudt."); return Promise.all([loadGoogle(), loadCalendar()]); })
+        .catch(function (err) { flash("Kunne ikke afbryde: " + err.message, true); });
+      return;
+    }
+    if (a === "calrefresh") {
+      el.disabled = true;
+      api("POST", "/api/calendar/refresh", {})
+        .then(function (r) { CAL = r.snapshot; flash(r.note || "Kalenderen er hentet."); route(); return loadGoogle(); })
+        .catch(function (err) { flash("Kunne ikke hente kalenderen: " + err.message, true); el.disabled = false; });
+      return;
+    }
+    if (a === "copyuri") { copyText(document.getElementById("g-uri").textContent, "Adressen er kopieret."); return; }
+    if (a === "meetsrc") {
+      DATA.kapacitet.meetingsSource = el.getAttribute("data-v");
+      markDirty();
+      rerenderSettingsSection("kapacitet");
+      return;
+    }
     if (a === "draftrestore") {
-      DATA = DRAFT.data; DRAFT = null;
-      dirty = true; saveDraft(); route();
-      flash("Ændringerne er gendannet — husk at trykke Gem.");
+      var dr = DRAFT;
+      var restore = function (theirs) {
+        DATA = dr.rev !== DATA_REV && dr.base ? mergeData(dr.base, dr.data, DATA, theirs).data : dr.data;
+        DRAFT = null; dirty = true; saveDraft(); route();
+        flash("Ændringerne er gendannet — husk at trykke Gem.");
+      };
+      var pre = dr.rev !== DATA_REV && dr.base ? mergeData(dr.base, dr.data, DATA, false) : null;
+      if (pre && pre.conflicts.length) askConflicts(pre.conflicts, restore);
+      else restore(false);
       return;
     }
     if (a === "draftdiscard") {
@@ -1808,7 +1987,7 @@ a.btn { text-decoration: none; }
       // En åben dialog gør resten af siden utilgængelig, så feltet skal ligge i den
       var ta = document.createElement("textarea");
       ta.value = text;
-      (dlg.open ? dlg : document.body).appendChild(ta);
+      (setDlg.open ? setDlg : (dlg.open ? dlg : document.body)).appendChild(ta);
       ta.select();
       try { document.execCommand("copy"); done(); }
       catch (e) { flash("Kunne ikke kopiere. Markér teksten, og kopiér selv.", true); }
@@ -1867,9 +2046,95 @@ a.btn { text-decoration: none; }
     return p.length === 2 ? "Uge " + parseInt(p[1], 10) + " · " + p[0] : k;
   }
 
+  /* ====================== Kalender ======================
+     Møderne hentes af serveren fra de forbundne Google-kalendere (netlify/lib/google.mts)
+     og ligger uden for data. Her regnes de om til timer i den aktuelle uge:
+       møder  = optagede, ikke-afviste møder inden for arbejdstiden, overlap talt én gang
+       fravær = "Ikke til stede"-hændelser og heldagshændelser som "Ferie" eller "Syg"
+     Fokustid og arbejdssted tæller ikke. Tiden regnes i browserens tidszone. */
+
+  var CAL = null;       // { fetchedAt, accounts, events } fra /api/calendar
+  var GOOGLE = null;    // { configured, missing, redirectUri, accounts } fra /api/google
+  var CAL_STALE_MS = 5 * 60000;
+  var ABSENCE_WORDS = /\b(ferie|fri|fridag|syg|sygdom|afspadsering|barsel|orlov|kursus)\b/i;
+
+  function weekStart(d) {
+    var t = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    t.setDate(t.getDate() - ((t.getDay() + 6) % 7));
+    return t;
+  }
+  function calConnected() { return !!(CAL && CAL.accounts && CAL.accounts.length); }
+  function calUsed() { return calConnected() && (DATA.kapacitet || {}).meetingsSource !== "fast"; }
+
+  function dateOnly(s) { return new Date(Number(s.slice(0, 4)), Number(s.slice(5, 7)) - 1, Number(s.slice(8, 10))); }
+  function sumIntervals(list) {
+    list.sort(function (a, b) { return a[0] - b[0]; });
+    var tot = 0, cs = null, ce = null;
+    list.forEach(function (iv) {
+      if (cs === null || iv[0] > ce) { if (cs !== null) tot += ce - cs; cs = iv[0]; ce = iv[1]; }
+      else if (iv[1] > ce) ce = iv[1];
+    });
+    if (cs !== null) tot += ce - cs;
+    return tot / 3600000;
+  }
+  function isAbsence(e) {
+    return e.type === "outOfOffice" || (e.allDay && e.busy && ABSENCE_WORDS.test(e.title || ""));
+  }
+  function isMeeting(e) {
+    return !e.allDay && e.busy && e.response !== "declined" && (e.type === "default" || e.type === "fromGmail");
+  }
+
+  // Timer med møder og fravær i ugen, der starter ws (en mandag), mandag–fredag i arbejdstiden.
+  function calWeekStats(ws) {
+    var c = DATA.kapacitet || {};
+    var h0 = num(c.workStart, 8), h1 = Math.max(num(c.workEnd, 17), h0 + 0.5);
+    var meet = 0, away = 0;
+    for (var i = 0; i < 5; i++) {
+      var day = new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + i);
+      var ds = day.getTime() + h0 * 3600000, de = day.getTime() + h1 * 3600000;
+      var A = [], M = [];
+      (CAL.events || []).forEach(function (e) {
+        var s, en;
+        if (e.allDay) { s = dateOnly(e.start).getTime(); en = dateOnly(e.end || e.start).getTime(); }
+        else { s = Date.parse(e.start); en = Date.parse(e.end); }
+        s = Math.max(s, ds); en = Math.min(en, de);
+        if (!(en > s)) return;
+        if (isAbsence(e)) A.push([s, en]);
+        else if (isMeeting(e)) M.push([s, en]);
+      });
+      var a = sumIntervals(A.slice());
+      away += a;
+      meet += sumIntervals(A.concat(M)) - a;   // et møde på en feriedag tæller ikke som møde
+    }
+    return { meetings: meet, absence: away, workDay: h1 - h0 };
+  }
+
+  function loadCalendar() {
+    return api("GET", "/api/calendar").then(function (res) {
+      CAL = res.snapshot;
+      if (DATA) route();
+      if (calConnected() && Date.now() - Date.parse(CAL.fetchedAt) > CAL_STALE_MS) {
+        return api("POST", "/api/calendar/refresh", {}).then(function (r) { CAL = r.snapshot; if (DATA) route(); });
+      }
+    }).catch(function (e) { console.warn("Kalenderen kunne ikke hentes:", e.message); });
+  }
+
+  function loadGoogle() {
+    return api("GET", "/api/google").then(function (res) {
+      GOOGLE = res;
+      rerenderSettingsSection("forbindelser");
+    }).catch(function (e) {
+      GOOGLE = { error: e.message };
+      rerenderSettingsSection("forbindelser");
+    });
+  }
+
   function capacity() {
     var c = DATA.kapacitet || {};
-    var avail = Math.max(0, num(c.contract) - num(c.meetings) - num(c.admin) - num(c.other));
+    var cal = calUsed() ? calWeekStats(weekStart(new Date())) : null;
+    var meetings = cal ? cal.meetings : num(c.meetings);
+    var absence = cal ? cal.absence : 0;
+    var avail = Math.max(0, num(c.contract) - meetings - num(c.admin) - num(c.other) - absence);
     var ceiling = num(c.ceiling, 85) / 100;
     var plan = avail * ceiling;
 
@@ -1894,7 +2159,8 @@ a.btn { text-decoration: none; }
     return {
       avail: avail, ceiling: ceiling, plan: plan, by: by, buffer: buffer,
       measured: measured, weeksLogged: weeks.length, live: live,
-      load: load, free: plan - load, util: util
+      load: load, free: plan - load, util: util,
+      meetings: meetings, absence: absence, fromCal: !!cal
     };
   }
 
@@ -1936,7 +2202,9 @@ a.btn { text-decoration: none; }
           (m.measured != null ? "målt gennemsnit over " + m.weeksLogged + " uger"
                               : "dit estimat, indtil 2 uger er registreret i ugeloggen") + "</span></span>" +
         '<b class="num">' + fmt(m.buffer) + " t</b></div>" +
-        '<p class="hint">Tilgængelig tid er ' + fmt(m.avail) + " t efter faste møder, mail &amp; admin og fravær. " +
+        '<p class="hint">Tilgængelig tid er ' + fmt(m.avail) + " t efter " +
+          (m.fromCal ? fmt(m.meetings) + " t møder" + (m.absence ? " og " + fmt(m.absence) + " t fravær" : "") + " fra kalenderen, mail &amp; admin og øvrigt fravær. "
+                     : "faste møder, mail &amp; admin og fravær. ") +
           "Loftet er " + fmt(m.ceiling * 100, 0) + " %. " +
           '<button class="sf-inline" data-act="settings" type="button">Ret i indstillinger</button></p>' +
       "</div></div></section>";
@@ -2089,16 +2357,27 @@ a.btn { text-decoration: none; }
 
   var SETTINGS_SECTIONS = [
     { id: "kapacitet", title: "Kapacitet", html: function () {
-        var c = DATA.kapacitet, m = capacity(), f = [
-          ["contract", "Arbejdsuge", "kontrakttimer pr. uge"],
-          ["meetings", "Faste møder", "interne + eksterne pr. uge"],
-          ["admin", "Mail &amp; admin", "indbakke, rapportering"],
-          ["other", "Øvrigt fravær", "ferie/kurser omregnet pr. uge"]
-        ];
-        return f.map(function (x) {
-            return '<div class="krow"><label class="klab" for="cap-' + x[0] + '">' + x[1] + '<span class="ksub">' + x[2] + "</span></label>" +
-                   numInput('id="cap-' + x[0] + '" data-cap="model" data-key="' + x[0] + '" max="80"', c[x[0]]) + "</div>";
-          }).join("") +
+        var c = DATA.kapacitet, m = capacity(), useCal = calUsed();
+        var row = function (key, label, sub, max) {
+          return '<div class="krow"><label class="klab" for="cap-' + key + '">' + label + '<span class="ksub">' + sub + "</span></label>" +
+                 numInput('id="cap-' + key + '" data-cap="model" data-key="' + key + '" max="' + (max || 80) + '"', c[key]) + "</div>";
+        };
+        var meetRow = useCal
+          ? '<div class="krow"><span class="klab">Møder<span class="ksub">fra kalenderen, denne uge</span></span>' +
+              '<b class="num" id="set-meet">' + fmt(m.meetings) + " t</b></div>" +
+            '<div class="krow"><span class="klab">Arbejdstid<span class="ksub">møder uden for tæller ikke</span></span>' +
+              '<span class="whours">' + numInput('id="cap-workStart" data-cap="model" data-key="workStart" max="24" aria-label="Arbejdstid fra"', num(c.workStart, 8)) +
+              "<span>–</span>" + numInput('id="cap-workEnd" data-cap="model" data-key="workEnd" max="24" aria-label="Arbejdstid til"', num(c.workEnd, 17)) + "</span></div>"
+          : row("meetings", "Faste møder", "interne + eksterne pr. uge");
+        var src = calConnected()
+          ? '<div class="krow"><span class="klab">Møder regnes fra</span><span class="seg-ctl" role="group" aria-label="Møder regnes fra">' +
+              '<button type="button" data-act="meetsrc" data-v="kalender" aria-pressed="' + useCal + '">Kalenderen</button>' +
+              '<button type="button" data-act="meetsrc" data-v="fast" aria-pressed="' + !useCal + '">Fast tal</button></span></div>'
+          : "";
+        return row("contract", "Arbejdsuge", "kontrakttimer pr. uge") + src + meetRow +
+          row("admin", "Mail &amp; admin", "indbakke, rapportering") +
+          row("other", "Øvrigt fravær", useCal ? 'pr. uge, ud over fravær i kalenderen<span id="set-away">' + awayNote(m) + "</span>"
+                                                : "ferie/kurser omregnet pr. uge") +
           '<div class="ktotal"><span>Tilgængeligt</span><b class="num" id="set-avail">' + fmt(m.avail) + " t</b></div>" +
           '<div class="kceil"><div class="kceil-hd"><label for="cap-ceiling">Planlægningsloft</label>' +
             '<b class="num" id="set-ceil">' + num(c.ceiling, 85) + " %</b></div>" +
@@ -2110,6 +2389,7 @@ a.btn { text-decoration: none; }
             numInput('id="cap-adhoc" data-cap="model" data-key="adhoc" max="40"', c.adhoc, m.measured != null ? " disabled" : "") +
           "</div></div>";
       } },
+    { id: "forbindelser", title: "Forbindelser", html: function () { return connectionsHtml(); } },
     { id: "konto", title: "Konto og adgang", html: function () {
         return '<p class="hint" style="margin-top:0">Historik, Claudes nøgle og log ud.</p>' +
           '<div class="set-links">' +
@@ -2119,6 +2399,65 @@ a.btn { text-decoration: none; }
           "</div>";
       } }
   ];
+
+  function awayNote(m) { return m.absence ? " · " + fmt(m.absence) + " t i kalenderen denne uge" : ""; }
+
+  var TIMEFMT = new Intl.DateTimeFormat("da-DK", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+  // Google-konti. Intet er bundet til én person: man forbinder de konti, man vil,
+  // og en anden kan sætte sit eget HeyOtto OS op med vejledningen nedenfor.
+  function connectionsHtml() {
+    if (!GOOGLE) return '<p class="hint" style="margin-top:0">Henter …</p>';
+    if (GOOGLE.error) return '<p class="hint" style="margin-top:0">Kunne ikke hente forbindelserne: ' + esc(GOOGLE.error) + "</p>";
+    if (!GOOGLE.configured) return googleSetupHtml();
+    var snapAcc = {};
+    ((CAL && CAL.accounts) || []).forEach(function (a) { snapAcc[a.id] = a; });
+    var list = GOOGLE.accounts.map(function (a) {
+      var s = snapAcc[a.id];
+      var status = a.error
+        ? '<span class="gerr">' + icon("alert") + esc(a.error) + "</span>"
+        : (a.lastSync ? "Hentet " + esc(TIMEFMT.format(new Date(a.lastSync))) + (s ? " · " + plural(s.events, "hændelse", "hændelser") : "") : "Ikke hentet endnu");
+      var cals = (a.calendars || []).map(function (c) {
+        return '<label class="gcal"><input type="checkbox" data-gcal="' + esc(a.id) + '" value="' + esc(c.id) + '"' + (c.included ? " checked" : "") + ">" +
+               (c.color ? '<i style="background:' + esc(c.color) + '"></i>' : "") + "<span>" + esc(c.name) + (c.primary ? " (primær)" : "") + "</span></label>";
+      }).join("");
+      return '<div class="gacc"><div class="gacc-hd"><b>' + esc(a.email) + "</b>" +
+          '<button class="btn" data-act="gdisconnect" data-id="' + esc(a.id) + '" data-email="' + esc(a.email) + '" type="button">Afbryd</button></div>' +
+        '<div class="hint">' + status + "</div>" +
+        (cals ? '<div class="gcals"><span class="flab">Kalendere, der tæller</span>' + cals + "</div>" : "") + "</div>";
+    }).join("");
+    return '<p class="hint" style="margin-top:0">Google Kalender · kun læsning. HeyOtto OS kan aldrig ændre eller svare på noget i kalenderen.</p>' +
+      list +
+      '<div class="set-links"><a class="btn primary" data-act="gconnect" href="/api/google/connect?scopes=calendar">+ ' +
+        (GOOGLE.accounts.length ? "Forbind en konto til" : "Forbind Google Kalender") + "</a>" +
+        (GOOGLE.accounts.length ? '<button class="btn" data-act="calrefresh" type="button">Hent nu</button>' : "") + "</div>" +
+      '<p class="hint">Du kan forbinde flere konti, fx privat og arbejde. Google spørger, hvilken konto du vil bruge.</p>';
+  }
+
+  function googleSetupHtml() {
+    var uri = GOOGLE.redirectUri;
+    return '<p style="margin:0 0 10px">Google er ikke sat op i dette HeyOtto OS endnu. Det gøres én gang, af den der ejer installationen. Tager ca. 10 minutter.</p>' +
+      '<ol class="steps">' +
+        '<li>Åbn <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">Google Cloud</a>, og lav et projekt, fx „HeyOtto OS“.</li>' +
+        '<li>Under <i>APIs &amp; Services → Library</i>: slå <b>Google Calendar API</b> til.</li>' +
+        "<li>Under <i>Google Auth Platform</i> (OAuth consent screen): vælg <b>External</b>, skriv app-navn og din e-mail. " +
+          "Tryk derefter <b>Publish app</b>, så adgangen ikke udløber efter 7 dage. Google viser en advarsel om en „ikke verificeret app“ første gang — det er forventet til eget brug.</li>" +
+        "<li>Under <i>Clients</i> (Credentials): <b>Create client → Web application</b>. Tilføj denne adresse under <b>Authorized redirect URIs</b>:" +
+          '<div class="copyrow"><code id="g-uri">' + esc(uri) + '</code><button class="btn" data-act="copyuri" type="button">Kopiér</button></div></li>' +
+        "<li>I Netlify (<i>Project configuration → Environment variables</i>): tilføj <code>GOOGLE_CLIENT_ID</code> og <code>GOOGLE_CLIENT_SECRET</code> (markér den som hemmelig) fra klienten. " +
+          "Lav så et nyt deploy (<i>Deploys → Trigger deploy</i>).</li>" +
+        "<li>Kom tilbage hertil, og tryk <b>Forbind Google Kalender</b>.</li>" +
+      "</ol>" +
+      (GOOGLE.missing && GOOGLE.missing.length ? '<p class="hint">Mangler i Netlify: ' + GOOGLE.missing.map(function (k) { return "<code>" + esc(k) + "</code>"; }).join(" og ") + ".</p>" : "") +
+      '<p class="hint">Vejledningen står også i <code>dashboard/README.md</code> under „Google: kalender og mail“.</p>';
+  }
+
+  function rerenderSettingsSection(id) {
+    if (!setDlg.open) return;
+    var s = SETTINGS_SECTIONS.filter(function (x) { return x.id === id; })[0];
+    var box = document.getElementById("set-" + id);
+    if (s && box) box.innerHTML = "<h4>" + esc(s.title) + "</h4>" + s.html();
+  }
 
   function adhocSub(m) {
     return m.measured != null
@@ -2143,9 +2482,10 @@ a.btn { text-decoration: none; }
         (dirty ? '<span class="udot"></span>Gem ændringer' : "Gem") + "</button>";
   }
 
-  function openSettings() {
+  function openSettings(section) {
     if (!DATA) return;
     if (dlg.open) dlg.close();
+    loadGoogle();
     setDlg.innerHTML =
       '<div class="set-hd"><h3 id="set-title">Indstillinger</h3>' +
         '<button class="icon-btn" data-act="settingsclose" type="button" title="Luk" aria-label="Luk indstillinger">' + icon("x") + "</button></div>" +
@@ -2154,6 +2494,8 @@ a.btn { text-decoration: none; }
       }).join("") +
       '<div class="set-ft" id="set-ft">' + settingsFooter() + "</div>";
     setDlg.showModal();
+    var target = section && document.getElementById("set-" + section);
+    if (target) { target.scrollIntoView({ block: "start" }); var f = target.querySelector("a,button"); if (f) f.focus(); return; }
     var first = setDlg.querySelector("input:not(:disabled)");
     if (first) first.focus();
   }
@@ -2166,6 +2508,8 @@ a.btn { text-decoration: none; }
     put("set-avail", fmt(m.avail) + " t");
     put("set-ceil", num(c.ceiling, 85) + " %");
     put("set-adhoc-sub", adhocSub(m));
+    put("set-meet", fmt(m.meetings) + " t");
+    put("set-away", awayNote(m));
     put("set-ft", settingsFooter());
     var ah = document.getElementById("cap-adhoc");
     if (ah) ah.disabled = m.measured != null;
@@ -2194,6 +2538,20 @@ a.btn { text-decoration: none; }
   }
   document.addEventListener("input", function (e) {
     if (e.target && e.target.getAttribute && e.target.getAttribute("data-cap")) applyCap(e.target);
+  });
+
+  // Hvilke kalendere tæller. Gemmes med det samme på serveren (det er ikke en del af data),
+  // og serveren henter kalenderne igen med det nye valg.
+  document.addEventListener("change", function (e) {
+    var el = e.target;
+    if (!el || !el.getAttribute || !el.getAttribute("data-gcal")) return;
+    var acc = el.getAttribute("data-gcal");
+    var boxes = setDlg.querySelectorAll('input[data-gcal="' + acc.replace(/"/g, '\\"') + '"]');
+    var included = Array.prototype.filter.call(boxes, function (b) { return b.checked; }).map(function (b) { return b.value; });
+    Array.prototype.forEach.call(boxes, function (b) { b.disabled = true; });
+    api("PUT", "/api/google/accounts/" + encodeURIComponent(acc) + "/calendars", { included: included })
+      .then(function (r) { if (r.snapshot) CAL = r.snapshot; route(); flash("Kalendervalget er gemt."); return loadGoogle(); })
+      .catch(function (err) { flash("Kunne ikke gemme kalendervalget: " + err.message, true); loadGoogle(); });
   });
 
   // Visningsvalg ændrer ikke data, så de må aldrig sætte siden i "ugemt"
@@ -2570,11 +2928,24 @@ a.btn { text-decoration: none; }
       '<p style="margin-top:12px"><button class="btn" type="button" onclick="location.reload()">Prøv igen</button></p></div>';
   }
 
+  // Tilbage fra Google (api.mts sender ?google=forbundet|fejl&besked=…): sig hvordan det gik,
+  // vis forbindelserne, og ryd adressen, så beskeden ikke kommer igen ved genindlæsning.
+  function googleReturn() {
+    var q = new URLSearchParams(location.search);
+    var how = q.get("google");
+    if (!how) return;
+    try { history.replaceState(null, "", location.pathname + location.hash); } catch (e) {}
+    openSettings("forbindelser");
+    if (how === "forbundet") flash("Google er forbundet: " + (q.get("besked") || "") + ". Dine møder hentes nu.");
+    else flash(q.get("besked") || "Forbindelsen til Google mislykkedes.", true);
+  }
+
   // Hent data fra skyen. Er man ikke logget ind, vises login-skærmen.
   function boot() {
     return api("GET", "/api/data").then(function (res) {
       DATA = res.data;
       DATA_REV = res.rev || "";
+      BASE = clone(res.data);
       document.getElementById("login").hidden = true;
       document.getElementById("app").hidden = false;
       try {
@@ -2585,6 +2956,8 @@ a.btn { text-decoration: none; }
         return;
       }
       loadJobs();
+      loadCalendar();
+      googleReturn();
     }, function (err) {
       if (err.status === 401 || err.status === 503) { showLogin(err.status === 503 ? err.message : ""); return; }
       crash(err, "HeyOtto OS kunne ikke hente dine data", "Prøv at genindlæse om lidt.");
