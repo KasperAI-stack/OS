@@ -16,6 +16,13 @@
      GET    /api/claude/jobs/:id             ét job
      PUT    /api/claude/jobs/:id             { status, result?, error? } — Claude melder tilbage,
                                              Kasper godkender eller kasserer
+     GET    /api/google                      { configured, missing, redirectUri, accounts } — forbindelsens status
+     GET    /api/google/connect?scopes=…     send browseren til Google for at forbinde en konto
+     GET    /api/google/callback             Google sender browseren tilbage hertil (ingen cookie, signeret state)
+     PUT    /api/google/accounts/:id/calendars  { included: [kalender-id …] }
+     DELETE /api/google/accounts/:id         afbryd en konto (tilbagekaldes også hos Google)
+     GET    /api/calendar                    { snapshot } — møder fra de forbundne kalendere
+     POST   /api/calendar/refresh            hent kalenderne nu (højst én gang i minuttet)
 
    To måder at være logget ind på:
      * Kasper: adgangskoden fra miljøvariablen HEYOTTO_PASSWORD giver en signeret
@@ -33,6 +40,7 @@
 import { getDeployStore, getStore } from "@netlify/blobs";
 import type { Config, Context } from "@netlify/functions";
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import * as google from "../lib/google.mts";
 
 type Store = ReturnType<typeof getStore>;
 type Who = "dig" | "Claude";
@@ -41,7 +49,6 @@ type IndexEntry = { id: string; by: Who; projects: number; tasks: number; restor
 const DATA_KEY = "data";
 const INDEX_KEY = "historik-index";
 const HISTORY = "historik/";
-const SECRET_KEY = "auth/secret";
 const CLAUDE_KEY = "auth/claude-key";
 const FAILS = "auth/fail/";
 const COOKIE = "heyotto_session";
@@ -120,12 +127,7 @@ function configuredPassword(): string | null {
 // En tilfældig hemmelighed, der laves første gang og bor i lageret. Sessionerne
 // signeres med den OG adgangskoden: skift adgangskode, så er alle logget ud.
 async function sessionKey(store: Store, password: string) {
-  let secret = await store.get(SECRET_KEY);
-  if (typeof secret !== "string" || !secret) {
-    await store.set(SECRET_KEY, randomBytes(32).toString("hex"));
-    secret = await store.get(SECRET_KEY);
-  }
-  return createHmac("sha256", String(secret)).update("session:" + password).digest("hex");
+  return createHmac("sha256", await google.serverSecret(store)).update("session:" + password).digest("hex");
 }
 
 const sign = (key: string, expires: number) => createHmac("sha256", key).update("v1." + expires).digest("hex");
@@ -521,6 +523,87 @@ async function claudeJobs(req: Request, store: Store, who: Who, path: string) {
   return fail(405, "Brug GET eller PUT.");
 }
 
+/* ---------- Google: konti og kalender ----------
+   Selve arbejdet står i netlify/lib/google.mts. Kalenderen ligger uden for data,
+   så en synk aldrig giver "data er ændret et andet sted" i browseren. */
+
+const env = (k: string) => Netlify.env.get(k);
+
+function redirect(location: string) {
+  return new Response(null, { status: 302, headers: { Location: location, "Cache-Control": "no-store" } });
+}
+
+// Tilbage til appen med besked i adressen. Appen viser den og åbner Indstillinger.
+function backToApp(ok: boolean, text: string) {
+  return redirect("/?" + new URLSearchParams({ google: ok ? "forbundet" : "fejl", besked: text.slice(0, 300) }) + "#kapacitet");
+}
+
+async function googleCallback(req: Request, store: Store) {
+  const u = new URL(req.url);
+  if (u.searchParams.get("error")) {
+    return backToApp(false, u.searchParams.get("error") === "access_denied"
+      ? "Du afbrød forbindelsen hos Google. Intet er ændret."
+      : "Google afviste forbindelsen: " + u.searchParams.get("error"));
+  }
+  try {
+    const email = await google.finish(store, env, u.origin, u.searchParams.get("code") || "", u.searchParams.get("state") || "");
+    try { await google.syncAll(store, env); } catch (e) { console.error("første kalendersynk fejlede:", e); }
+    return backToApp(true, email);
+  } catch (e) {
+    if (!(e instanceof google.GoogleError)) console.error("Google-forbindelse fejlede:", e);
+    return backToApp(false, e instanceof Error ? e.message : String(e));
+  }
+}
+
+async function googleRoutes(req: Request, store: Store, who: Who, path: string) {
+  if (who !== "dig") return fail(401, "Kun du kan forbinde og afbryde Google-konti — log ind i appen.");
+  const origin = new URL(req.url).origin;
+  if (path === "/api/google" && req.method === "GET") {
+    return json(200, {
+      configured: !!google.client(env), missing: google.missingEnv(env), redirectUri: google.redirectUri(origin),
+      accounts: (await google.readAccounts(store)).map(google.publicAccount)
+    });
+  }
+  if (path === "/api/google/connect" && req.method === "GET") {
+    const scopes = (new URL(req.url).searchParams.get("scopes") || "calendar").split(",");
+    try {
+      return redirect(await google.startUrl(store, env, origin, scopes));
+    } catch (e) {
+      return backToApp(false, e instanceof Error ? e.message : String(e));
+    }
+  }
+  const cal = path.match(/^\/api\/google\/accounts\/([^/]+)\/calendars$/);
+  if (cal && req.method === "PUT") {
+    const body = await readJson(req);
+    const included = Array.isArray(body?.included) ? body.included.filter((x: unknown) => typeof x === "string") : null;
+    if (!included) return fail(400, "included skal være en liste af kalender-id'er.");
+    const acc = await google.setCalendars(store, decodeURIComponent(cal[1]), included);
+    if (!acc) return fail(410, "Kontoen er ikke forbundet længere.");
+    // Hent igen med det nye valg, så kapaciteten passer med det samme
+    let snapshot = null;
+    try { snapshot = await google.syncAll(store, env); } catch (e) { console.error("synk efter kalendervalg fejlede:", e); }
+    return json(200, { account: google.publicAccount(acc), snapshot });
+  }
+  const one = path.match(/^\/api\/google\/accounts\/([^/]+)$/);
+  if (one && req.method === "DELETE") {
+    return (await google.disconnect(store, decodeURIComponent(one[1]))) ? json(200, { ok: true }) : fail(410, "Kontoen er ikke forbundet længere.");
+  }
+  return fail(400, "Ukendt adresse eller metode: " + req.method + " " + path);
+}
+
+async function calendarRoutes(req: Request, store: Store, who: Who, path: string) {
+  if (path === "/api/calendar" && req.method === "GET") return json(200, { snapshot: await google.readSnapshot(store) });
+  if (path === "/api/calendar/refresh" && req.method === "POST") {
+    if (who !== "dig") return fail(401, "Claude kan læse kalenderen, men ikke starte en synk.");
+    const last = await google.readSnapshot(store);
+    if (last && Date.now() - Date.parse(last.fetchedAt) < google.REFRESH_GAP_MS) {
+      return json(200, { snapshot: last, note: "Kalenderen blev hentet for under et minut siden." });
+    }
+    return json(200, { snapshot: await google.syncAll(store, env) });
+  }
+  return fail(405, "Brug GET /api/calendar eller POST /api/calendar/refresh.");
+}
+
 /* ---------- Ruter ---------- */
 
 export default async (req: Request, context: Context) => {
@@ -541,6 +624,9 @@ export default async (req: Request, context: Context) => {
       if (!fromOwnPage(req)) return fail(400, "Login skal ske fra HeyOtto OS selv.");
       return await login(req, context, store, password);
     }
+    // Google sender browseren hertil fra sit eget site, så session-cookien følger ikke
+    // med. Den signerede engangs-state i google.mts beviser, at du startede flowet.
+    if (path === "/api/google/callback" && method === "GET") return await googleCallback(req, store);
 
     const who = await caller(req, store, password);
     if (!who) return fail(401, "Ikke logget ind.");
@@ -559,6 +645,8 @@ export default async (req: Request, context: Context) => {
       return await claudeKey(req, store);
     }
     if (path === "/api/claude/jobs" || /^\/api\/claude\/jobs\/[^/]+$/.test(path)) return await claudeJobs(req, store, who, path);
+    if (path === "/api/google" || path.startsWith("/api/google/")) return await googleRoutes(req, store, who, path);
+    if (path === "/api/calendar" || path === "/api/calendar/refresh") return await calendarRoutes(req, store, who, path);
     return fail(400, "Ukendt adresse eller metode: " + method + " " + path);
   } catch (e) {
     if (e instanceof HttpError) return fail(e.status, e.message);

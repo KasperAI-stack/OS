@@ -1,6 +1,12 @@
 # HeyOtto OS: iterationer M1–M10
 
-Status (2026-11-05): **M1, M2 og M3 er bygget** på branchen `claude/m1-m3-oprydning-indstillinger`. De er testet lokalt og afventer merge. M4–M10 er planlagt. Numrene er byggerækkefølgen: hver iteration bygger kun på dem med lavere numre. Hver fil har en analyse af den nuværende kode, en anbefalet løsning, konkrete trin, åbne spørgsmål og en definition af "færdig".
+Status (2026-11-05):
+
+- **M1–M3** er bygget. PR #6.
+- **M4** er bygget på branchen `claude/m4-google-kalender` (bygger på M1–M3). Det er testet lokalt, men ikke mod rigtig Google, før en OAuth-klient er sat op.
+- M5–M10 er planlagt.
+
+**Krav fra Kasper (2026-11-05):** det skal være nemt at sætte kalender og Gmail op for andre konti. Derfor er intet bundet til én konto. Man kan forbinde flere Google-konti, og opsætningen står i appen med den præcise redirect-adresse. En anden person kan sætte sit eget HeyOtto OS op med samme trin. Numrene er byggerækkefølgen: hver iteration bygger kun på dem med lavere numre. Hver fil har en analyse af den nuværende kode, en anbefalet løsning, konkrete trin, åbne spørgsmål og en definition af "færdig".
 
 | # | Iteration | Dit ønske | Størrelse | Bygger på | Kasper skal selv |
 |---|---|---|---|---|---|

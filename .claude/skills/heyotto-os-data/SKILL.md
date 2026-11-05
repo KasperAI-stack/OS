@@ -22,6 +22,8 @@ curl -sS -H "Authorization: Bearer $HEYOTTO_API_KEY" https://heyotto-os.netlify.
 
 The response is `{ "rev": "...", "data": { meta, kapacitet, uger, epics, projects, sprints, tasks } }`.
 
+**Calendar (read-only).** If Kasper has connected Google Calendar, `GET /api/calendar` returns `{ snapshot: { fetchedAt, accounts, events } }`, with meetings from 7 days back to 12 weeks ahead. Each event has `title, start, end, allDay, type, busy, response, attendees`. It is not part of `data` and can't be changed through the API. Connecting and disconnecting accounts is only for Kasper, in the app under **Indstillinger → Forbindelser**. `snapshot` is `null` when nothing is connected. Say so rather than guessing at meetings.
+
 ## 3. Change: always read, change, then write with `rev`
 
 1. GET fresh data right before changing anything. Never reuse data from earlier in the conversation.
