@@ -107,6 +107,45 @@ export function dayStats(events, day, k) {
   return { meetings: m, absence: a, workDay, free: Math.max(0, workDay - m - a) };
 }
 
+/* ---------- Rutiner ----------
+   En rutine er noget, der kommer igen: { id, name, every, weekday, monthday, hours, project, note, active, last }.
+     every: "dag" (hverdage) | "uge" | "2uger" | "maaned"
+     weekday: 1–5 (mandag–fredag) til uge og 2uger · monthday: 1–28 eller 0 (sidste dag) til maaned; weekend → fredagen før
+   Hver forekomst bliver en task med deadline (task.routine = rutinens id). Rutinens tid
+   tæller som fast tid pr. uge i kapaciteten (som drift), og selve tasken har 0 timer,
+   så tiden ikke tælles to gange. */
+
+export const EVERY = { dag: "Hver hverdag", uge: "Hver uge", "2uger": "Hver anden uge", maaned: "Hver måned" };
+const PER_WEEK = { dag: 5, uge: 1, "2uger": 0.5, maaned: 12 / 52 };
+
+export function routineWeeklyHours(data) {
+  return (data.rutiner || []).filter((r) => r && r.active !== false)
+    .reduce((s, r) => s + num(r.hours) * (PER_WEEK[r.every] || 0), 0);
+}
+
+// Forekomster (ÅÅÅÅ-MM-DD) fra og med fromIso til og med toIso
+export function occurrences(r, fromIso, toIso) {
+  const out = [];
+  if (!r || !isDate(fromIso) || !isDate(toIso) || fromIso > toIso) return out;
+  let d = dateOnly(fromIso);
+  const end = dateOnly(toIso);
+  for (let i = 0; d <= end && i < 400; i++, d = addDays(d, 1)) {
+    const wd = d.getDay(), iso = localIso(d);
+    if (wd === 0 || wd === 6) continue;
+    if (r.every === "dag") out.push(iso);
+    else if (r.every === "uge" && wd === (Number(r.weekday) || 5)) out.push(iso);
+    else if (r.every === "2uger" && wd === (Number(r.weekday) || 5) && isoWeekNumber(d) % 2 === (Number(r.parity) || 0)) out.push(iso);
+    else if (r.every === "maaned") {
+      // Dag 1–28, eller 0 = sidste dag. Falder den i en weekend, er det fredagen før.
+      const md = Number(r.monthday) || 0;
+      let t = md > 0 ? new Date(d.getFullYear(), d.getMonth(), Math.min(md, 28)) : new Date(d.getFullYear(), d.getMonth() + 1, 0);
+      while (t.getDay() === 0 || t.getDay() === 6) t = addDays(t, -1);
+      if (localIso(t) === iso) out.push(iso);
+    }
+  }
+  return out;
+}
+
 /* ---------- Kapacitet pr. uge ---------- */
 
 function kindMap(data) {
@@ -133,7 +172,8 @@ export function weekCapacity(data, cal, ws, today) {
   if (useCal) for (const d of days) { const s = dayStats(cal.events, d, k); meetings += s.meetings; absence += s.absence; }
   else meetings = num(k.meetings) * frac;
   const kinds = kindMap(data);
-  const drift = (data.tasks || []).filter((t) => isOpen(t) && kinds[t.project] === "drift").reduce((s, t) => s + num(t.hours), 0);
+  const drift = (data.tasks || []).filter((t) => isOpen(t) && kinds[t.project] === "drift").reduce((s, t) => s + num(t.hours), 0) +
+                routineWeeklyHours(data);
   const avail = num(k.contract) * frac - meetings - absence - (num(k.admin) + num(k.other)) * frac;
   const raw = Math.max(0, avail) * num(k.ceiling, 85) / 100 - (drift + adhocBuffer(data)) * frac;
   return { start: localIso(ws), days: days.map(localIso), frac, meetings, absence, raw, hours: Math.max(0, raw) };
@@ -181,7 +221,7 @@ export function forecast(data, cal, today = new Date(), opts = {}) {
     let status = "ok", deficit = 0;
     const fin = finish[t.id] || "";
     if (due && due < todayIso) status = "over";
-    else if (due && !(rem > 0)) status = "mangler";
+    else if (due && !(rem > 0)) status = t.routine ? "ok" : "mangler";   // en rutines tid ligger i rutinens timer pr. uge
     else if (rem > 0 && due) {
       if (!fin && due >= horizonEnd) {
         status = "ok";                                // deadline og færdig begge efter de 12 uger: ved det ikke endnu
@@ -236,13 +276,14 @@ export function alerts(data, cal, today = new Date(), fc = forecast(data, cal, t
     const base = { taskId: t.id, due };
     const key = (kind) => kind + ":" + t.id + ":" + (due || "");
     if (f.status === "over") {
-      add("rod", "over", key("over"), q(t.title) + " er over deadline", "Deadline var " + shortDate(due) + ".", base);
+      // En glemt rutine er ikke en brand: gul, ikke rød
+      add(t.routine ? "gul" : "rod", "over", key("over"), q(t.title) + " er over deadline", (t.routine ? "Rutinen skulle være gjort " : "Deadline var ") + shortDate(due) + ".", base);
     } else if (f.status === "risiko") {
       add("rod", "risiko", key("risiko"), q(t.title) + " når ikke deadline",
         (f.finish ? "Prognosen siger færdig ca. " + shortDate(f.finish) + ", deadline er " + shortDate(due) + "."
                   : "Der er ikke tid nok de næste 12 uger til deadline " + shortDate(due) + ".") +
         (f.deficit > 0 ? " Mangler ca. " + h(f.deficit) + "." : ""), base);
-    } else if (due && st === "ikke startet" && wd !== null && wd <= 3) {
+    } else if (due && !t.routine && st === "ikke startet" && wd !== null && wd <= 3) {
       add("rod", "ikke-startet", key("ikke-startet"), q(t.title) + " er ikke startet",
         "Deadline " + (wd <= 0 ? "i dag" : "om " + wd + " arbejdsdag" + (wd === 1 ? "" : "e")) + " (" + shortDate(due) + ").", base);
     } else if (due && st === "blokeret" && workdaysBetween(todayIso, due) <= 5) {

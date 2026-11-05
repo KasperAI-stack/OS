@@ -64,7 +64,8 @@ The full contract is in `dashboard/README.md` under "Datakontrakten". The rules 
 - **sprint** must exist for that project and month. Add the sprint (`{project, month, goal}`) if it doesn't.
 - Fill every task field (`id, project, sprint, start, end, status, title, owner, due, epic, hours, note`). Use `""` / `0` when something is unknown.
 - **Never invent** hours, dates or owners. Leave them empty, and tell Kasper what is missing.
-- A project's **kind** (`drift` / `projekt` / `adhoc`) decides where its hours count on the capacity page.
+- A project's **kind** (`drift` / `projekt` / `adhoc`) decides where its hours count on the capacity page. Only `projekt` shows under **Projekter** in the sidebar. The `adhoc` project is **"Uden projekt"**: put small one-off tasks there, not in a real project.
+- **Routines** (`data.rutiner`, optional) are things that repeat: `{ id, name, every: "dag"|"uge"|"2uger"|"maaned", weekday 1–5, monthday 1–28 or 0 = last day, hours per time, project, note, active, last }`. The app creates their tasks itself (id `r-<routine>-<date>`, `routine: <id>`, `hours: 0`). Don't create those tasks by hand; add or change the routine instead.
 - Set `meta.updated` to today's date when you change something.
 
 Jobs that Kasper sends to Claude from the app ("Lad Claude udføre", or owner "Claude") are not part of `data`. They live under `/api/claude/jobs`, and the `heyotto-os-job` skill handles them.

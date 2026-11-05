@@ -105,7 +105,8 @@ function emptyData() {
       { id: "adhoc", name: "Ad hoc", kind: "adhoc", tagline: "Det uplanlagte" }
     ],
     sprints: [],
-    tasks: []
+    tasks: [],
+    rutiner: []
   };
 }
 
@@ -235,6 +236,11 @@ function checkData(d: any): string | null {
   }
   if (d.tasks.some((t: any) => !t || typeof t.id !== "string" || !t.id || typeof t.project !== "string")) {
     return "Hver opgave skal have et id og et projekt.";
+  }
+  // Rutiner (kan mangle i ældre data)
+  if (d.rutiner !== undefined && (!Array.isArray(d.rutiner) ||
+      d.rutiner.some((r: any) => !r || typeof r.id !== "string" || !r.id || typeof r.name !== "string"))) {
+    return "data.rutiner skal være en liste, og hver rutine skal have et id og et navn.";
   }
   return null;
 }

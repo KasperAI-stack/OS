@@ -350,7 +350,7 @@ Et epic-filter fra ét projekt tømmer ikke et andet: gælder filteret ikke for 
 
 ## Datakontrakten
 
-`data` er ét JSON-objekt med `meta`, `kapacitet`, `uger`, `epics` og tre flade lister: `projects`, `sprints`, `tasks`. Både appen og Claude retter i det samme objekt. API'et afviser data, der ikke har den grundform.
+`data` er ét JSON-objekt med `meta`, `kapacitet`, `uger`, `epics` og flade lister: `projects`, `sprints`, `tasks` og `rutiner` (kan mangle i ældre data). Både appen og Claude retter i det samme objekt. API'et afviser data, der ikke har den grundform.
 
 | Felt | Format | Bemærkning |
 |---|---|---|
@@ -366,7 +366,12 @@ Et epic-filter fra ét projekt tømmer ikke et andet: gælder filteret ikke for 
 | `remaining` | tal eller udeladt | Timer **tilbage i alt** (estimat). Bruges af prognosen. Udeladt = ikke estimeret |
 | `priority` | `"høj"` / `"lav"` eller udeladt | Afgør rækkefølgen ved samme deadline. Udeladt = normal |
 
-Projekter har desuden `kind` (`drift` / `projekt` / `adhoc`), som afgør hvilken bås deres timer havner i på forsiden. `kapacitet` og `uger` holder modellens tal og ugeloggen. I `kapacitet` styrer `meetingsSource` (`"kalender"` / `"fast"`) om møderne regnes fra kalenderen, og `workStart`/`workEnd` (timer, standard 8 og 17) er arbejdstiden, møderne klippes til.
+| `routine` | et `id` fra `rutiner` eller udeladt | Sat, når opgaven er én forekomst af en rutine. Id'et er `r-<rutine>-<dato>` |
+| `source` | `{ type: "gmail", id, url }` eller udeladt | Sat, når opgaven kom fra Indbakken |
+
+Projekter har desuden `kind` (`drift` / `projekt` / `adhoc`), som afgør hvilken bås deres timer havner i på forsiden. Kun `projekt` vises under **Projekter** i sidebaren. Projektet med `kind: "adhoc"` er **"Uden projekt"**: tasks dér er løse tasks, og deres timer trækker først fra ad hoc-bufferen. `drift` vises under **Rutiner**.
+
+`rutiner` (valgfri liste) er det, der kommer igen: `{ id, name, every, weekday, monthday, hours, project, note, active, last }`. `every` er `"dag"` (hverdage), `"uge"`, `"2uger"` eller `"maaned"`. `weekday` er 1–5 (mandag–fredag), `monthday` er 1–28 eller 0 (sidste dag; weekend → fredagen før). `hours` er timer pr. gang og tæller som fast tid pr. uge i kapaciteten (som drift). `last` er den seneste forekomst, der er lavet en task til. Appen laver tasks til forekomsterne de næste 7 dage, daglige kun for i dag, med `hours: 0`, så tiden ikke tælles to gange. `kapacitet` og `uger` holder modellens tal og ugeloggen. I `kapacitet` styrer `meetingsSource` (`"kalender"` / `"fast"`) om møderne regnes fra kalenderen, og `workStart`/`workEnd` (timer, standard 8 og 17) er arbejdstiden, møderne klippes til.
 
 **Statusser — præcis disse fem:**
 
