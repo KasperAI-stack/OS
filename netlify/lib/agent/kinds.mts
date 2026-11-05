@@ -5,13 +5,15 @@
    forkert svar eller forslag, aldrig en handling.
 
    Indbakken (M8) har kun mail-læsning, data_read og de to indbakke-værktøjer: en mail kan
-   højst give et forkert forslag. M9 (omplanlægning) tilføjer sin slags her. */
+   højst give et forkert forslag. Omplanlægningen (M9) kan kun læse og gemme et planforslag:
+   ændringerne lægges først ind i data, når du trykker Anvend i appen. */
 
 import OTTO from "./skills/otto.mts";
 import PING from "./skills/ping.mts";
 import SPOERG from "./skills/spoerg.mts";
 import MORGENBRIEF from "./skills/morgenbrief.mts";
 import INDBAKKE from "./skills/indbakke.mts";
+import OMPLANLAEG from "./skills/omplanlaeg.mts";
 
 export type Effort = "low" | "medium" | "high";
 export type Kind = {
@@ -25,7 +27,8 @@ export type Kind = {
   defaultEnabled: boolean;
   byHand: boolean;               // må startes fra appen
   needsInput: boolean;           // kræver tekst fra dig (et spørgsmål)
-  schedule?: { hour: number; weekdays: boolean };
+  // weekday: kun den ugedag (1 = mandag). onlyIfRisk: kun når prognosen har røde alarmer eller overbookede uger
+  schedule?: { hour: number; weekdays: boolean; weekday?: number; onlyIfRisk?: boolean };
 };
 
 const READ_ALL = ["data_read", "forecast_run", "calendar_list"] as const;
@@ -44,6 +47,17 @@ export const KINDS: Record<string, Kind> = {
     tools: ["data_read", "gmail_new", "gmail_read", "inbox_suggest_task", "inbox_skip"],
     model: "claude-sonnet-5-5", effort: "medium",
     maxSteps: 20, skill: INDBAKKE, defaultEnabled: true, byHand: true, needsInput: false
+  },
+  omplanlaeg: {
+    id: "omplanlaeg", label: "Omplanlæg", tools: [...READ_ALL, "plan_propose_changes"],
+    model: "claude-sonnet-5-5", effort: "high",
+    maxSteps: 12, skill: OMPLANLAEG, defaultEnabled: true, byHand: true, needsInput: false
+  },
+  ugeforslag: {
+    id: "ugeforslag", label: "Ugeforslag (omplanlæg)", tools: [...READ_ALL, "plan_propose_changes"],
+    model: "claude-sonnet-5-5", effort: "high",
+    maxSteps: 12, skill: OMPLANLAEG, defaultEnabled: false, byHand: false, needsInput: false,
+    schedule: { hour: 7, weekdays: true, weekday: 1, onlyIfRisk: true }
   },
   morgenbrief: {
     id: "morgenbrief", label: "Morgenbrief", tools: READ_ALL, model: "claude-sonnet-5-5", effort: "medium",

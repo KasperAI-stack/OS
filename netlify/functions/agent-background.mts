@@ -9,6 +9,7 @@ import { sendAll } from "../lib/alerts.mts";
 import { execute } from "../lib/agent/runtime.mts";
 import { validSignature } from "../lib/agent/queue.mts";
 import { readRun, readSettings, saveRun, type Store } from "../lib/agent/store.mts";
+import { readPlan } from "../lib/plans.mts";
 
 export default async (req: Request, context: Context) => {
   // Samme lager som api.mts: kun produktion rører de rigtige data
@@ -24,8 +25,8 @@ export default async (req: Request, context: Context) => {
   // Prognosen regner i lokal tid, ligesom i appen
   process.env.TZ = (await readSettings(store)).tz;
   const origin = new URL(req.url).origin;
-  const notify = async (title: string, text: string, tag: string) => {
-    await sendAll(store, [{ title, body: text, url: "/#otto", tag }], origin);
+  const notify = async (title: string, text: string, tag: string, url = "/#otto") => {
+    await sendAll(store, [{ title, body: text, url, tag }], origin);
   };
 
   try {
@@ -36,6 +37,14 @@ export default async (req: Request, context: Context) => {
     if (run.kind === "morgenbrief" && run.status === "færdig" && run.output) {
       const [first, ...rest] = run.output.split("\n").map((l) => l.replace(/^[-*#\s]+/, "").trim()).filter(Boolean);
       if (first) await notify("Otto: " + first.slice(0, 80), rest.join(" · ").slice(0, 180), "morgenbrief");
+    }
+    // Ugeforslaget: kun en besked, når der faktisk er et forslag at se på
+    if (run.kind === "ugeforslag" && run.status === "færdig") {
+      const plan = await readPlan(store as any, run.id);
+      if (plan && plan.changes.length) {
+        await notify("Otto har et forslag til ugen",
+          `${plan.changes.length} ændringer. I risiko: ${plan.before.atRisk + plan.before.overdue} → ${plan.after.atRisk + plan.after.overdue}.`, "ugeforslag", "/#omplan");
+      }
     }
   } catch (e) {
     console.error("agent-run fejlede:", e);

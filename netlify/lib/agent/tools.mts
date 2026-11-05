@@ -18,6 +18,7 @@ import { readSnapshot } from "../google.mts";
 import { readState } from "../alerts.mts";
 import { mailAccounts, newThreads, readThread, threadUrl, type ThreadHead } from "../gmail.mts";
 import { addSuggestion, markProcessed, readProcessed } from "../inbox.mts";
+import { applyChanges, metrics as planMetrics, savePlan, validate as validatePlan, type Plan } from "../plans.mts";
 import type { Store } from "./store.mts";
 
 export type ToolClass = "read" | "propose" | "write";
@@ -301,10 +302,63 @@ const inboxSkip: Tool = {
   }
 };
 
+/* ---------- Omplanlægning (M9): propose ---------- */
+
+const planPropose: Tool = {
+  name: "plan_propose_changes",
+  cls: "propose",
+  description:
+    "Gemmer et forslag til omplanlægning som en ændringsliste, Kasper selv godkender. Ændrer IKKE data. " +
+    "Serveren tjekker hver ændring og svarer med de godkendte, de afviste (med grund) og prognosen før og efter. " +
+    "Du kan kalde det igen for at forbedre forslaget; det seneste kald gælder. " +
+    "Tilladte felter: sprint (ÅÅÅÅ-MM, skal findes i projektet, eller tom), start og end (ÅÅÅÅ-MM), hours (timer pr. uge lige nu, 0–40), " +
+    "remaining (timer tilbage i alt), priority (høj/normal/lav), status (kun \"I gang\" eller \"Droppet\") og due (ÅÅÅÅ-MM-DD, kræver altid aftale).",
+  input_schema: {
+    type: "object",
+    properties: {
+      summary: { type: "string", description: "2–4 sætninger: hvad er problemet, og hvad gør forslaget." },
+      changes: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            taskId: { type: "string" },
+            field: { type: "string", enum: ["sprint", "start", "end", "hours", "remaining", "priority", "status", "due"] },
+            to: { type: ["string", "number"] },
+            reason: { type: "string", description: "Én kort sætning: hvorfor." },
+            needsAgreement: { type: "boolean", description: "true, hvis ændringen kræver aftale med andre." }
+          },
+          required: ["taskId", "field", "to", "reason"]
+        }
+      },
+      questions: { type: "array", items: { type: "string" }, description: "Spørgsmål til Kasper, hvis du mangler noget (fx timer tilbage)." }
+    },
+    required: ["summary", "changes"], additionalProperties: false
+  },
+  async run(input, ctx) {
+    const d = await readData(ctx.store);
+    if (!d) return { error: "Der er ingen data endnu." };
+    const cal = await readSnapshot(ctx.store);
+    const snoozed = (await readState(ctx.store)).snoozed;
+    const { changes, dropped } = validatePlan(d, input.changes);
+    const plan: Plan = {
+      id: String(ctx.scratch.runId), runId: String(ctx.scratch.runId), kind: String(ctx.scratch.kind || ""),
+      createdAt: new Date().toISOString(), summary: str(input.summary, 1200),
+      changes, dropped,
+      questions: (Array.isArray(input.questions) ? input.questions : []).map((q) => str(q, 300)).filter(Boolean).slice(0, 8),
+      before: planMetrics(d, cal, ctx.now, snoozed), after: planMetrics(applyChanges(d, changes), cal, ctx.now, snoozed),
+      status: "ny", appliedAt: ""
+    };
+    await savePlan(ctx.store, plan);
+    ctx.scratch.planSaved = true;
+    return { saved: true, accepted: changes.length, dropped, before: plan.before, after: plan.after };
+  }
+};
+
 /* ---------- Registeret ---------- */
 
 export const REGISTRY: Record<string, Tool> = Object.fromEntries(
-  [ping, dataRead, forecastRun, calendarList, gmailNew, gmailRead, inboxSuggest, inboxSkip].map((t) => [t.name, t]));
+  [ping, dataRead, forecastRun, calendarList, gmailNew, gmailRead, inboxSuggest, inboxSkip, planPropose].map((t) => [t.name, t]));
 
 // Køres, når modulet indlæses: et værktøj med en ukendt klasse stopper serveren.
 export function assertRegistry(reg: Record<string, Tool> = REGISTRY) {

@@ -686,6 +686,23 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
           border-radius: var(--r-inner); display: grid; gap: 10px; font-size: 12.5px; color: var(--ink-2); }
 .osteps code { display: block; margin-top: 3px; font-family: var(--mono); font-size: 11.5px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--muted); }
 .osteps .err { color: var(--danger-ink); }
+/* Omplanlæg (M9) */
+.pmets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.pmet { border: 1px solid var(--border); border-radius: var(--r-inner); padding: 10px 12px; }
+.pmet b { display: block; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin-top: 2px; }
+.pmet.good b { color: var(--ink); }
+.pmet.bad b { color: var(--danger-ink); }
+.pchgs { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.pchg { padding: 8px 0; border-bottom: 1px dashed var(--border-strong); }
+.pchg:last-child { border-bottom: 0; }
+.pchg .gcal { align-items: flex-start; }
+.pchg .gcal input { margin-top: 3px; }
+.pchg-what { display: block; font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+.pchg .vmeta { display: block; font-size: 12.5px; color: var(--muted); }
+.pchg .tag { font-size: 9.5px; padding: 1px 7px; margin-left: 4px; }
+.pq { margin-top: 14px; font-size: 13.5px; }
+.pq ul { margin: 0; padding-left: 18px; }
+@media (max-width: 640px) { .pmets { grid-template-columns: 1fr; } }
 /* Indbakke (M8) */
 .isugs { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .isug { border: 1px solid var(--border); border-radius: var(--r-inner); padding: 14px 16px; }
@@ -1911,7 +1928,7 @@ a.btn { text-decoration: none; }
     var el = e.target.closest ? e.target.closest("[data-act]") : null;
     if (!el) return;
     var a = el.getAttribute("data-act");
-    if (ottoClick(a, el) || inboxClick(a, el)) return;
+    if (ottoClick(a, el) || inboxClick(a, el) || planClick(a, el)) return;
     if (a === "jump") {
       // Genvejsbjælken er ren scroll i siden. Den må ikke sætte adressen,
       // for hash'en bruges til at vælge projekt — et "#sprint" ville blive
@@ -2865,7 +2882,8 @@ a.btn { text-decoration: none; }
     var red = list.filter(function (a) { return a.level === 3; }).length;
     return '<section class="otto-says" aria-label="Otto siger"><div class="os-hd"><b>Otto siger</b>' +
       '<span class="hint">' + (red ? plural(red, "ting kræver", "ting kræver") + " din opmærksomhed" : plural(list.length, "ting", "ting") + " at holde øje med") +
-      (snoozedN ? " · " + plural(snoozedN, "udsat", "udsatte") : "") + "</span></div>" +
+      (snoozedN ? " · " + plural(snoozedN, "udsat", "udsatte") : "") + "</span>" +
+      '<button class="btn" data-act="omplan" type="button" style="margin-left:auto">' + icon("spark") + "Omplanlæg med Otto</button></div>" +
       '<ul class="os-list">' + rows + "</ul>" +
       (list.length > 5 ? '<button class="sf-inline os-more" data-act="ottoall" type="button">' + (OTTO_ALL ? "Vis færre" : "Vis alle " + list.length) + "</button>" : "") +
       "</section>";
@@ -3947,6 +3965,180 @@ a.btn { text-decoration: none; }
     return false;
   }
 
+  /* ====================== Omplanlæg med Otto (M9) ======================
+     Otto foreslår en ændringsliste. Serveren har tjekket hver ændring og regnet
+     prognosen før og efter. Anvend lægger de valgte ændringer ind og gemmer; alt kan
+     fortrydes under Historik. Deadlines og "droppet" er fravalgt som standard. */
+
+  var PLAN = null;     // det viste forslag
+  var PRUN = null;     // kørslen, der laver et forslag lige nu
+  var PCHECK = {};     // ændringsnummer → valgt
+  var PFIELD = { sprint: "Sprint", start: "Starter", end: "Slutter", hours: "Timer pr. uge", remaining: "Timer tilbage",
+                 priority: "Prioritet", status: "Status", due: "Deadline" };
+
+  function planValue(field, v) {
+    if (v === null || v === undefined || v === "") return field === "sprint" ? "ingen sprint" : "—";
+    if ((field === "sprint" || field === "start" || field === "end") && /^\d{4}-\d{2}$/.test(v)) return miLabel(mi(v), true);
+    if (field === "due" && isDate(v)) return FC.shortDate(v);
+    if (field === "hours" || field === "remaining") return fmt(num(v)) + " t";
+    return String(v);
+  }
+
+  function setPlan(p) {
+    PLAN = p;
+    PCHECK = {};
+    (p ? p.changes : []).forEach(function (c, i) { PCHECK[i] = c.field !== "due" && !(c.field === "status" && c.to === "Droppet") && !c.needsAgreement; });
+  }
+
+  function renderPlan() {
+    renderSidebar(null);
+    document.title = (dirty ? "● " : "") + "Omplanlæg — HeyOtto OS";
+    document.getElementById("main").innerHTML =
+      pageHead("Omplanlæg med Otto", "Otto foreslår ændringer, så alle deadlines når i mål. Du vælger, hvad der bliver lagt ind.") +
+      '<section class="card"><div class="card-pad">' +
+        '<form class="oask" id="planform"><label class="flab" for="pmsg">Noget, Otto skal vide? (valgfrit)</label>' +
+          '<textarea id="pmsg" rows="2" maxlength="2000" placeholder="Fx „Jeg er syg torsdag“ eller „Africa Tours 2.0 har forrang“"></textarea>' +
+          '<div class="oask-ft"><span class="hint">Otto læser opgaver, prognose og kalender. Intet ændres, før du trykker Anvend.</span>' +
+            '<button class="btn primary" type="submit" id="pgo">' + icon("spark") + "Lav forslag</button></div></form>" +
+      "</div></section>" +
+      '<section class="card" style="margin-top:20px"><div class="card-pad" id="pbox"></div></section>';
+    wireTheme();
+    fillPlan();
+    if (!PLAN && !PRUN) {
+      api("GET", "/api/plans").then(function (r) {
+        var p = (r.plans || []).filter(function (x) { return x.status === "ny"; })[0];
+        if (p && !PLAN) { setPlan(p); fillPlan(); }
+      }).catch(function () {});
+    }
+  }
+
+  function metricRow(b, a) {
+    var cell = function (label, x, y) {
+      var tone = y < x ? " good" : y > x ? " bad" : "";
+      return '<div class="pmet' + tone + '"><span class="vlabel">' + label + '</span><b class="num">' + x + " → " + y + "</b></div>";
+    };
+    return '<div class="pmets">' +
+      cell("I risiko eller over deadline", b.atRisk + b.overdue, a.atRisk + a.overdue) +
+      cell("Røde alarmer", b.red, a.red) +
+      cell("Overbookede uger", b.overbookedWeeks, a.overbookedWeeks) + "</div>";
+  }
+
+  function fillPlan() {
+    var box = document.getElementById("pbox");
+    if (!box) return;
+    var go = document.getElementById("pgo");
+    var busy = PRUN && OBUSY[PRUN.status];
+    if (go) go.disabled = !!busy;
+    if (busy) {
+      var last = (PRUN.steps || []).filter(function (s) { return s.type === "tool"; }).pop();
+      box.innerHTML = '<p class="hint">' + icon("spark") + " Otto laver et forslag" + (last ? " (" + esc(last.name) + ")" : "") + " … Det tager typisk et minut.</p>";
+      return;
+    }
+    if (PRUN && !PLAN) {
+      box.innerHTML = PRUN.status === "færdig"
+        ? '<p class="kp-lead">' + esc(PRUN.output || "Otto lavede intet forslag.") + "</p>"
+        : '<p class="hint" style="color:var(--danger-ink)">' + esc(PRUN.error || "Det gik galt.") + "</p>";
+      return;
+    }
+    if (!PLAN) { box.innerHTML = '<p class="col-empty">Intet forslag endnu. Tryk <b>Lav forslag</b>.</p>'; return; }
+
+    var p = PLAN, done = p.status !== "ny";
+    var rows = p.changes.map(function (c, i) {
+      var t = taskById(c.taskId);
+      var proj = projById(c.project);
+      return '<li class="pchg"><label class="gcal"><input type="checkbox" data-planchk="' + i + '"' + (PCHECK[i] ? " checked" : "") + (done ? " disabled" : "") + ">" +
+          "<span><b>" + esc(t ? t.title : c.title) + "</b>" + (proj ? ' <span class="hint">· ' + esc(proj.name) + "</span>" : "") +
+          '<span class="pchg-what">' + esc(PFIELD[c.field] || c.field) + ": " + esc(planValue(c.field, c.from)) + " → <b>" + esc(planValue(c.field, c.to)) + "</b>" +
+            (c.needsAgreement ? ' <span class="tag">kræver aftale</span>' : "") + "</span>" +
+          (c.reason ? '<span class="vmeta">' + esc(c.reason) + "</span>" : "") + "</span></label></li>";
+    }).join("");
+    var nChecked = p.changes.filter(function (c, i) { return PCHECK[i]; }).length;
+    box.innerHTML =
+      '<p class="kp-lead" style="font-size:15.5px;font-weight:500">' + esc(p.summary || "Forslag fra Otto") + "</p>" +
+      metricRow(p.before, p.after) +
+      '<p class="hint" style="margin:6px 0 14px">Før/efter er regnet af prognosen med alle ændringer valgt, ikke af Claude.</p>' +
+      (rows ? '<ul class="pchgs">' + rows + "</ul>" : '<p class="col-empty">Ingen ændringer i forslaget.</p>') +
+      (p.questions && p.questions.length ? '<div class="pq"><span class="flab">Otto spørger</span><ul>' +
+        p.questions.map(function (q) { return "<li>" + esc(q) + "</li>"; }).join("") + "</ul></div>" : "") +
+      (p.dropped && p.dropped.length ? '<details class="ihandled"><summary>Afvist af serveren (' + p.dropped.length + ")</summary><ul class=\"steps\">" +
+        p.dropped.map(function (d) { var t = taskById(d.taskId); return "<li>" + esc((t ? t.title : d.taskId) + " · " + d.field + ": " + d.why) + "</li>"; }).join("") + "</ul></details>" : "") +
+      (done
+        ? '<p class="hint" style="margin-top:14px">Forslaget er ' + esc(p.status) + ".</p>"
+        : '<div class="set-links" style="margin-top:16px"><button class="btn primary" data-act="planapply" type="button"' + (nChecked ? "" : " disabled") + ">Anvend " + plural(nChecked, "valgt ændring", "valgte ændringer") + "</button>" +
+          '<button class="btn" data-act="plandrop" type="button">Kassér forslaget</button></div>');
+  }
+
+  function startPlan() {
+    var ta = document.getElementById("pmsg");
+    var msg = ta ? ta.value.trim() : "";
+    PLAN = null; PRUN = { status: "i kø", steps: [] };
+    fillPlan();
+    api("POST", "/api/agent/runs", { kind: "omplanlaeg", input: msg }).then(function (r) {
+      PRUN = r.run;
+      fillPlan();
+      watchRun(r.run.id, function (run, busy) {
+        PRUN = run;
+        if (busy) { fillPlan(); return; }
+        api("GET", "/api/plans/" + encodeURIComponent(run.id))
+          .then(function (res) { setPlan(res.plan); })
+          .catch(function () { PLAN = null; })
+          .then(function () { fillPlan(); if (ta) ta.value = ""; });
+      });
+    }).catch(function (e) {
+      if (e.status === 401) { showLogin("Du er blevet logget ud. Log ind igen."); return; }
+      PRUN = { status: "fejlet", error: e.message, steps: [] };
+      fillPlan();
+    });
+  }
+
+  function applyPlan() {
+    var p = PLAN, applied = 0, skipped = [];
+    p.changes.forEach(function (c, i) {
+      if (!PCHECK[i]) return;
+      var t = taskById(c.taskId);
+      if (!t) { skipped.push(c.title + " (findes ikke længere)"); return; }
+      var now = t[c.field] === undefined ? (c.field === "priority" ? "normal" : null) : t[c.field];
+      if (String(now === null ? "" : now) !== String(c.from === null ? "" : c.from)) { skipped.push(c.title + " (er ændret siden)"); return; }
+      if (c.field === "priority" && c.to === "normal") delete t.priority; else t[c.field] = c.to;
+      applied++;
+    });
+    if (!applied) { flash("Ingen ændringer blev lagt ind." + (skipped.length ? " Sprunget over: " + skipped.join(", ") : ""), true); return; }
+    markDirty();
+    api("PUT", "/api/plans/" + encodeURIComponent(p.id), { status: "anvendt" }).catch(function () {});
+    p.status = "anvendt";
+    fillPlan();
+    save().then(function () {
+      if (dirty) return;                       // gemningen fejlede: den har selv sagt hvorfor
+      flash(plural(applied, "ændring er lagt ind", "ændringer er lagt ind") + " og gemt. Kan fortrydes under Historik." +
+            (skipped.length ? " Sprunget over: " + skipped.join(", ") + "." : ""), !!skipped.length);
+    });
+  }
+
+  function planClick(a, el) {
+    if (a === "omplan") { location.hash = "omplan"; return true; }
+    if (a === "planapply") { if (PLAN) applyPlan(); return true; }
+    if (a === "plandrop") {
+      if (!PLAN) return true;
+      api("PUT", "/api/plans/" + encodeURIComponent(PLAN.id), { status: "kasseret" }).catch(function () {});
+      PLAN.status = "kasseret";
+      fillPlan();
+      return true;
+    }
+    return false;
+  }
+
+  document.addEventListener("submit", function (e) {
+    if (!e.target || e.target.id !== "planform") return;
+    e.preventDefault();
+    startPlan();
+  });
+  document.addEventListener("change", function (e) {
+    var el = e.target;
+    if (!el || !el.getAttribute || el.getAttribute("data-planchk") === null) return;
+    PCHECK[el.getAttribute("data-planchk")] = el.checked;
+    fillPlan();
+  });
+
   /* ====================== Tema ====================== */
 
   function currentTheme() {
@@ -3989,6 +4181,7 @@ a.btn { text-decoration: none; }
     else if (h === "claude") renderClaude();
     else if (h === "otto") renderOtto();
     else if (h === "indbakke") renderInbox();
+    else if (h === "omplan") renderPlan();
     else if (!h || h === "kapacitet" || !projById(h)) renderCapacity();
     else render(h);
 

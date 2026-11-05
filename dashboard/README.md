@@ -135,6 +135,8 @@ Alle svar er JSON. Fejl er `{ "error": "dansk besked" }`.
 | `GET /api/agent/runs/:id` | Én kørsel med hvert trin, tokens og pris |
 | `GET /api/inbox` | `{ suggestions, handled, mail }`: Ottos forslag fra mail, og hvilke konti der har givet adgang til mail |
 | `PUT /api/inbox/:id` `{ status, taskId? }` | Markér et forslag `oprettet` / `ignoreret` (eller `ny`). Kun for dig |
+| `GET /api/plans` · `GET /api/plans/:id` | Ottos seneste planforslag / ét forslag (id = kørslens id) |
+| `PUT /api/plans/:id` `{ status }` | `anvendt` eller `kasseret`. Kun for dig |
 
 Du er logget ind med enten session-cookien eller `Authorization: Bearer <nøgle>` (Claude). Ændringer med cookie skal komme fra appen selv: JSON og samme oprindelse. API'et svarer aldrig 403 eller 404. Netlify ville ved de koder lede efter en statisk side i stedet, så afvisninger er 400/401, og en forsvundet version er 410.
 
@@ -229,7 +231,7 @@ Otto er HeyOtto OS' egen agent. Den kører på serveren og kalder Claude API dir
 |---|---|---|
 | `read` | `ping`, `data_read`, `forecast_run`, `calendar_list` | Ingen |
 | `read` (mail, M8) | `gmail_new`, `gmail_read` | Ingen |
-| `propose` | `inbox_suggest_task`, `inbox_skip` (M8). Omplanlægning kommer i M9 | Skriver kun i forslagslagre uden for data |
+| `propose` | `inbox_suggest_task`, `inbox_skip` (M8), `plan_propose_changes` (M9) | Skriver kun i forslagslagre uden for data |
 | `write` | (ingen endnu) | Kun når automatik er slået til for kørslen |
 
 Der findes ingen klasse til handlinger udenfor (mail, invitationer, kampagner), og serveren starter ikke, hvis et værktøj har en ukendt klasse. Hver slags kørsel får kun sine egne værktøjer (`netlify/lib/agent/kinds.mts`), og et kald til andre værktøjer afvises i løkken. Agenten kan ikke starte kørsler selv: udløsere er kun planen og dig. Baggrundsfunktionen kræver en HMAC-signatur.
@@ -251,6 +253,20 @@ Der findes ingen klasse til handlinger udenfor (mail, invitationer, kampagner), 
 - Mailtekst gemmes aldrig, kun Ottos resumé og trådens afsender, emne og dato. Kun læsning (`gmail.readonly`): HeyOtto OS kan ikke sende, slette, arkivere eller mærke mail.
 
 **Opsætning:** slå **Gmail API** til i Google Cloud-projektet (*APIs & Services → Library*). Tryk så **Giv adgang til mail** i Indbakken eller under Indstillinger → Forbindelser, og sæt flueben ved Gmail hos Google.
+
+### Omplanlæg med Otto (M9)
+
+Knappen **Omplanlæg med Otto** står i "Otto siger" på forsiden og åbner `#omplan`. Skriv evt. noget, Otto skal vide ("Jeg er syg torsdag"), og tryk **Lav forslag**. Efter ca. et minut kommer:
+
+- et kort resumé og **før/efter** (i risiko eller over deadline, røde alarmer, overbookede uger). Tallene regnes af prognosen (`dashboard/lib/forecast.mjs`) på serveren, ikke af Claude
+- en **ændringsliste med flueben**. Ny deadline og "Droppet" er fravalgt som standard, og deadlines er altid mærket *kræver aftale*
+- spørgsmål, hvis Otto mangler noget, og de ændringer, serveren afviste (med grund)
+
+**Anvend valgte** lægger ændringerne ind og gemmer. Er en opgave ændret, siden forslaget blev lavet, springes den over. Alt kan fortrydes under Historik.
+
+Otto må kun foreslå felterne `sprint` (skal findes i projektet), `start`, `end`, `hours`, `remaining`, `priority`, `status` (kun *I gang* eller *Droppet*) og `due`, og kun på åbne opgaver. Den kan ikke oprette eller slette opgaver. Kørslen har kun `data_read`, `forecast_run`, `calendar_list` og `plan_propose_changes`, som gemmer forslaget i `plans/<kørsels-id>` uden for data.
+
+**Ugeforslag** (Indstillinger → Otto, slået fra som standard): mandag kl. 7. Det kører kun, når prognosen har røde alarmer eller overbookede uger, og sender en notifikation, når der er et forslag.
 
 ### Sæt Claude API op (én gang pr. installation)
 

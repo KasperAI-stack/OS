@@ -112,7 +112,7 @@ export async function execute(store: Store, id: string, opts: { call?: ModelCall
 
   const tools: Tool[] = toolsFor(kind.tools, settings.auto[kind.id] === true);
   const allowed = new Set(tools.map((t) => t.name));
-  const scratch: Record<string, any> = { runId: run.id };
+  const scratch: Record<string, any> = { runId: run.id, kind: run.kind };
   const system: Anthropic.TextBlockParam[] = [{ type: "text", text: BASE_PROMPT + "\n\n" + kind.skill }];
   const apiTools: Anthropic.Tool[] = tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.input_schema }));
   const ask = kind.needsInput ? run.input : (run.input || "Udfør kørslen.");
