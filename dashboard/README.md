@@ -6,6 +6,7 @@ Et Scrum-/projektoverblik over de store initiativer, med kapacitet på forsiden.
 
 | Hvad | Hvor |
 |---|---|
+| Google-forbindelsen og kalendersynken | `netlify/lib/google.mts`, kørt hvert 15. minut af `netlify/functions/calendar-sync.mts` |
 | Appen (layout, logik, redigering) | `dashboard/index.html` — én HTML-fil, intet byggetrin, ingen biblioteker |
 | Otto-illustrationerne | `dashboard/otto/` — PNG'er med gennemsigtig baggrund |
 | API'et (login, data, historik, Claudes nøgle, Claude-jobs) | `netlify/functions/api.mts` |
@@ -28,7 +29,15 @@ Første gang i en browser beder appen om adgangskoden. Derefter husker browseren
 
 **Ugemte ændringer overlever et genindlæs.** Ved hver ændring skrives en kladde til browseren. Åbner du siden igen med noget ugemt, møder du et banner med **Gendan ændringerne** eller **Kassér**. Kladden er en sikkerhedsline i den browser, du sidder ved — ikke et lager. Det, der er gemt i skyen, er sandheden.
 
-**Computer, telefon og Claude på samme tid.** Siden husker, hvilken version den hentede. Er der gemt et andet sted siden — på telefonen eller af Claude — nægter siden at gemme og siger det, i stedet for stille at overskrive. Genindlæs, så ser du de nye data. Dine ugemte ændringer ligger i kladden, og banneret advarer, hvis du er ved at erstatte nyere data med dem.
+**Computer, telefon og Claude på samme tid.** Siden husker, hvilken version den hentede. Er der gemt et andet sted siden — på telefonen eller af Claude — afviser serveren først. Siden henter så den nye version og fletter dine ændringer ind pr. projekt, sprint, opgave og uge:
+
+- ændret kun hos dig → din værdi
+- ændret kun derude → den nye
+- tilføjet eller slettet ét sted → det gælder
+
+Kun hvis samme felt er ændret begge steder, bliver du spurgt: **Behold mine** eller **Brug de nye**. Begge versioner ligger bagefter i Historik.
+
+Kladden husker også, hvad den byggede på. Gendanner du en kladde efter, at data er ændret i skyen, flettes den ind på samme måde i stedet for at erstatte det nye.
 
 ## Historik
 
@@ -103,6 +112,13 @@ Alle svar er JSON. Fejl er `{ "error": "dansk besked" }`.
 | `POST /api/claude/jobs` `{ taskId, task, instruction }` | Sæt Claude i gang. Kun for dig, ikke for Claude |
 | `GET /api/claude/jobs/:id` | Ét job |
 | `PUT /api/claude/jobs/:id` `{ status, result?, error? }` | Claude: `i gang` / `til godkendelse` / `fejlet`. Dig: `godkendt` / `kasseret`. **410**, hvis jobbet er lukket |
+| `GET /api/google` | `{ configured, missing, redirectUri, accounts }`. Kun for dig. Tokens sendes aldrig |
+| `GET /api/google/connect?scopes=calendar` | Sender browseren til Google for at forbinde en konto. Kun for dig |
+| `GET /api/google/callback` | Google sender browseren tilbage hertil. Ender på `/?google=forbundet` eller `?google=fejl&besked=…` |
+| `PUT /api/google/accounts/:id/calendars` `{ included }` | Vælg, hvilke kalendere der tæller. Henter kalenderne igen |
+| `DELETE /api/google/accounts/:id` | Afbryd en konto. Adgangen trækkes også tilbage hos Google |
+| `GET /api/calendar` | `{ snapshot }`: møder fra 7 dage tilbage til 12 uger frem. Også for Claude |
+| `POST /api/calendar/refresh` | Hent kalenderne nu. Højst én gang i minuttet. Kun for dig |
 
 Du er logget ind med enten session-cookien eller `Authorization: Bearer <nøgle>` (Claude). Ændringer med cookie skal komme fra appen selv: JSON og samme oprindelse. API'et svarer aldrig 403 eller 404. Netlify ville ved de koder lede efter en statisk side i stedet, så afvisninger er 400/401, og en forsvundet version er 410.
 
@@ -137,6 +153,41 @@ Tandhjulet øverst til højre på alle sider åbner **Indstillinger**. Her ligge
 Nye sektioner (forbindelser, alarmer, agent) føjes til `SETTINGS_SECTIONS` i `index.html`.
 
 Asana hentes ikke automatisk. Bed i stedet Claude om at hente opgaverne og skrive dem ind — med Claude-adgang skriver Claude direkte i skyen.
+
+## Google: kalender og mail
+
+HeyOtto OS kan forbinde én eller flere Google-konti, fx en privat og en til arbejdet. Kalenderen bruges i dag. Mail kommer i M8, som et ekstra samtykke på de samme konti. Der er intet i koden, der er bundet til én person, så en anden kan sætte sit eget HeyOtto OS op med de samme trin.
+
+**Hvad den gør.** Serveren henter møderne hvert 15. minut og når du åbner appen (hvis de er over 5 minutter gamle). Den henter fra 7 dage tilbage til 12 uger frem. Kapaciteten regner selv ugens timer ud fra dem:
+
+- **Møder**: optagede møder, du ikke har afvist, inden for arbejdstiden. Overlappende møder tælles kun én gang.
+- **Fravær**: "Ikke til stede"-hændelser og heldagshændelser som *Ferie*, *Syg* eller *Kursus*. Et møde på en feriedag tæller ikke som møde.
+- Fokustid, arbejdssted og hændelser markeret "Ledig" tæller ikke.
+
+I Indstillinger kan du vælge mellem **Kalenderen** og **Fast tal** og sætte arbejdstiden. Under **Forbindelser** vælger du, hvilke kalendere der tæller pr. konto. Den primære og dem, du selv ejer, er slået til fra start. Helligdage og andres delte kalendere er slået fra.
+
+**Kun læsning.** Scopet er `calendar.readonly`. HeyOtto OS kan aldrig oprette, ændre eller svare på noget. Der gemmes kun titel, tidspunkt, type, dit svar og antal deltagere, ikke beskrivelser eller deltagernes adresser. Refresh-tokens krypteres (AES-256-GCM) i Netlify Blobs og sendes aldrig til browseren. **Afbryd** trækker også adgangen tilbage hos Google.
+
+### Sæt Google op (én gang pr. installation)
+
+Det gør den, der ejer HeyOtto OS-installationen. Vejledningen står også i appen under **Indstillinger → Forbindelser**, med den præcise redirect-adresse og en kopiér-knap.
+
+1. Lav et projekt i [Google Cloud](https://console.cloud.google.com/projectcreate), fx „HeyOtto OS“.
+2. *APIs & Services → Library*: slå **Google Calendar API** til. (Når mail kommer: også **Gmail API**.)
+3. *Google Auth Platform* (OAuth consent screen): vælg **External**, og skriv app-navn og e-mail. Tryk **Publish app**. I *Testing* udløber adgangen efter 7 dage. Til eget brug viser Google en advarsel om en „ikke verificeret app“ første gang. Klik *Avanceret → Fortsæt*.
+4. *Clients*: **Create client → Web application**. Under **Authorized redirect URIs** tilføjes `https://<din-adresse>/api/google/callback`, fx `https://heyotto-os.netlify.app/api/google/callback`. Skal en Deploy Preview også kunne forbindes, tilføjes dens adresse på samme måde.
+5. I Netlify (*Project configuration → Environment variables*): `GOOGLE_CLIENT_ID` og `GOOGLE_CLIENT_SECRET` (markér den som hemmelig). Lav et nyt deploy.
+6. I appen: **Indstillinger → Forbindelser → Forbind Google Kalender**. Gentag for hver konto.
+
+**Til andre end dig selv.** Hver installation har sin egen adgangskode og sine egne data, så en anden person laver sit eget Netlify-site fra repoet og sin egen OAuth-klient. Skal mange personer bruge den *samme* OAuth-klient, kræver Google, at appen bliver verificeret. Til Gmail (`gmail.readonly`) kræver Google desuden en sikkerhedsvurdering, når appen bruges af andre end en lille gruppe testbrugere.
+
+**Når noget går galt**, står fejlen på kontoen under Forbindelser, og de seneste møder bliver liggende:
+
+| Besked | Løsning |
+|---|---|
+| Adgangen er udløbet eller trukket tilbage | Forbind kontoen igen. Står klienten som *Testing*, så tryk *Publish app* |
+| Google kender ikke denne adresse som redirect-URI | Tilføj adressen fra Indstillinger til klienten i Google Cloud |
+| Google Calendar API er ikke slået til | *APIs & Services → Library → Google Calendar API → Enable* |
 
 ## Redigering
 
@@ -180,7 +231,7 @@ Et epic-filter fra ét projekt tømmer ikke et andet: gælder filteret ikke for 
 | `epic` | nøgle fra `epics` | Valgfri. Lille mærke på kortet, fuldt navn som tooltip |
 | `hours` | tal | Timer pr. uge **lige nu**. 0 hvis opgaven ikke trækker tid i denne uge |
 
-Projekter har desuden `kind` (`drift` / `projekt` / `adhoc`), som afgør hvilken bås deres timer havner i på forsiden. `kapacitet` og `uger` holder modellens tal og ugeloggen.
+Projekter har desuden `kind` (`drift` / `projekt` / `adhoc`), som afgør hvilken bås deres timer havner i på forsiden. `kapacitet` og `uger` holder modellens tal og ugeloggen. I `kapacitet` styrer `meetingsSource` (`"kalender"` / `"fast"`) om møderne regnes fra kalenderen, og `workStart`/`workEnd` (timer, standard 8 og 17) er arbejdstiden, møderne klippes til.
 
 **Statusser — præcis disse fem:**
 
