@@ -33,6 +33,10 @@ Status (2026-11-06):
 | [M14](M14-mcp-og-dokumentation.md) | MCP-endpoint og API-dokumentation (OpenAPI) | 7 | M | M11, M12 | — |
 | [M15](M15-os-og-studio.md) | OS og Studio taler sammen (begge veje) | 7 | M | M11–M14 | Tokens i Studio og OS, MCP-opsætning i Studio |
 
+## Ønsker til senere
+
+- **Gem automatisk** (Kasper, 2026-11-06): ændringer skal ikke gemmes manuelt med Gem. Fletningen fra M4 og versionstjekket gør det muligt at gemme løbende i baggrunden.
+
 ## Pull requests
 
 1. **M1 + M2:** oprydning. Ren sletning med lav risiko, der gør resten lettere at bygge.
