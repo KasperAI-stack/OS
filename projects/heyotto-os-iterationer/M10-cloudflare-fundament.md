@@ -1,12 +1,12 @@
 # M10: Cloudflare-fundament: Tasks kører på Workers
 
-**Status (2026-11-06):** koden er bygget og testet i Node (se "Bygget"). Netlify er fjernet helt fra projektet. Deploy til testmiljøet mangler og kræver adgang til Cloudflare-kontoen. Første af seks iterationer (M10–M15), der giver HeyOtto Tasks samme opsætning som HeyOtto Studio: API med tokens, MCP, UI bag Cloudflare Access og en forbindelse til Studio. Grundlaget er Studios guide "byg et værktøj med samme opsætning som HeyOtto Studio" (M38–M42 i Studio).
+**Status (2026-11-06):** bygget, deployet og røgtestet i testmiljøet på `https://heyotto-tasks-test.heyotto-tasks.workers.dev`. Netlify er fjernet helt fra projektet. Første af seks iterationer (M10–M15), der giver HeyOtto Tasks samme opsætning som HeyOtto Studio: API med tokens, MCP, UI bag Cloudflare Access og en forbindelse til Studio. Grundlaget er Studios guide "byg et værktøj med samme opsætning som HeyOtto Studio" (M38–M42 i Studio).
 
 > "jeg synes vi skal fuldstændig væk fra netlify"
 
 ## Beslutning
 
-HeyOtto Tasks kører **kun på Cloudflare** (besluttet 2026-11-06). Der er ingen Netlify-kode, -konfiguration eller -pakker i repoet. Det gamle Netlify-site kører videre urørt med de nuværende data, indtil de er kopieret til D1 (M13). Derefter slettes det.
+HeyOtto Tasks kører **kun på Cloudflare** (besluttet 2026-11-06). Der er ingen Netlify-kode, -konfiguration eller -pakker i repoet. **Ingen data flyttes** (Kasper, 2026-11-06: ingen tasks, der ikke må slettes). Tasks starter forfra på Cloudflare, Google forbindes igen, og det gamle Netlify-site slettes, når Tasks er live (M13).
 
 Guiden beskriver tre måder at køre et værktøj på (a: samme pc som Studio, b: anden maskine med egen tunnel, c: hosting med egen HTTPS). **Tasks bruger c:** Cloudflare Workers med eget domæne. Der er ingen tunnel og ingen pc, der skal være tændt.
 
@@ -23,7 +23,6 @@ Guiden beskriver tre måder at køre et værktøj på (a: samme pc som Studio, b
 | `server/webpush.mts` | Web Push med Web Crypto (VAPID + aes128gcm). Nøglerne i lageret virker uændret |
 | `dashboard/_headers` | Sikkerheds-headers på de statiske filer |
 | `wrangler.jsonc` | Produktion og miljøet `test` (egen D1 og kø), cron hvert 15. minut og hver time, `nodejs_compat` |
-| `scripts/copy-blobs-to-d1.mjs` | Engangsflytning af data fra det gamle Netlify-site til D1 (`--uden-push` til testmiljøet). Netlify-biblioteket hentes kun til den kørsel |
 | `test/*.test.mts` (`npm test`) | 20 tests: D1-lageret, API'et gennem `handle()` med D1, Workerens `fetch`/`queue`/`scheduled`, Web Push mod `http_ece` og `web-push`-nøgler, og prognosen på en server i UTC, Los Angeles og Tokyo = browseren i København |
 
 Valg undervejs:
@@ -33,28 +32,35 @@ Valg undervejs:
 - Appen hedder nu **HeyOtto Tasks** (titel, manifest og notifikationer). Routine-teksterne ("HeyOtto OS-job", "HeyOtto OS-opgaver") er uændrede, fordi skillen og routinen genkender dem.
 - Workeren fylder 1,25 MB (226 KB gzip). Grænsen på den gratis plan er 3 MB.
 
-**Ikke testet endnu:** Workeren i Cloudflares egen runtime. `wrangler dev` kan ikke starte på pc'en, fordi Microsoft Visual C++ Redistributable mangler (workerd kræver den). Den første kørsel i den rigtige runtime bliver derfor testmiljøet.
+## Testmiljøet
+
+`https://heyotto-tasks-test.heyotto-tasks.workers.dev` med D1 `heyotto-tasks-test` og køen `heyotto-tasks-otto-test`. Workeren starter på 10 ms. Røgtest i Cloudflares runtime:
+
+| Test | Resultat |
+|---|---|
+| Appen, statiske filer og headers | `200`. `README.md` er ikke offentlig (`dashboard/.assetsignore`) |
+| Uden login / login | `401` / session-cookie |
+| Gem, konflikt og Historik | ny `rev` i D1, `409` ved gammel `rev`, versionen i Historik |
+| Push-nøgle | laves, krypteres og læses igen (`createCipheriv`, som Google-tokens bruger) |
+| Otto og Google | svarer korrekt "ikke sat op", fordi testmiljøet ikke har nøglerne |
+
+`wrangler dev` kan ikke starte lokalt, fordi Microsoft Visual C++ Redistributable mangler på pc'en. Testmiljøet bruges i stedet.
 
 ## Trin, der mangler
 
-1. `npx wrangler login`, `npx wrangler d1 create heyotto-tasks-test` og `npx wrangler queues create heyotto-tasks-otto-test`. Indsæt database-id'et i `wrangler.jsonc`.
-2. `npm run cf:migrate:test`, hemmelighederne med `npx wrangler secret put … --env test` og `APP_URL` til testadressen.
-3. Kopi af data: `npm install --no-save @netlify/blobs`, `npm run cf:copy -- <sti uden for repoet> --uden-push`, indlæs med `wrangler d1 execute`, og slet filen.
-4. `npm run cf:deploy:test`, og gennemgå appen: login, gem, fletning, kalender, Indbakke, Otto, Omplanlæg og push (slå til på testadressen).
-5. Mål CPU-tiden pr. kald i Workers-loggen (grænsen på den gratis plan er 10 ms).
+1. Mål CPU-tiden pr. kald i Workers-loggen (`npx wrangler tail --env test`). Grænsen på den gratis plan er 10 ms.
+2. Valgfrit i test: `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_ID` og `GOOGLE_CLIENT_SECRET` med `--env test`, og testadressens callback i Google-klienten. Så kan Otto, kalender og Indbakke prøves, før Tasks går live.
 
-## Kasper skal selv
+## Plan
 
-- `npx wrangler login` i repoet med kontoen, der har `heyotto.win`.
-- Netlify-site-id og et adgangstoken til den ene kopi af data.
-- Intet om planen: Tasks starter på **Workers Free**. Queues, Cron Triggers (5 pr. konto, Tasks bruger 2) og D1 er med. Grænsen er **10 ms CPU-tid pr. kald**. Ventetid på Claude, Google og databasen tæller ikke med. Kun hvis kald rammer grænsen, skal der vælges mellem at optimere dem og Workers Paid (ca. 5 USD/md.).
+Tasks starter på **Workers Free**. Queues, Cron Triggers (5 pr. konto, Tasks bruger 2) og D1 er med. Grænsen er **10 ms CPU-tid pr. kald**. Ventetid på Claude, Google og databasen tæller ikke med. Kun hvis kald rammer grænsen, skal der vælges mellem at optimere dem og Workers Paid (ca. 5 USD/md.).
 
 ## Åbne spørgsmål
 
-1. Skal testadressen også stå bag Cloudflare Access fra start? Anbefaling: ja, med den eksisterende adgangskode som ekstra lag, fordi den indeholder en kopi af rigtige data.
+1. Skal testadressen også stå bag Cloudflare Access? Kommer naturligt med M12.
 
 ## Færdig når
 
-- Hele appen virker på testadressen med en kopi af data, og Google-forbindelserne kan læses uden at logge ind igen
+- Hele appen virker på testadressen ✅ (røgtest)
 - Otto-kørsler, kalendersync og alarmer kører fra køen og cron
 - Prognosen giver samme resultat på serveren som i browseren, også sent om aftenen

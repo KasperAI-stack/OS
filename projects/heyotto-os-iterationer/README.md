@@ -8,7 +8,7 @@ Status (2026-11-06):
 - **M6** (prognose og alarmer, inkl. push-notifikationer) er bygget på branchen `claude/m6-prognose-alarmer`.
 - **M7** (Otto, agent-kernen) og **M8** (Indbakke med "Hent mails") er merget og live (PR #13 og #14).
 - **M9** (omplanlæg med Otto, inkl. ugeforslag mandag) er bygget på branchen `claude/m9-omplanlaeg`.
-- **M10** er bygget og testet i Node på branchen `claude/m10-cloudflare` (deploy til testmiljøet mangler). Appen hedder nu **HeyOtto Tasks** og kører kun på Cloudflare: Netlify er fjernet helt fra koden.
+- **M10** er bygget og testet i Node på branchen `claude/m10-cloudflare` (kører i testmiljøet på heyotto-tasks-test.heyotto-tasks.workers.dev). Appen hedder nu **HeyOtto Tasks** og kører kun på Cloudflare: Netlify er fjernet helt fra koden.
 - **M10–M15** er planlagt (2026-11-06): OS flytter til Cloudflare og får samme opsætning som HeyOtto Studio (API med tokens, MCP, UI bag Cloudflare Access) og en forbindelse til Studio. Grundlaget er Studios guide "byg et værktøj med samme opsætning som HeyOtto Studio". Den tidligere M10-plan (Studio på pc'en via tunnel med `/actions` og `/runs`) er erstattet af M15.
 
 **Krav fra Kasper (2026-11-05):** det skal være nemt at sætte kalender og Gmail op for andre konti. Derfor er intet bundet til én konto. Man kan forbinde flere Google-konti, og opsætningen står i appen med den præcise redirect-adresse. En anden person kan sætte sit eget HeyOtto OS op med samme trin. Numrene er byggerækkefølgen: hver iteration bygger kun på dem med lavere numre. Hver fil har en analyse af den nuværende kode, en anbefalet løsning, konkrete trin, åbne spørgsmål og en definition af "færdig".
@@ -27,7 +27,7 @@ Status (2026-11-06):
 | [M10](M10-cloudflare-fundament.md) | **Cloudflare-fundament:** OS kører på Workers + D1 (testadresse) | 7 | L | M1–M9 | Adgang til Cloudflare-kontoen (gratis plan, Paid kun hvis CPU-grænsen rammes) |
 | [M11](M11-api-tokens.md) | API-tokens (`hos_`) med scopes og OS' API `/ext` | 7 | M | M10 | — |
 | [M12](M12-adgangsvagt-og-access.md) | Global adgangsvagt og UI'et bag Cloudflare Access | 7 | M | M10, M11 | Lave Access-applikationen |
-| [M13](M13-flytning-til-cloudflare.md) | Flytningen: data, domæne, Google og push, det gamle site slettes | 7 | S | M10–M12 | Vælge flyttedag, rette Google-redirect, slå push til igen |
+| [M13](M13-flytning-til-cloudflare.md) | Gå live: domæne, Google og push. Ingen data flyttes, det gamle site slettes | 7 | S | M10–M12 | Vælge flyttedag, rette Google-redirect, slå push til igen |
 | [M14](M14-mcp-og-dokumentation.md) | MCP-endpoint og API-dokumentation (OpenAPI) | 7 | M | M11, M12 | — |
 | [M15](M15-os-og-studio.md) | OS og Studio taler sammen (begge veje) | 7 | M | M11–M14 | Tokens i Studio og OS, MCP-opsætning i Studio |
 

@@ -411,7 +411,6 @@ HeyOtto Tasks kører kun på Cloudflare (planen: `projects/heyotto-os-iteratione
 
 - Prognose og alarmer regnes på serveren i brugerens tidszone med `server/zone.mts` (Workers kører altid i UTC, og `process.env.TZ` virker ikke der).
 - Push sendes med Web Crypto (`server/webpush.mts`).
-- Data fra det gamle Netlify-site kopieres én gang med `scripts/copy-blobs-to-d1.mjs` (se kommentaren øverst i filen).
 
 ## Valideringen
 

@@ -1,7 +1,7 @@
 // HeyOtto Tasks på Cloudflare Workers. Se worker/index.mts og projects/heyotto-os-iterationer/M10-cloudflare-fundament.md.
 //
 //   npm run cf:dev            lokalt (Miniflare: lokal D1, kø og cron)
-//   npm run cf:deploy:test    testmiljøet (egen database og kø, kopi af data)
+//   npm run cf:deploy:test    testmiljøet (egen database og kø)
 //
 // Hemmeligheder sættes med `npx wrangler secret put <NAVN> [--env test]` og står aldrig her:
 //   HEYOTTO_PASSWORD, ANTHROPIC_API_KEY, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,

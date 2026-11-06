@@ -14,7 +14,6 @@
     "cf:dev": "wrangler dev --port 8799 --test-scheduled",
     "cf:migrate:local": "wrangler d1 migrations apply heyotto-tasks --local",
     "cf:migrate:test": "wrangler d1 migrations apply heyotto-tasks-test --env test --remote",
-    "cf:deploy:test": "wrangler deploy --env test",
-    "cf:copy": "node scripts/copy-blobs-to-d1.mjs"
+    "cf:deploy:test": "wrangler deploy --env test"
   }
 }
