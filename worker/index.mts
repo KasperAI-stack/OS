@@ -4,7 +4,8 @@
      /mcp med token, app-adressen kun med Cloudflare Access, alle andre adresser 403.
 
      fetch       /api/* → appens API (server/api.mts). /ext/* → det offentlige API med
-                 tokens (server/ext.mts). Alt andet: appens statiske filer
+                 tokens (server/ext.mts). /mcp/* → MCP til Studio, Claude og Cursor
+                 (server/mcp.mts). Alt andet: appens statiske filer
                  (dashboard/), som Cloudflare serverer uden om Workeren.
      queue       én assistent-kørsel pr. besked (Cloudflare Queue)
      scheduled   hvert 15. minut: kalender + Assistentens planlagte udløser. Hver time: alarmer.
@@ -15,6 +16,7 @@
 import { handle, studioCommenter } from "../server/api.mts";
 import * as studio from "../server/studio.mts";
 import { ext } from "../server/ext.mts";
+import { mcp } from "../server/mcp.mts";
 import { gate } from "../server/gate.mts";
 import { alertsTick, calendarTick, runAgent, scheduleTick } from "../server/jobs.mts";
 import type { Env as EnvFn, Platform } from "../server/platform.mts";
@@ -77,6 +79,7 @@ export default {
     const path = new URL(req.url).pathname;
     if (path === "/api" || path.startsWith("/api/")) return handle(req, platform(req, env, ctx, g.user));
     if (path === "/ext" || path.startsWith("/ext/")) return ext.fetch(req, { p: platform(req, env, ctx) });
+    if (path === "/mcp" || path.startsWith("/mcp/")) return mcp.fetch(req, { p: platform(req, env, ctx) });
     return env.ASSETS.fetch(req);
   },
 

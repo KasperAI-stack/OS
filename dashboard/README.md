@@ -131,26 +131,12 @@ Studio, n8n og andre værktøjer bruger `/ext` med et API-token. Tokens laves og
 Authorization: Bearer tsk_…
 ```
 
-| Kald | Rettighed | Hvad |
-|---|---|---|
-| `GET /ext/health` | alle | `{ ok, token, scopes }` |
-| `GET /ext/tasks?status=&project=&due_before=&include_done=true` | `read` | Åbne tasks (eller alle med `include_done`), med projekt og kommentarer |
-| `GET /ext/tasks/{id}` | `read` | Én task |
-| `POST /ext/tasks` | `write` | Ny task: `title` (krævet), `project`, `status`, `due`, `owner`, `note`, `hours`, `remaining`, `priority`, `sprint`. Uden `project` havner den under "Uden projekt". Svarer `201` |
-| `PATCH /ext/tasks/{id}` | `write` | Ret de samme felter (ikke `project`) |
-| `POST /ext/tasks/{id}/comments` | `write` | `{ text }` (højst 4.000 tegn). Vises på opgaven i appen. Svarer `201` |
-| `GET /ext/projects` | `read` | Projekter med antal åbne og færdige tasks |
-| `GET /ext/routines` | `read` | Rutinerne |
-| `GET /ext/sprints?project=` | `read` | Sprints: `project`, `month`, `goal` |
-| `POST /ext/sprints` | `write` | Ny sprint: `{ project, month: "ÅÅÅÅ-MM", goal }`. `409`, hvis projektet allerede har en sprint den måned. Svarer `201` |
-| `GET /ext/calendar` | `read` | `{ snapshot }`: møder fra de forbundne Google-konti. `null`, når intet er forbundet |
-| `GET /ext/jobs/{id}` | `read` | Et job, du har sat Claude på i appen |
-| `PATCH /ext/jobs/{id}` | `write` | Claude melder tilbage: `{ status: "i gang" | "til godkendelse" | "fejlet", result?, error? }`. `410`, hvis du har lukket jobbet |
+Samme tokens virker på **MCP** på `https://tasks-api.heyotto.win/mcp` (`server/mcp.mts`) til Studios agenter, Claude og Cursor, med værktøjerne `list_tasks`, `get_task`, `list_projects`, `list_routines`, `get_forecast`, `create_task`, `update_task` og `add_comment`.
 
-- **Ingen sletning**, ingen Historik og ingen tokens via `/ext`. Ændringer gemmes med versionstjek og står i Historik med tokenets navn, så de kan fortrydes.
-- **Grænser:** 60 kald i minuttet pr. token (Cloudflares Rate Limiting, omtrentlig pr. datacenter), body højst 256 KB.
-- **Fejl** er JSON `{ "error": "…" }` på dansk: `400` ugyldigt, `401` token, `403` rettighed, `404` ukendt task, job eller adresse, `409` findes allerede, `413` for stor, `429` for mange kald.
-- **Log:** én linje pr. kald med tokenets navn, metode, sti og status. Tokens renses (`tsk_***`) i logs og stier.
+**Hele beskrivelsen** (alle kald, felter, fejlkoder, MCP-værktøjer og eksempler) står i [`docs/api.md`](../docs/api.md), og maskinlæsbart til n8n i [`docs/openapi.json`](../docs/openapi.json). Testen `test/openapi.test.mts` fejler, hvis en rute mangler i filen.
+
+- **Ingen sletning**, ingen Historik og ingen tokens via `/ext` eller `/mcp`. Ændringer står i Historik med tokenets navn, så de kan fortrydes.
+- **Grænser:** 60 kald i minuttet pr. token, body højst 256 KB. Tokens renses (`tsk_***`) i logs og stier.
 
 ## Forsiden: kapacitet
 

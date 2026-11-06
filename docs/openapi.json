@@ -1,0 +1,148 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "HeyOtto Tasks API",
+    "version": "1.0.0",
+    "description": "Kaspers opgaver, projekter og kapacitet. Tokens laves i appen under Indstillinger → API-tokens. Fejl er { error } på dansk. Se docs/api.md."
+  },
+  "servers": [{ "url": "https://tasks-api.heyotto.win/ext" }],
+  "security": [{ "bearer": [] }],
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "health", "summary": "Tjek tokenet",
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "type": "boolean" }, "token": { "type": "string" }, "scopes": { "type": "array", "items": { "type": "string", "enum": ["read", "write"] } } } } } } },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/tasks": {
+      "get": {
+        "operationId": "listTasks", "summary": "Åbne tasks (read)",
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "$ref": "#/components/schemas/Status" } },
+          { "name": "project", "in": "query", "schema": { "type": "string" } },
+          { "name": "due_before", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "include_done", "in": "query", "schema": { "type": "string", "enum": ["true"] } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "tasks": { "type": "array", "items": { "$ref": "#/components/schemas/Task" } } } } } } },
+          "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "operationId": "createTask", "summary": "Ny task (write)",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/TaskFields" }, { "type": "object", "required": ["title"], "properties": { "project": { "type": "string", "description": "Projektets id. Udelad for \"Uden projekt\"" } } }] } } } },
+        "responses": {
+          "201": { "$ref": "#/components/responses/OneTask" },
+          "400": { "$ref": "#/components/responses/Error" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/tasks/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "get": {
+        "operationId": "getTask", "summary": "Én task (read)",
+        "responses": { "200": { "$ref": "#/components/responses/OneTask" }, "404": { "$ref": "#/components/responses/Error" } }
+      },
+      "patch": {
+        "operationId": "updateTask", "summary": "Ret en task (write). Projektet kan kun ændres i appen",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TaskFields" } } } },
+        "responses": { "200": { "$ref": "#/components/responses/OneTask" }, "400": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/tasks/{id}/comments": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "post": {
+        "operationId": "addComment", "summary": "Kommentar på en task (write)",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["text"], "properties": { "text": { "type": "string", "maxLength": 4000 } } } } } },
+        "responses": {
+          "201": { "description": "Oprettet", "content": { "application/json": { "schema": { "type": "object", "properties": { "comment": { "$ref": "#/components/schemas/Comment" } } } } } },
+          "400": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/projects": {
+      "get": {
+        "operationId": "listProjects", "summary": "Projekter (read)",
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "projects": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "kind": { "type": "string" }, "tagline": { "type": "string" }, "openTasks": { "type": "integer" }, "doneTasks": { "type": "integer" } } } } } } } } } }
+      }
+    },
+    "/routines": {
+      "get": {
+        "operationId": "listRoutines", "summary": "Rutiner (read)",
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "routines": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "every": { "type": "string" }, "weekday": { "type": ["integer", "null"] }, "monthday": { "type": ["integer", "null"] }, "hours": { "type": "number" }, "project": { "type": "string" }, "active": { "type": "boolean" }, "last": { "type": "string" } } } } } } } } } }
+      }
+    },
+    "/sprints": {
+      "get": {
+        "operationId": "listSprints", "summary": "Sprints (read)",
+        "parameters": [{ "name": "project", "in": "query", "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "sprints": { "type": "array", "items": { "$ref": "#/components/schemas/Sprint" } } } } } } } }
+      },
+      "post": {
+        "operationId": "createSprint", "summary": "Ny sprint (write)",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Sprint" } } } },
+        "responses": {
+          "201": { "description": "Oprettet", "content": { "application/json": { "schema": { "type": "object", "properties": { "sprint": { "$ref": "#/components/schemas/Sprint" } } } } } },
+          "400": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/calendar": {
+      "get": {
+        "operationId": "getCalendar", "summary": "Møder fra de forbundne Google-konti (read). null uden",
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "snapshot": { "type": ["object", "null"] } } } } } } }
+      }
+    },
+    "/forecast": {
+      "get": {
+        "operationId": "getForecast", "summary": "Prognosen: alarmer, tasks i risiko og kapacitet de næste 12 uger (read)",
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": {
+          "today": { "type": "string", "format": "date" },
+          "alerts": { "type": "array", "items": { "type": "object", "properties": { "level": { "type": "integer", "description": "3 rød, 2 gul, 1 grå" }, "kind": { "type": "string" }, "title": { "type": "string" }, "why": { "type": "string" } } } },
+          "tasks": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" }, "status": { "type": "string", "enum": ["risiko", "stramt", "over", "mangler"] }, "due": { "type": "string" }, "finish": { "type": "string" }, "remaining": { "type": "number" }, "deficit": { "type": "number" } } } },
+          "weeks": { "type": "array", "items": { "type": "object", "properties": { "start": { "type": "string", "format": "date" }, "hours": { "type": "number" }, "used": { "type": "number" } } } }
+        } } } } } }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": { "bearer": { "type": "http", "scheme": "bearer", "description": "tsk_… fra Indstillinger → API-tokens" } },
+    "schemas": {
+      "Status": { "type": "string", "enum": ["Ikke startet", "I gang", "Blokeret", "Færdig", "Droppet"] },
+      "TaskFields": {
+        "type": "object", "additionalProperties": false,
+        "properties": {
+          "title": { "type": "string", "maxLength": 120 },
+          "status": { "$ref": "#/components/schemas/Status" },
+          "due": { "type": "string", "description": "ÅÅÅÅ-MM-DD eller tom" },
+          "owner": { "type": "string", "maxLength": 40 },
+          "note": { "type": "string", "maxLength": 2000 },
+          "hours": { "type": "number", "minimum": 0, "maximum": 40, "description": "Timer pr. uge lige nu" },
+          "remaining": { "type": ["number", "null"], "minimum": 0, "maximum": 2000, "description": "Timer tilbage i alt" },
+          "priority": { "type": "string", "enum": ["høj", "normal", "lav"] },
+          "sprint": { "type": "string", "description": "ÅÅÅÅ-MM" }
+        }
+      },
+      "Comment": { "type": "object", "properties": { "at": { "type": "string", "format": "date-time" }, "by": { "type": "string" }, "text": { "type": "string" } } },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" }, "title": { "type": "string" }, "project": { "type": "string" }, "projectName": { "type": "string" },
+          "status": { "$ref": "#/components/schemas/Status" }, "due": { "type": "string" }, "owner": { "type": "string" }, "note": { "type": "string" },
+          "hours": { "type": "number" }, "remaining": { "type": ["number", "null"] }, "priority": { "type": "string", "enum": ["høj", "normal", "lav"] },
+          "sprint": { "type": "string" }, "routine": { "type": "string" },
+          "comments": { "type": "array", "items": { "$ref": "#/components/schemas/Comment" } }
+        }
+      },
+      "Sprint": { "type": "object", "required": ["project", "month"], "properties": { "project": { "type": "string" }, "month": { "type": "string", "description": "ÅÅÅÅ-MM" }, "goal": { "type": "string", "maxLength": 400 } } },
+      "Error": { "type": "object", "properties": { "error": { "type": "string", "description": "Dansk besked" } } }
+    },
+    "responses": {
+      "Error": { "description": "Fejl", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "OneTask": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "task": { "$ref": "#/components/schemas/Task" } } } } } }
+    }
+  }
+}
