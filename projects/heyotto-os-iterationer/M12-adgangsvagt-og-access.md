@@ -1,6 +1,14 @@
 # M12: Global adgangsvagt og UI'et bag Cloudflare Access
 
-**Status (2026-11-06):** planlagt. Svarer til M2 og M4 i Studios guide. Bygger på M10 og M11.
+**Status (2026-11-06):** bygget og deployet i testmiljøet. Venter på Access-applikationen (AUD-tagget), før appen kan åbnes igen.
+
+Bygget:
+- `server/gate.mts` (vagten), `server/access.mts` (JWT med Web Crypto), `run_worker_first`, `workers_dev: false` og `preview_urls: false`.
+- Testmiljøet: `tasks-test-ui.heyotto.win` (appen) og `tasks-test.heyotto.win` (API). Produktion er sat op i `wrangler.jsonc` med `tasks-ui` og `tasks`.
+- Appen sender `X-Tasks: 1`. Ændrende `/api`-kald uden den eller med fremmed Origin afvises.
+- 7 nye tests (i alt 35).
+- Testet udefra: API-adressen `401` uden token og `404` på `/` og `/api`. App-adressen `403` (fail closed, AUD mangler). workers.dev svarer ikke længere.
+- `CF_ACCESS_TEAM_DOMAIN` og `CF_ACCESS_AUD` er `vars` i `wrangler.jsonc` (ikke hemmelige). Svarer til M2 og M4 i Studios guide. Bygger på M10 og M11.
 
 ## Mål
 
@@ -56,7 +64,7 @@ Intet er bundet til Kaspers konto: e-mailen står i Access-policyen i Cloudflare
 ## Kasper skal selv
 
 1. Cloudflare Zero Trust → Access → Applications → Self-hosted: `tasks-ui.heyotto.win`, policy "Allow" med kun din e-mail.
-2. Kopiere applikationens AUD-tag til `wrangler secret put CF_ACCESS_AUD`.
+2. Give mig applikationens AUD-tag. Det skrives i `wrangler.jsonc` (`CF_ACCESS_AUD`).
 
 ## Færdig når
 

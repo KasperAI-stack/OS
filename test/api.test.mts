@@ -8,7 +8,7 @@ import type { Platform } from "../server/platform.mts";
 import { d1Store } from "../worker/store.mts";
 import { memoryD1 } from "./helpers.mts";
 
-const ORIGIN = "https://tasks.example";
+const ORIGIN = "http://127.0.0.1:8799";
 const PASSWORD = "en-lang-test-adgangskode";
 
 function setup(vars: Record<string, string> = {}) {

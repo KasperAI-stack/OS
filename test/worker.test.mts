@@ -13,7 +13,7 @@ function env(extra: Record<string, unknown> = {}) {
     DB: memoryD1(),
     ASSETS: { fetch: async (req: Request) => { assets.push(new URL(req.url).pathname); return new Response("app"); } },
     AGENT_QUEUE: { send: async (body) => { sent.push(body); } },
-    APP_URL: "https://tasks.example",
+    APP_URL: "http://127.0.0.1:8799",
     HEYOTTO_PASSWORD: "en-lang-test-adgangskode",
     ...extra
   };
@@ -23,8 +23,8 @@ const ctx = { waitUntil() {} };
 
 test("fetch: /api går til API'et, resten til de statiske filer", async () => {
   const { e, assets } = env();
-  assert.equal((await worker.fetch(new Request("https://tasks.example/api/data"), e, ctx)).status, 401);
-  assert.equal(await (await worker.fetch(new Request("https://tasks.example/"), e, ctx)).text(), "app");
+  assert.equal((await worker.fetch(new Request("http://127.0.0.1:8799/api/data"), e, ctx)).status, 401);
+  assert.equal(await (await worker.fetch(new Request("http://127.0.0.1:8799/"), e, ctx)).text(), "app");
   assert.deepEqual(assets, ["/"]);
 });
 

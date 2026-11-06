@@ -1654,7 +1654,8 @@ a.btn { text-decoration: none; }
   // Fælles indgang til API'et. En fejl bliver til en Error med status og den
   // danske besked, serveren har skrevet.
   function api(method, url, body) {
-    var opts = { method: method, headers: {}, credentials: "same-origin" };
+    // X-Tasks: serveren afviser ændringer uden den (mod CSRF, se server/gate.mts)
+    var opts = { method: method, headers: { "X-Tasks": "1" }, credentials: "same-origin" };
     if (body !== undefined) {
       opts.headers["Content-Type"] = "application/json";
       opts.body = JSON.stringify(body);

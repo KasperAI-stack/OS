@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import worker, { type WorkerEnv } from "../worker/index.mts";
 import { memoryD1 } from "./helpers.mts";
 
-const U = "https://tasks.example";
+const U = "http://127.0.0.1:8799";
 const PASSWORD = "en-lang-test-adgangskode";
 
 function setup() {

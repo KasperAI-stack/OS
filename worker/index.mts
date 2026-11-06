@@ -1,5 +1,8 @@
 /* HeyOtto Tasks på Cloudflare Workers.
 
+     Først: adgangsvagten (server/gate.mts). Lukket som standard: API-adressen kun /ext og
+     /mcp med token, app-adressen kun med Cloudflare Access, alle andre adresser 403.
+
      fetch       /api/* → appens API (server/api.mts). /ext/* → det offentlige API med
                  tokens (server/ext.mts). Alt andet: appens statiske filer
                  (dashboard/), som Cloudflare serverer uden om Workeren.
@@ -11,6 +14,7 @@
 
 import { handle } from "../server/api.mts";
 import { ext } from "../server/ext.mts";
+import { gate } from "../server/gate.mts";
 import { alertsTick, calendarTick, runAgent, scheduleTick } from "../server/jobs.mts";
 import type { Env as EnvFn, Platform } from "../server/platform.mts";
 import { d1Store, type D1Like } from "./store.mts";
@@ -23,6 +27,10 @@ export type WorkerEnv = {
   AGENT_QUEUE: { send(body: { runId: string }): Promise<unknown> };
   EXT_LIMITER?: { limit(opts: { key: string }): Promise<{ success: boolean }> };   // 60 kald/min pr. token
   APP_URL?: string;              // appens egen https-adresse (links i notifikationer, VAPID)
+  UI_HOST?: string;              // appens adresse bag Access, fx tasks-ui.heyotto.win
+  API_HOST?: string;             // API'ets adresse (/ext, /mcp), fx tasks.heyotto.win
+  CF_ACCESS_TEAM_DOMAIN?: string;
+  CF_ACCESS_AUD?: string;
   [k: string]: unknown;
 };
 
@@ -58,6 +66,11 @@ export function platform(req: Request, env: WorkerEnv, ctx: Ctx): Platform {
 
 export default {
   async fetch(req: Request, env: WorkerEnv, ctx: Ctx): Promise<Response> {
+    const stop = await gate(req, {
+      uiHost: env.UI_HOST || "", apiHost: env.API_HOST || "",
+      team: env.CF_ACCESS_TEAM_DOMAIN || "", aud: env.CF_ACCESS_AUD || ""
+    });
+    if (stop) return stop;
     const path = new URL(req.url).pathname;
     if (path === "/api" || path.startsWith("/api/")) return handle(req, platform(req, env, ctx));
     if (path === "/ext" || path.startsWith("/ext/")) return ext.fetch(req, { p: platform(req, env, ctx) });
