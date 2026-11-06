@@ -31,9 +31,9 @@
   "env": {
     // Testmiljøet: egen database og kø, så en test aldrig rører de rigtige data
     "test": {
-      "vars": { "APP_URL": "" },
+      "vars": { "APP_URL": "https://heyotto-tasks-test.heyotto-tasks.workers.dev" },
       "d1_databases": [
-        { "binding": "DB", "database_name": "heyotto-tasks-test", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
+        { "binding": "DB", "database_name": "heyotto-tasks-test", "database_id": "cd14081d-2c54-46a0-9e62-8430bbe9d568", "migrations_dir": "migrations" }
       ],
       "queues": {
         "producers": [{ "binding": "AGENT_QUEUE", "queue": "heyotto-tasks-otto-test" }],
