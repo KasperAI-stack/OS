@@ -1,6 +1,12 @@
 # M14: MCP-endpoint og API-dokumentation
 
-**Status (2026-11-06):** planlagt. Svarer til M5 og M6 i Studios guide. Bygger på M11 og M12.
+**Status (2026-11-06):** bygget og committet (`4384b83`), 52 tests består. **Ikke udrullet endnu:** `npm run cf:deploy` venter på Kaspers ok, derefter test udefra. Svarer til M5 og M6 i Studios guide. Bygger på M11 og M12.
+
+**Afvigelser:**
+- Skrevet uden `@modelcontextprotocol/sdk` (`server/mcp.mts`, ca. 200 linjer): SDK'ens skemavalidering (ajv) genererer kode med `new Function`, som Workers afviser. Kun værktøjsdelen af protokollen bruges, og felterne valideres af de samme funktioner som `/ext`, så `inputSchema` er almindeligt JSON Schema og ikke zod.
+- Ny rute `GET /ext/forecast`, så `/ext` og MCP kan det samme.
+- De forældede `/ext/jobs`-rækker er fjernet fra README'en (ruterne forsvandt i M13).
+- Appen linker endnu ikke til `docs/api.md`: Workeren serverer kun `dashboard/`, så dokumentationen findes kun i repoet.
 
 ## Mål
 
