@@ -1,8 +1,8 @@
-/* HeyOtto OS — Ottos planforslag (M9): omplanlægning som en ændringsliste, du godkender.
+/* HeyOtto OS — Assistentens planforslag (M9): omplanlægning som en ændringsliste, du godkender.
 
      plans/<kørsels-id>   { id, runId, kind, createdAt, summary, changes, dropped, questions, before, after, status }
 
-   Otto foreslår ændringer med værktøjet plan_propose_changes. Serveren tjekker hver
+   Assistenten foreslår ændringer med værktøjet plan_propose_changes. Serveren tjekker hver
    ændring (opgaven findes og er åben, feltet er tilladt, værdien er gyldig) og regner
    før/efter med den samme prognose, som appen viser. Tallene kommer altså ikke fra
    Claude. Intet skrives i data: det gør appen, når du trykker Anvend. */

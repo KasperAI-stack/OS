@@ -6,8 +6,8 @@
      fetch       /api/* → appens API (server/api.mts). /ext/* → det offentlige API med
                  tokens (server/ext.mts). Alt andet: appens statiske filer
                  (dashboard/), som Cloudflare serverer uden om Workeren.
-     queue       én Otto-kørsel pr. besked (Cloudflare Queue)
-     scheduled   hvert 15. minut: kalender + Ottos planlagte udløser. Hver time: alarmer.
+     queue       én assistent-kørsel pr. besked (Cloudflare Queue)
+     scheduled   hvert 15. minut: kalender + Assistentens planlagte udløser. Hver time: alarmer.
 
    Opsætningen står i wrangler.jsonc. Hemmeligheder (adgangskode, Claude- og
    Google-nøgler) sættes med `wrangler secret put` og ligger aldrig i repoet. */

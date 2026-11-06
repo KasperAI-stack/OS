@@ -78,7 +78,7 @@ Studios agent hedder Otto (`otto.heyotto.win`), og Tasks' egen agent (M7) hedder
 
 ## Åbne spørgsmål til Kasper
 
-1. **Navnet:** skal Tasks' agent omdøbes (fx "Assistent" eller bare "Spørg Tasks"), så Otto kun er Studios agent? Anbefaling: ja, fordi Otto er Studios offentlige navn (`otto.heyotto.win`).
+1. ~~**Navnet**~~ **Afgjort (Kasper, 2026-11-06):** Tasks' agent hedder nu **Assistenten** i appen ("Spørg assistenten", "Omplanlæg med assistenten", Indstillinger → Assistent). Otto er kun Studios agent og Hey Otto-maskotten.
 2. **Adresser:** `tasks-api.heyotto.win` (API og MCP) og `tasks.heyotto.win` (appen), eller `tasks-api.heyotto.win` og `tasks.heyotto.win` som i guiden?
 3. Skal Tasks kunne starte gemte flows i Studio (`POST /flows/{id}/run`)? Planen venter altid på din godkendelse i Studio.
 

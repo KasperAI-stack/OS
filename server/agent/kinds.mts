@@ -1,4 +1,4 @@
-/* HeyOtto OS — de slags kørsler, Otto kan lave.
+/* HeyOtto OS — de slags kørsler, assistenten kan lave.
 
    Hver slags får KUN de værktøjer, der står her. Det er det vigtigste forsvar mod
    prompt injection: indholdet i en kalender eller (senere) en mail kan højst give et
@@ -20,7 +20,7 @@ export type Kind = {
   id: string;
   label: string;
   tools: readonly string[];
-  model: string;                 // standardmodel; kan ændres under Indstillinger → Otto
+  model: string;                 // standardmodel; kan ændres under Indstillinger → Assistent
   effort: Effort;
   maxSteps: number;
   skill: string;
@@ -39,7 +39,7 @@ export const KINDS: Record<string, Kind> = {
     maxSteps: 3, skill: PING, defaultEnabled: true, byHand: true, needsInput: false
   },
   spoerg: {
-    id: "spoerg", label: "Spørg Otto", tools: READ_ALL, model: "claude-opus-5-5", effort: "medium",
+    id: "spoerg", label: "Spørg assistenten", tools: READ_ALL, model: "claude-opus-5-5", effort: "medium",
     maxSteps: 12, skill: SPOERG, defaultEnabled: true, byHand: true, needsInput: true
   },
   indbakke: {

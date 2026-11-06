@@ -1,4 +1,4 @@
-/* Morgenbrief: dagens overblik på hverdage kl. 7 (slås til under Indstillinger → Otto). */
+/* Morgenbrief: dagens overblik på hverdage kl. 7 (slås til under Indstillinger → Assistent). */
 
 export default `Kørsel: Morgenbrief.
 

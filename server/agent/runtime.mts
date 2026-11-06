@@ -1,4 +1,4 @@
-/* HeyOtto Tasks — Ottos kørselsmotor: en tool use-løkke mod Claude API.
+/* HeyOtto Tasks — Assistentens kørselsmotor: en tool use-løkke mod Claude API.
 
    Send beskeder + værktøjsliste → udfør de værktøjskald, Claude beder om → send
    resultaterne tilbage → gentag, til Claude er færdig. Løkken er skrevet i hånden
@@ -47,8 +47,8 @@ export function configured(env: (k: string) => string | undefined = (k) => proce
 
 function apiError(e: unknown) {
   if (e instanceof Anthropic.AuthenticationError) return "Claude API afviste nøglen. Tjek ANTHROPIC_API_KEY i Cloudflare (`npx wrangler secret put ANTHROPIC_API_KEY`).";
-  if (e instanceof Anthropic.PermissionDeniedError) return "Nøglen har ikke adgang til modellen. Vælg en anden model under Indstillinger → Otto.";
-  if (e instanceof Anthropic.NotFoundError) return "Modellen findes ikke hos Claude API. Vælg en anden model under Indstillinger → Otto.";
+  if (e instanceof Anthropic.PermissionDeniedError) return "Nøglen har ikke adgang til modellen. Vælg en anden model under Indstillinger → Assistent.";
+  if (e instanceof Anthropic.NotFoundError) return "Modellen findes ikke hos Claude API. Vælg en anden model under Indstillinger → Assistent.";
   if (e instanceof Anthropic.RateLimitError) return "Claude API har for travlt lige nu (for mange kald). Prøv igen om lidt.";
   if (e instanceof Anthropic.BadRequestError) return "Claude API afviste kaldet: " + clip(e.message, 300);
   if (e instanceof Anthropic.APIConnectionTimeoutError) return "Claude API svarede ikke i tide. Prøv igen.";
@@ -62,7 +62,7 @@ function dateLine(now: Date, tz: string) {
   return `Lige nu: ${f.format(now)} (${tz}).`;
 }
 
-// Tidligere spørgsmål og svar i samme samtale (Spørg Otto), ældste først
+// Tidligere spørgsmål og svar i samme samtale (Spørg assistenten), ældste først
 async function history(store: Store, run: Run): Promise<Anthropic.MessageParam[]> {
   const chain: Run[] = [];
   let id = run.parent;
@@ -106,8 +106,8 @@ export async function execute(store: Store, id: string, opts: { call?: ModelCall
   };
 
   if (!kind) return await finish("fejlet", "Ukendt slags kørsel: " + run.kind);
-  if (!settings.enabled) return await finish("stoppet", "Otto er slået fra under Indstillinger → Otto.");
-  if (!settings.kinds[kind.id]?.enabled) return await finish("stoppet", `„${kind.label}“ er slået fra under Indstillinger → Otto.`);
+  if (!settings.enabled) return await finish("stoppet", "Assistenten er slået fra under Indstillinger → Assistent.");
+  if (!settings.kinds[kind.id]?.enabled) return await finish("stoppet", `„${kind.label}“ er slået fra under Indstillinger → Assistent.`);
 
   const tools: Tool[] = toolsFor(kind.tools, settings.auto[kind.id] === true);
   const allowed = new Set(tools.map((t) => t.name));
@@ -132,11 +132,11 @@ export async function execute(store: Store, id: string, opts: { call?: ModelCall
     if (b.over) {
       if (!b.spend.alerted && opts.notify) {
         await markBudgetAlerted(store, day);
-        await opts.notify("Otto har nået dagsbudgettet",
-          `${Math.round(b.spend.usd * settings.usdDkk * 100) / 100} kr. af ${settings.budgetDkk} kr. er brugt i dag. Otto kører igen i morgen, eller når du hæver budgettet.`,
+        await opts.notify("Assistenten har nået dagsbudgettet",
+          `${Math.round(b.spend.usd * settings.usdDkk * 100) / 100} kr. af ${settings.budgetDkk} kr. er brugt i dag. Assistenten kører igen i morgen, eller når du hæver budgettet.`,
           "agent-budget").catch((e) => console.error("budget-besked fejlede:", e));
       }
-      return await finish("stoppet", `Dagsbudgettet på ${settings.budgetDkk} kr. er brugt. Otto kører igen i morgen, eller når du hæver budgettet under Indstillinger → Otto.`);
+      return await finish("stoppet", `Dagsbudgettet på ${settings.budgetDkk} kr. er brugt. Assistenten kører igen i morgen, eller når du hæver budgettet under Indstillinger → Assistent.`);
     }
 
     const ts = Date.now();

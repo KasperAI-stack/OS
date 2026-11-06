@@ -26,7 +26,7 @@
 <style>
 /* Designsystem: Hey Otto (brand/hey-otto/guidelines.md).
    Sort, grå og hvid bærer HeyOtto Tasks. Der er ingen gradienter og ingen lilla
-   flader: lilla findes kun i fokusringen og i Otto selv. Primærfarven er blæk.
+   flader: lilla findes kun i fokusringen og i Otto-figuren selv. Primærfarven er blæk.
    Én signalfarve (rød) bruges kun til blokeret, overskredet og overbooket. */
 
 :root {
@@ -438,7 +438,7 @@ details.hist .hist-body { padding: 0 16px 14px 34px; }
 /* ---------- Tom-tilstand ---------- */
 .empty { background: var(--surface); border: 1px dashed var(--border-strong); border-radius: var(--r-card);
          padding: 30px 24px; text-align: center; color: var(--ink-2); }
-/* Otto tænker i en lys flise — den er lys i begge temaer, så Otto altid står rent */
+/* Otto-figuren står i en lys flise — den er lys i begge temaer, så Otto-figuren altid står rent */
 .empty:not(.goal)::before {
   content: ""; display: block; width: 104px; height: 128px; margin: -4px auto 18px; border-radius: var(--r-inner);
   background: url("otto/taenker.png") center bottom 6px / auto 86% no-repeat, var(--otto-tile);
@@ -467,7 +467,7 @@ footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border
 }
 
 /* ---------- Kapacitet ---------- */
-/* Dommen står i et gitter af tynde linjer. Otto i den første celle viser stemningen:
+/* Dommen står i et gitter af tynde linjer. Otto-figuren i den første celle viser stemningen:
    kaffe ved plads tilbage, løb ved på kanten og arbejde ved overbooket. */
 .verdict { display: grid; grid-template-columns: minmax(300px, 1.4fr) 1fr 1fr;
            border: 1px solid var(--border); border-radius: var(--r-card); overflow: hidden;
@@ -676,7 +676,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .set-sec code#g-uri { white-space: normal; overflow-wrap: anywhere; }
 .copyrow { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
 .conflicts { margin: 0 0 6px; padding-left: 18px; display: grid; gap: 8px; font-size: 13.5px; max-height: 50vh; overflow-y: auto; }
-/* ---------- Otto: Spørg Otto, aktivitet og indstillinger (M7) ---------- */
+/* ---------- Assistenten: Spørg assistenten, aktivitet og indstillinger (M7) ---------- */
 .oselect, .oask textarea { font: inherit; border-radius: var(--r-field); border: 1.5px solid var(--border-strong); background: var(--surface-2); color: var(--ink); }
 .oselect { font-size: 13px; padding: 5px 8px; max-width: 210px; }
 .oask textarea { display: block; width: 100%; font-size: 14px; padding: 10px 12px; resize: vertical; line-height: 1.45; min-height: 64px; }
@@ -870,7 +870,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   .cal-nav .icon-btn, .cal-nav .btn, .cal-nav .seg-ctl, .card-hd .seg-ctl { display: none !important; }
   .cw-scroll { max-height: none; overflow: visible; }
 }
-/* ---------- Otto siger: alarmer fra prognosen ----------
+/* ---------- Assistenten siger: alarmer fra prognosen ----------
    Rød er signalfarven (som blokeret og overskredet), gul står i blæk, grå er dæmpet. */
 .otto-says { margin: 0 0 22px; border: 1px solid var(--border); border-radius: var(--r-card); background: var(--surface); padding: 14px 20px 12px; }
 .otto-says.calm { padding: 12px 20px; }
@@ -1153,7 +1153,7 @@ a.btn { text-decoration: none; }
         fmt(m.util * 100, 0) + " %" + alertBadge() + "</span></span></button>" +
       '<button class="proj" data-act="otto" aria-current="' + (active === "otto") + '">' +
         '<span class="dot" style="background:var(--accent)"></span>' +
-        '<span><span class="pname">Spørg Otto</span><br><span class="pmeta">Agenten · læser, ændrer intet</span></span></button>' +
+        '<span><span class="pname">Spørg assistenten</span><br><span class="pmeta">Agenten · læser, ændrer intet</span></span></button>' +
       '<button class="proj" data-act="indbakke" aria-current="' + (active === "indbakke") + '">' +
         '<span class="dot" style="background:' + (inboxCount() ? "var(--accent)" : "var(--sidebar-muted)") + '"></span>' +
         '<span><span class="pname">Indbakke</span><br><span class="pmeta">' +
@@ -2928,7 +2928,7 @@ a.btn { text-decoration: none; }
     wireTheme();
   }
 
-  /* ----- "Otto siger": alarmerne fra prognosen -----
+  /* ----- "Assistenten siger": alarmerne fra prognosen -----
      De vigtigste først (rød → gul → grå), højst 5 ad gangen. Udsæt gemmes på serveren. */
   var OTTO_ALL = false;
   function alertBadge() {
@@ -2942,7 +2942,7 @@ a.btn { text-decoration: none; }
     var snoozedN = p.all.length - list.length;
     if (!list.length) {
       if (!withDue) return "";
-      return '<section class="otto-says calm"><p>' + icon("spark") + "<b>Otto siger:</b> alle deadlines når i mål ifølge prognosen." +
+      return '<section class="otto-says calm"><p>' + icon("spark") + "<b>Assistenten siger:</b> alle deadlines når i mål ifølge prognosen." +
         (snoozedN ? ' <span class="hint">' + plural(snoozedN, "udsat alarm", "udsatte alarmer") + "</span>" : "") + "</p></section>";
     }
     var shown = OTTO_ALL ? list : list.slice(0, 5);
@@ -2957,10 +2957,10 @@ a.btn { text-decoration: none; }
         "</div></li>";
     }).join("");
     var red = list.filter(function (a) { return a.level === 3; }).length;
-    return '<section class="otto-says" aria-label="Otto siger"><div class="os-hd"><b>Otto siger</b>' +
+    return '<section class="otto-says" aria-label="Assistenten siger"><div class="os-hd"><b>Assistenten siger</b>' +
       '<span class="hint">' + (red ? plural(red, "ting kræver", "ting kræver") + " din opmærksomhed" : plural(list.length, "ting", "ting") + " at holde øje med") +
       (snoozedN ? " · " + plural(snoozedN, "udsat", "udsatte") : "") + "</span>" +
-      '<button class="btn" data-act="omplan" type="button" style="margin-left:auto">' + icon("spark") + "Omplanlæg med Otto</button></div>" +
+      '<button class="btn" data-act="omplan" type="button" style="margin-left:auto">' + icon("spark") + "Omplanlæg med assistenten</button></div>" +
       '<ul class="os-list">' + rows + "</ul>" +
       (list.length > 5 ? '<button class="sf-inline os-more" data-act="ottoall" type="button">' + (OTTO_ALL ? "Vis færre" : "Vis alle " + list.length) + "</button>" : "") +
       "</section>";
@@ -3040,7 +3040,7 @@ a.btn { text-decoration: none; }
       } },
     { id: "alarmer", title: "Alarmer", html: function () { return alarmsHtml(); } },
     { id: "forbindelser", title: "Forbindelser", html: function () { return connectionsHtml(); } },
-    { id: "otto", title: "Otto (agent)", html: function () { return ottoSettingsHtml(); } },
+    { id: "otto", title: "Assistent (agent)", html: function () { return ottoSettingsHtml(); } },
     { id: "tokens", title: "API-tokens", html: function () { return tokensHtml(); } },
     { id: "konto", title: "Konto og adgang", html: function () {
         return '<p class="hint" style="margin-top:0">Historik, Claudes nøgle og log ud. API-tokens til andre værktøjer står ovenfor.</p>' +
@@ -3137,7 +3137,7 @@ a.btn { text-decoration: none; }
       dev = '<div class="set-links"><button class="btn primary" data-act="pushon" type="button">Slå notifikationer til på denne enhed</button></div>';
     }
     var others = devices.filter(function (d) { return !(PUSHDEV.sub && d.endpoint === PUSHDEV.sub.endpoint); });
-    return '<p class="hint" style="margin-top:0">Alarmerne kommer fra prognosen: deadlines i risiko, opgaver der ikke er startet, blokerede opgaver og overbookede uger. De står også under „Otto siger“ på forsiden.</p>' +
+    return '<p class="hint" style="margin-top:0">Alarmerne kommer fra prognosen: deadlines i risiko, opgaver der ikke er startet, blokerede opgaver og overbookede uger. De står også under „Assistenten siger“ på forsiden.</p>' +
       '<label class="gcal"><input type="checkbox" data-pref="daily"' + (p.daily !== false ? " checked" : "") + "><span>Morgenoverblik kl. 7 på hverdage</span></label>" +
       '<label class="gcal"><input type="checkbox" data-pref="instant"' + (p.instant !== false ? " checked" : "") + "><span>Besked med det samme ved nye røde alarmer (kl. 7–19)</span></label>" +
       '<div style="margin-top:12px">' + dev + "</div>" +
@@ -3550,9 +3550,9 @@ a.btn { text-decoration: none; }
       '<p class="hint">Skriv aldrig tokenet i en chat. Du kan tilbagekalde det under API-tokens.</p>';
   }
 
-  /* ====================== Otto: agent-kernen (M7) ======================
-     Otto er OS'ets egen agent: Claude API og OS'ets egne værktøjer, kørt på serveren
-     (server/agent/). Spørg Otto læser alt, men ændrer intet. Hver kørsel kan ses
+  /* ====================== Assistenten: agent-kernen (M7) ======================
+     Assistenten er OS'ets egen agent: Claude API og OS'ets egne værktøjer, kørt på serveren
+     (server/agent/). Spørg assistenten læser alt, men ændrer intet. Hver kørsel kan ses
      under Aktivitet med hvert værktøjskald og prisen. Indstillingerne ligger på
      serveren, ikke i data, så de gemmes med det samme. */
 
@@ -3579,7 +3579,7 @@ a.btn { text-decoration: none; }
   }
   function loadRuns() {
     return api("GET", "/api/agent/runs").then(function (r) { ORUNS = r.runs || []; fillRuns(); })
-      .catch(boxError("oruns", "Ottos aktivitet"));
+      .catch(boxError("oruns", "Assistentens aktivitet"));
   }
 
   // Følger én kørsel, til den er færdig. Den kører i baggrunden på serveren.
@@ -3600,9 +3600,9 @@ a.btn { text-decoration: none; }
 
   function renderOtto() {
     renderSidebar("otto");
-    document.title = (dirty ? "● " : "") + "Otto — HeyOtto Tasks";
+    document.title = (dirty ? "● " : "") + "Assistenten — HeyOtto Tasks";
     document.getElementById("main").innerHTML =
-      pageHead("Spørg Otto", "Spørg om projekter, deadlines, kapacitet og kalender. Otto kan læse alt, men ikke ændre noget.") +
+      pageHead("Spørg assistenten", "Spørg om projekter, deadlines, kapacitet og kalender. Assistenten kan læse alt, men ikke ændre noget.") +
       '<section class="card"><div class="card-pad" id="ochat"></div></section>' +
       '<section class="card" style="margin-top:20px"><div class="card-hd"><h2>Aktivitet</h2><span class="hint" id="otoday"></span></div>' +
         '<div class="card-pad" id="oruns"><p class="hint">Henter …</p></div></section>';
@@ -3619,10 +3619,10 @@ a.btn { text-decoration: none; }
     if (today && AGENT && AGENT.today) {
       today.textContent = "I dag " + kr(AGENT.today.dkk) + " af " + kr(AGENT.settings.budgetDkk) + " · " + plural(AGENT.today.runs, "kørsel", "kørsler");
     }
-    if (AGENT && AGENT.error) { box.innerHTML = '<p class="hint">Kunne ikke hente Otto: ' + esc(AGENT.error) + "</p>"; return; }
+    if (AGENT && AGENT.error) { box.innerHTML = '<p class="hint">Kunne ikke hente assistenten: ' + esc(AGENT.error) + "</p>"; return; }
     if (AGENT && !AGENT.configured) {
-      box.innerHTML = '<p class="kp-lead">Otto er ikke sat op endnu</p>' +
-        '<p class="hint">Otto bruger Claude API. Det sættes op én gang med din egen nøgle.</p>' +
+      box.innerHTML = '<p class="kp-lead">Assistenten er ikke sat op endnu</p>' +
+        '<p class="hint">Assistenten bruger Claude API. Det sættes op én gang med din egen nøgle.</p>' +
         '<p style="margin-top:12px"><button class="btn primary" data-act="settings" data-section="otto" type="button">Se hvordan</button></p>';
       return;
     }
@@ -3633,7 +3633,7 @@ a.btn { text-decoration: none; }
       if (!r || OBUSY[r.status]) {
         var last = r && (r.steps || []).filter(function (s) { return s.type === "tool"; }).pop();
         a = '<div class="oc-a"><span class="hint">' + icon("spark") + " " +
-            (!r ? "Sender …" : r.status === "i kø" ? "Otto starter …" : "Otto tænker" + (last ? " (" + esc(last.name) + ")" : "") + " …") + "</span></div>";
+            (!r ? "Sender …" : r.status === "i kø" ? "Assistenten starter …" : "Assistenten tænker" + (last ? " (" + esc(last.name) + ")" : "") + " …") + "</span></div>";
       } else if (r.status === "færdig") {
         a = '<div class="oc-a">' + ottoText(r.output) + '<p class="hint">' + plural(toolCount(r), "værktøjskald", "værktøjskald") + " · " + kr(r.costDkk) + "</p></div>";
       } else {
@@ -3647,7 +3647,7 @@ a.btn { text-decoration: none; }
         : '<p class="hint" style="margin:0 0 12px">Fx „Når jeg alle deadlines i november?“, „Hvad bør jeg starte med i dag?“ eller „Hvor travl er næste uge?“</p>') +
       '<form class="oask" id="oaskform"><label class="flab" for="oq">' + (OCHAT.length ? "Spørg videre" : "Dit spørgsmål") + "</label>" +
         '<textarea id="oq" rows="2" maxlength="2000"' + dis + "></textarea>" +
-        '<div class="oask-ft"><span class="hint">Otto læser data, prognose og kalender. Ændringer foreslår Otto, og dem laver du selv. Enter sender, Shift+Enter giver ny linje.</span>' +
+        '<div class="oask-ft"><span class="hint">Assistenten læser data, prognose og kalender. Ændringer foreslår assistenten, og dem laver du selv. Enter sender, Shift+Enter giver ny linje.</span>' +
           (OCHAT.length ? '<button class="btn" type="button" data-act="ottonew"' + dis + ">Ny samtale</button>" : "") +
           '<button class="btn primary" type="submit"' + dis + ">" + icon("spark") + "Spørg</button></div></form>";
     var ta = document.getElementById("oq");
@@ -3685,7 +3685,7 @@ a.btn { text-decoration: none; }
   function fillRuns() {
     var box = document.getElementById("oruns");
     if (!box || !ORUNS) return;
-    if (!ORUNS.length) { box.innerHTML = '<p class="col-empty">Otto har ikke kørt endnu.</p>'; return; }
+    if (!ORUNS.length) { box.innerHTML = '<p class="col-empty">Assistenten har ikke kørt endnu.</p>'; return; }
     box.innerHTML = '<ul class="vlist">' + ORUNS.map(function (r) {
       var open = OOPEN[r.id];
       var line = r.status === "færdig" && r.output ? '<span class="vmeta">' + esc(r.output.split("**").join("").slice(0, 160)) + (r.output.length > 160 ? " …" : "") + "</span>"
@@ -3732,12 +3732,12 @@ a.btn { text-decoration: none; }
   function testOtto(btn) {
     btn.disabled = true;
     api("POST", "/api/agent/runs", { kind: "ping" }).then(function (r) {
-      flash("Otto er startet …");
+      flash("Assistenten er startet …");
       watchRun(r.run.id, function (run, busy) {
         if (busy) return;
         btn.disabled = false;
         loadAgent();
-        if (run.status === "færdig") flash("Otto svarer: " + run.output);
+        if (run.status === "færdig") flash("Assistenten svarer: " + run.output);
         else flash("Testen fejlede: " + (run.error || run.status), true);
       });
     }).catch(function (e) { btn.disabled = false; flash(e.message, true); });
@@ -3775,7 +3775,7 @@ a.btn { text-decoration: none; }
     }
   });
 
-  // Ottos indstillinger gemmes med det samme på serveren (ikke en del af data)
+  // Assistentens indstillinger gemmes med det samme på serveren (ikke en del af data)
   document.addEventListener("change", function (e) {
     var el = e.target;
     if (!el || !el.getAttribute) return;
@@ -3796,12 +3796,12 @@ a.btn { text-decoration: none; }
 
   function ottoSettingsHtml() {
     if (!AGENT) return '<p class="hint" style="margin-top:0">Henter …</p>';
-    if (AGENT.error) return '<p class="hint" style="margin-top:0">Kunne ikke hente Otto: ' + esc(AGENT.error) + "</p>";
+    if (AGENT.error) return '<p class="hint" style="margin-top:0">Kunne ikke hente assistenten: ' + esc(AGENT.error) + "</p>";
     var s = AGENT.settings;
     var setup = AGENT.configured
-      ? '<p class="hint" style="margin-top:0">' + icon("spark") + " Claude API er forbundet. Otto læser data, prognose og kalender. " +
-        "Otto kan ikke sende mails, svare på invitationer eller ændre kalenderen. Det er låst i koden.</p>"
-      : '<p style="margin:0 0 10px">Otto bruger Claude API, som betales pr. forbrug. Det sættes op én gang:</p>' +
+      ? '<p class="hint" style="margin-top:0">' + icon("spark") + " Claude API er forbundet. Assistenten læser data, prognose og kalender. " +
+        "Assistenten kan ikke sende mails, svare på invitationer eller ændre kalenderen. Det er låst i koden.</p>"
+      : '<p style="margin:0 0 10px">Assistenten bruger Claude API, som betales pr. forbrug. Det sættes op én gang:</p>' +
         '<ol class="steps">' +
           '<li>Lav en API-nøgle på <a href="https://platform.claude.com" target="_blank" rel="noopener">platform.claude.com</a>.</li>' +
           "<li>Gem den i Cloudflare: <code>npx wrangler secret put ANTHROPIC_API_KEY</code> i repoet, og genindlæs.</li>" +
@@ -3815,21 +3815,21 @@ a.btn { text-decoration: none; }
         "</select></div>";
     }).join("");
     return setup +
-      '<label class="gcal" style="margin-top:8px"><input type="checkbox" data-agent="enabled"' + (s.enabled ? " checked" : "") + "><span>Otto er slået til</span></label>" +
+      '<label class="gcal" style="margin-top:8px"><input type="checkbox" data-agent="enabled"' + (s.enabled ? " checked" : "") + "><span>Assistenten er slået til</span></label>" +
       '<div class="krow" style="margin-top:8px"><label class="klab" for="otto-budget">Dagsbudget<span class="ksub">Brugt i dag: ' + kr(AGENT.today.dkk) +
           " · " + plural(AGENT.today.runs, "kørsel", "kørsler") + "</span></label>" +
         '<span><input type="number" id="otto-budget" data-agent="budgetDkk" min="0" max="1000" step="5" value="' + s.budgetDkk + '"> kr.</span></div>' +
       '<div class="krow"><label class="klab" for="otto-kurs">Dollarkurs<span class="ksub">Claude API koster i dollar. Prisen regnes om med denne kurs.</span></label>' +
         '<span><input type="number" id="otto-kurs" data-agent="usdDkk" min="1" max="20" step="0.05" value="' + s.usdDkk + '"> kr.</span></div>' +
       '<div class="gcals" style="margin-top:12px"><span class="flab">Kørsler og model</span>' + kinds + "</div>" +
-      '<div class="set-links" style="margin-top:12px"><button class="btn" data-act="ottotest" type="button"' + (AGENT.configured ? "" : " disabled") + ">Test Otto</button>" +
-        '<a class="btn" href="#otto" data-act="settingsclose">Spørg Otto og aktivitet</a></div>' +
-      '<p class="hint">Prisen regnes ud fra Claudes listepriser. Når dagsbudgettet er brugt, stopper Otto til næste dag, og du får en notifikation. ' +
+      '<div class="set-links" style="margin-top:12px"><button class="btn" data-act="ottotest" type="button"' + (AGENT.configured ? "" : " disabled") + ">Test assistenten</button>" +
+        '<a class="btn" href="#otto" data-act="settingsclose">Spørg assistenten og aktivitet</a></div>' +
+      '<p class="hint">Prisen regnes ud fra Claudes listepriser. Når dagsbudgettet er brugt, stopper assistenten til næste dag, og du får en notifikation. ' +
         "Morgenbriefen kommer som notifikation, når den er slået til.</p>";
   }
 
   /* ====================== Indbakke: mail → opgaver (M8) ======================
-     "Hent mails" starter en Otto-kørsel (slagsen indbakke), der læser nye mails og laver
+     "Hent mails" starter en assistent-kørsel (slagsen indbakke), der læser nye mails og laver
      forslag. Forslagene ligger på serveren uden for data. Opret laver en almindelig
      opgave og gemmer med det samme; Ignorér husker tråden, så den ikke kommer igen. */
 
@@ -3852,7 +3852,7 @@ a.btn { text-decoration: none; }
     renderSidebar("indbakke");
     document.title = (dirty ? "● " : "") + "Indbakke — HeyOtto Tasks";
     document.getElementById("main").innerHTML =
-      pageHead("Indbakke", "Otto læser dine mails og foreslår opgaver. Du bestemmer, hvad der bliver oprettet.") +
+      pageHead("Indbakke", "Assistenten læser dine mails og foreslår opgaver. Du bestemmer, hvad der bliver oprettet.") +
       '<section class="card"><div class="card-hd"><h2>Forslag fra mail</h2>' +
         '<button class="btn primary" data-act="inboxpull" id="ipull" type="button">' + icon("spark") + "Hent mails</button></div>" +
         '<div class="card-pad" id="ibox"><p class="hint">Henter …</p></div></section>';
@@ -3877,7 +3877,7 @@ a.btn { text-decoration: none; }
 
     if (!hasMail()) {
       var accs = INBOX.mail.accounts;
-      box.innerHTML = '<p class="kp-lead">Giv Otto adgang til at læse mail</p>' +
+      box.innerHTML = '<p class="kp-lead">Giv assistenten adgang til at læse mail</p>' +
         '<ol class="steps">' +
           '<li>Slå <b>Gmail API</b> til i dit Google Cloud-projekt: <a href="https://console.cloud.google.com/apis/library/gmail.googleapis.com" target="_blank" rel="noopener">åbn Gmail API</a> → <b>Enable</b>.</li>' +
           "<li>" + (accs.length
@@ -3885,7 +3885,7 @@ a.btn { text-decoration: none; }
               '<div class="set-links" style="margin-top:8px"><a class="btn primary" data-act="gconnect" href="/api/google/connect?scopes=calendar,gmail">Giv adgang til mail</a></div>'
             : 'Forbind først en Google-konto under <button class="sf-link-ink" data-act="settings" data-section="forbindelser" type="button">Indstillinger → Forbindelser</button>.') + "</li>" +
         "</ol>" +
-        '<p class="hint">Kun læsning. Otto kan aldrig sende, slette eller arkivere mail. Mailtekst gemmes ikke, kun Ottos korte resumé.</p>';
+        '<p class="hint">Kun læsning. Assistenten kan aldrig sende, slette eller arkivere mail. Mailtekst gemmes ikke, kun assistentens korte resumé.</p>';
       return;
     }
 
@@ -3893,7 +3893,7 @@ a.btn { text-decoration: none; }
     if (IPULL) {
       var last = (IPULL.steps || []).filter(function (s) { return s.type === "tool"; }).pop();
       status = pulling
-        ? '<p class="hint" style="margin:0 0 14px">' + icon("spark") + " Otto læser dine mails" + (last ? " (" + esc(last.name) + ")" : "") + " …</p>"
+        ? '<p class="hint" style="margin:0 0 14px">' + icon("spark") + " Assistenten læser dine mails" + (last ? " (" + esc(last.name) + ")" : "") + " …</p>"
         : IPULL.status === "færdig"
           ? '<p class="hint" style="margin:0 0 14px">' + esc(IPULL.output || "Færdig.") + " · " + kr(IPULL.costDkk) + "</p>"
           : '<p class="hint" style="margin:0 0 14px;color:var(--danger-ink)">' + esc(IPULL.error || "Det gik galt.") + "</p>";
@@ -3903,8 +3903,8 @@ a.btn { text-decoration: none; }
       var p = projById(s.project);
       var meta = [];
       if (s.due) meta.push("deadline " + FC.shortDate(s.due));
-      if (s.estimate) meta.push("ca. " + fmt(s.estimate) + " t (Ottos estimat)");
-      if (s.confidence < 0.5) meta.push("Otto er i tvivl");
+      if (s.estimate) meta.push("ca. " + fmt(s.estimate) + " t (Assistentens estimat)");
+      if (s.confidence < 0.5) meta.push("Assistenten er i tvivl");
       return '<li class="isug"><div class="isug-hd"><b>' + esc(s.title) + "</b>" +
           '<span class="tag">' + esc(p ? p.name : "Ad hoc") + "</span></div>" +
         '<span class="vmeta">' + esc(senderName(s.from)) + " · " + esc(s.subject || "(intet emne)") + (mailDate(s.date) ? " · " + esc(mailDate(s.date)) : "") + "</span>" +
@@ -3925,9 +3925,9 @@ a.btn { text-decoration: none; }
 
     box.innerHTML = status +
       (list ? '<ul class="isugs">' + list + "</ul>"
-            : '<p class="col-empty">Ingen nye forslag. Tryk <b>Hent mails</b>, så læser Otto de seneste 3 dages mails.</p>') +
+            : '<p class="col-empty">Ingen nye forslag. Tryk <b>Hent mails</b>, så læser assistenten de seneste 3 dages mails.</p>') +
       (handled ? '<details class="ihandled"><summary>Behandlet (' + INBOX.handled.length + ")</summary><ul class=\"vlist\">" + handled + "</ul></details>" : "") +
-      '<p class="hint" style="margin-top:14px">Otto springer kampagner, sociale, opdateringer og sendte mails over. Nye opgaver får 0 timer i denne uge, så de ikke trækker tid, før du siger det.</p>';
+      '<p class="hint" style="margin-top:14px">Assistenten springer kampagner, sociale, opdateringer og sendte mails over. Nye opgaver får 0 timer i denne uge, så de ikke trækker tid, før du siger det.</p>';
   }
 
   function suggestion(id) { return INBOX ? INBOX.suggestions.filter(function (s) { return s.id === id; })[0] : null; }
@@ -3996,8 +3996,8 @@ a.btn { text-decoration: none; }
     return false;
   }
 
-  /* ====================== Omplanlæg med Otto (M9) ======================
-     Otto foreslår en ændringsliste. Serveren har tjekket hver ændring og regnet
+  /* ====================== Omplanlæg med assistenten (M9) ======================
+     Assistenten foreslår en ændringsliste. Serveren har tjekket hver ændring og regnet
      prognosen før og efter. Anvend lægger de valgte ændringer ind og gemmer; alt kan
      fortrydes under Historik. Deadlines og "droppet" er fravalgt som standard. */
 
@@ -4025,11 +4025,11 @@ a.btn { text-decoration: none; }
     renderSidebar(null);
     document.title = (dirty ? "● " : "") + "Omplanlæg — HeyOtto Tasks";
     document.getElementById("main").innerHTML =
-      pageHead("Omplanlæg med Otto", "Otto foreslår ændringer, så alle deadlines når i mål. Du vælger, hvad der bliver lagt ind.") +
+      pageHead("Omplanlæg med assistenten", "Assistenten foreslår ændringer, så alle deadlines når i mål. Du vælger, hvad der bliver lagt ind.") +
       '<section class="card"><div class="card-pad">' +
-        '<form class="oask" id="planform"><label class="flab" for="pmsg">Noget, Otto skal vide? (valgfrit)</label>' +
+        '<form class="oask" id="planform"><label class="flab" for="pmsg">Noget, assistenten skal vide? (valgfrit)</label>' +
           '<textarea id="pmsg" rows="2" maxlength="2000" placeholder="Fx „Jeg er syg torsdag“ eller „Africa Tours 2.0 har forrang“"></textarea>' +
-          '<div class="oask-ft"><span class="hint">Otto læser opgaver, prognose og kalender. Intet ændres, før du trykker Anvend.</span>' +
+          '<div class="oask-ft"><span class="hint">Assistenten læser opgaver, prognose og kalender. Intet ændres, før du trykker Anvend.</span>' +
             '<button class="btn primary" type="submit" id="pgo">' + icon("spark") + "Lav forslag</button></div></form>" +
       "</div></section>" +
       '<section class="card" style="margin-top:20px"><div class="card-pad" id="pbox"></div></section>';
@@ -4062,12 +4062,12 @@ a.btn { text-decoration: none; }
     if (go) go.disabled = !!busy;
     if (busy) {
       var last = (PRUN.steps || []).filter(function (s) { return s.type === "tool"; }).pop();
-      box.innerHTML = '<p class="hint">' + icon("spark") + " Otto laver et forslag" + (last ? " (" + esc(last.name) + ")" : "") + " … Det tager typisk et minut.</p>";
+      box.innerHTML = '<p class="hint">' + icon("spark") + " Assistenten laver et forslag" + (last ? " (" + esc(last.name) + ")" : "") + " … Det tager typisk et minut.</p>";
       return;
     }
     if (PRUN && !PLAN) {
       box.innerHTML = PRUN.status === "færdig"
-        ? '<p class="kp-lead">' + esc(PRUN.output || "Otto lavede intet forslag.") + "</p>"
+        ? '<p class="kp-lead">' + esc(PRUN.output || "Assistenten lavede intet forslag.") + "</p>"
         : '<p class="hint" style="color:var(--danger-ink)">' + esc(PRUN.error || "Det gik galt.") + "</p>";
       return;
     }
@@ -4085,11 +4085,11 @@ a.btn { text-decoration: none; }
     }).join("");
     var nChecked = p.changes.filter(function (c, i) { return PCHECK[i]; }).length;
     box.innerHTML =
-      '<p class="kp-lead" style="font-size:15.5px;font-weight:500">' + esc(p.summary || "Forslag fra Otto") + "</p>" +
+      '<p class="kp-lead" style="font-size:15.5px;font-weight:500">' + esc(p.summary || "Forslag fra assistenten") + "</p>" +
       metricRow(p.before, p.after) +
       '<p class="hint" style="margin:6px 0 14px">Før/efter er regnet af prognosen med alle ændringer valgt, ikke af Claude.</p>' +
       (rows ? '<ul class="pchgs">' + rows + "</ul>" : '<p class="col-empty">Ingen ændringer i forslaget.</p>') +
-      (p.questions && p.questions.length ? '<div class="pq"><span class="flab">Otto spørger</span><ul>' +
+      (p.questions && p.questions.length ? '<div class="pq"><span class="flab">Assistenten spørger</span><ul>' +
         p.questions.map(function (q) { return "<li>" + esc(q) + "</li>"; }).join("") + "</ul></div>" : "") +
       (p.dropped && p.dropped.length ? '<details class="ihandled"><summary>Afvist af serveren (' + p.dropped.length + ")</summary><ul class=\"steps\">" +
         p.dropped.map(function (d) { var t = taskById(d.taskId); return "<li>" + esc((t ? t.title : d.taskId) + " · " + d.field + ": " + d.why) + "</li>"; }).join("") + "</ul></details>" : "") +
@@ -4456,7 +4456,7 @@ a.btn { text-decoration: none; }
           (rows ? '<ul class="vlist">' + rows + "</ul>"
                 : '<p class="col-empty">Ingen rutiner endnu. Fx „Ugerapport hver fredag“ eller „Månedsrapport sidste dag i måneden“.</p>') +
           '<p class="hint" style="margin-top:14px">Rutinens timer tæller som fast tid pr. uge i kapaciteten. Tasks fra rutiner laves for de næste ' + ROUTINE_DAYS +
-            " dage (daglige kun for i dag), og de har 0 timer, så tiden ikke tælles to gange. Senere kan Otto køre rutiner som flows.</p>" +
+            " dage (daglige kun for i dag), og de har 0 timer, så tiden ikke tælles to gange. Senere kan assistenten køre rutiner som flows.</p>" +
         "</div></section>" + driftHtml;
     wireTheme();
   }

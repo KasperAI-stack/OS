@@ -8,7 +8,7 @@ Et Scrum-/projektoverblik over de store initiativer, med kapacitet på forsiden.
 |---|---|
 | Prognose og alarmregler (deles af app og server) | `dashboard/lib/forecast.mjs` |
 | Alarmer og push-notifikationer | `server/alerts.mts` og `server/webpush.mts`, kørt hver time af Workerens cron. Service worker: `dashboard/sw.js` |
-| Otto, agent-kernen (Claude API + egne værktøjer) | `server/agent/` (motor, værktøjer, slags, skills, lager). Kørsler i køen (`worker/index.mts` → `queue`), planen i `server/jobs.mts` |
+| Assistenten, agent-kernen (Claude API + egne værktøjer) | `server/agent/` (motor, værktøjer, slags, skills, lager). Kørsler i køen (`worker/index.mts` → `queue`), planen i `server/jobs.mts` |
 | Google-forbindelsen og kalendersynken | `server/google.mts`, kørt hvert 15. minut af Workerens cron |
 | Appen (layout, logik, redigering) | `dashboard/index.html` — én HTML-fil, intet byggetrin, ingen biblioteker |
 | Otto-illustrationerne | `dashboard/otto/` — PNG'er med gennemsigtig baggrund |
@@ -107,14 +107,14 @@ Alle svar er JSON. Fejl er `{ "error": "dansk besked" }`.
 | `POST /api/push/subscribe` `{ subscription, label, tz }` | Slå notifikationer til på en enhed. Kun for dig |
 | `POST /api/push/unsubscribe` `{ endpoint }` | Slå fra på en enhed |
 | `POST /api/push/test` `{ endpoint }` | Send en prøve til én enhed |
-| `GET /api/agent` | Otto: `{ configured, settings, today, kinds, models }` |
-| `PUT /api/agent/settings` `{ enabled?, budgetDkk?, usdDkk?, kinds? }` | Ottos indstillinger. Kun for dig |
+| `GET /api/agent` | Assistenten: `{ configured, settings, today, kinds, models }` |
+| `PUT /api/agent/settings` `{ enabled?, budgetDkk?, usdDkk?, kinds? }` | Assistentens indstillinger. Kun for dig |
 | `GET /api/agent/runs` | De seneste 40 kørsler, uden trin. Også for Claude |
 | `POST /api/agent/runs` `{ kind, input?, parent? }` | Start en kørsel (`ping`, `spoerg`, `morgenbrief`). Højst 30 i timen. Kun for dig |
 | `GET /api/agent/runs/:id` | Én kørsel med hvert trin, tokens og pris |
-| `GET /api/inbox` | `{ suggestions, handled, mail }`: Ottos forslag fra mail, og hvilke konti der har givet adgang til mail |
+| `GET /api/inbox` | `{ suggestions, handled, mail }`: Assistentens forslag fra mail, og hvilke konti der har givet adgang til mail |
 | `PUT /api/inbox/:id` `{ status, taskId? }` | Markér et forslag `oprettet` / `ignoreret` (eller `ny`). Kun for dig |
-| `GET /api/plans` · `GET /api/plans/:id` | Ottos seneste planforslag / ét forslag (id = kørslens id) |
+| `GET /api/plans` · `GET /api/plans/:id` | Assistentens seneste planforslag / ét forslag (id = kørslens id) |
 | `PUT /api/plans/:id` `{ status }` | `anvendt` eller `kasseret`. Kun for dig |
 
 Du er logget ind med enten session-cookien eller `Authorization: Bearer <nøgle>` (Claude). Ændringer med cookie skal komme fra appen selv: JSON og samme oprindelse. Afvisninger er 400/401, og en forsvundet version er 410.
@@ -196,7 +196,7 @@ Prognosen svarer på ét spørgsmål: **når alt sin deadline?** Den er et regne
 - **Rækkefølge:** åbne opgaver med **timer tilbage** fylder ugerne i deadline-rækkefølge (*Earliest Deadline First*). Ved samme deadline går **høj** prioritet før **lav**. Kan alt ikke nås i den rækkefølge, kan det ikke nås i nogen.
 - **Hver opgave får en status:** *når deadline*, *stramt* (færdig under 2 arbejdsdage før), *når ikke deadline* (med ca. hvor mange timer der mangler), *over deadline* eller *mangler et estimat*. Status og forventet færdigdato står i opgavedialogen. På kortene og i kalenderen markeres *i risiko* som overskredet.
 
-**Otto siger** øverst på forsiden viser alarmerne. De vigtigste står først, og der vises højst 5 ad gangen:
+**Assistenten siger** øverst på forsiden viser alarmerne. De vigtigste står først, og der vises højst 5 ad gangen:
 
 | Alarm | Hvornår | Farve |
 |---|---|---|
@@ -224,14 +224,14 @@ Begge dele kan slås fra. Udsatte alarmer sendes ikke, og samme alarm sendes ikk
 
 **iPhone og iPad:** notifikationer virker kun, når HeyOtto OS ligger på hjemmeskærmen. Tryk *Del → Føj til hjemmeskærm*, og åbn appen derfra. Siden har et manifest og et app-ikon (`dashboard/manifest.webmanifest`, `otto/app-192.png` og `otto/app-512.png`). Service workeren (`dashboard/sw.js`) viser kun notifikationer og cacher ikke noget.
 
-## Otto: agenten (M7)
+## Assistenten: Tasks egen agent (M7)
 
-Otto er HeyOtto OS' egen agent. Den kører på serveren og kalder Claude API direkte med OS'ets egne værktøjer. Der bruges ingen Claude Code Routines og ingen claude.ai-forbindelser.
+Assistenten er HeyOtto OS' egen agent. Den kører på serveren og kalder Claude API direkte med OS'ets egne værktøjer. Der bruges ingen Claude Code Routines og ingen claude.ai-forbindelser.
 
-- **Spørg Otto** (i sidebaren): et chatfelt. Otto læser data, prognose og kalender og svarer. Otto kan ikke ændre noget, så ændringer foreslår den, og du laver dem selv. Opfølgende spørgsmål husker de seneste 5 i samtalen.
+- **Spørg assistenten** (i sidebaren): et chatfelt. Assistenten læser data, prognose og kalender og svarer. Assistenten kan ikke ændre noget, så ændringer foreslår den, og du laver dem selv. Opfølgende spørgsmål husker de seneste 5 i samtalen.
 - **Aktivitet** (samme side): hver kørsel med udløser, svar, hvert værktøjskald (input og forkortet output), tokens og pris. Klik på en kørsel for at se trinene.
 - **Morgenbrief**: dagens overblik kl. 7 på hverdage, sendt som notifikation. Slået fra som standard.
-- **Indstillinger → Otto (agent)**: til/fra, dagsbudget i kr., dollarkurs, hvilke kørsler der er slået til, og model pr. kørsel. **Test Otto** laver den billigste kørsel (Haiku + `ping`).
+- **Indstillinger → Assistent (agent)**: til/fra, dagsbudget i kr., dollarkurs, hvilke kørsler der er slået til, og model pr. kørsel. **Test assistenten** laver den billigste kørsel (Haiku + `ping`).
 
 **Sikkerhed, håndhævet i koden:**
 
@@ -244,37 +244,37 @@ Otto er HeyOtto OS' egen agent. Den kører på serveren og kalder Claude API dir
 
 Der findes ingen klasse til handlinger udenfor (mail, invitationer, kampagner), og serveren starter ikke, hvis et værktøj har en ukendt klasse. Hver slags kørsel får kun sine egne værktøjer (`server/agent/kinds.mts`), og et kald til andre værktøjer afvises i løkken. Agenten kan ikke starte kørsler selv: udløsere er kun planen og dig. Baggrundsfunktionen kræver en HMAC-signatur.
 
-**Grænser:** højst 20 trin, 400.000 tokens og 10 minutter pr. kørsel, 30 kørsler i timen fra appen, og et **dagsbudget** (standard 20 kr.). Budgettet tjekkes før hvert kald til Claude. Når det er brugt, stopper Otto til næste dag, og du får én notifikation. Prisen regnes ud fra Claudes listepriser i `kinds.mts` og omregnes med dollarkursen fra indstillingerne.
+**Grænser:** højst 20 trin, 400.000 tokens og 10 minutter pr. kørsel, 30 kørsler i timen fra appen, og et **dagsbudget** (standard 20 kr.). Budgettet tjekkes før hvert kald til Claude. Når det er brugt, stopper assistenten til næste dag, og du får én notifikation. Prisen regnes ud fra Claudes listepriser i `kinds.mts` og omregnes med dollarkursen fra indstillingerne.
 
-**Modeller (standard):** Haiku 5.5 til testen, Sonnet 5.5 til morgenbriefen og Opus 5.5 til Spørg Otto. De faste instruktioner caches (prompt caching), så gentagne kørsler bliver billigere.
+**Modeller (standard):** Haiku 5.5 til testen, Sonnet 5.5 til morgenbriefen og Opus 5.5 til Spørg assistenten. De faste instruktioner caches (prompt caching), så gentagne kørsler bliver billigere.
 
 **Skills** (instruktionerne til hver slags kørsel) ligger i `server/agent/skills/` som tekst i `.mts`-filer, så de versioneres i git og følger med, når Workeren pakkes.
 
 ### Indbakke: mail → opgaver (M8)
 
-**Indbakke** i sidebaren. Tryk **Hent mails**, så læser Otto de seneste 3 dages mails fra de Google-konti, der har givet adgang til mail. Kampagner, sociale, opdateringer, fora og sendte mails springes over allerede i søgningen. For hver mail, hvor nogen venter på dig, laver Otto et forslag med titel, kort resumé, projekt, deadline (kun hvis mailen nævner en) og et estimat.
+**Indbakke** i sidebaren. Tryk **Hent mails**, så læser assistenten de seneste 3 dages mails fra de Google-konti, der har givet adgang til mail. Kampagner, sociale, opdateringer, fora og sendte mails springes over allerede i søgningen. For hver mail, hvor nogen venter på dig, laver assistenten et forslag med titel, kort resumé, projekt, deadline (kun hvis mailen nævner en) og et estimat.
 
 - **Opret** laver opgaven med det samme og gemmer. **Ret og opret** åbner opgavedialogen udfyldt. **Ignorér** skjuler forslaget. **Åbn mail** åbner tråden i Gmail.
-- Nye opgaver får 0 timer i denne uge, Ottos estimat som *timer tilbage*, link til tråden i noten og `source: { type: "gmail", id, url }`.
-- En tråd, Otto har vurderet, kommer ikke igen, medmindre der kommer et nyt svar i den.
+- Nye opgaver får 0 timer i denne uge, assistentens estimat som *timer tilbage*, link til tråden i noten og `source: { type: "gmail", id, url }`.
+- En tråd, assistenten har vurderet, kommer ikke igen, medmindre der kommer et nyt svar i den.
 - Kørslen har kun værktøjerne `data_read`, `gmail_new`, `gmail_read`, `inbox_suggest_task` og `inbox_skip`. Forslag kan kun laves til tråde, `gmail_new` har vist i samme kørsel. En mail med "instruktioner" kan derfor højst give et forkert forslag.
-- Mailtekst gemmes aldrig, kun Ottos resumé og trådens afsender, emne og dato. Kun læsning (`gmail.readonly`): HeyOtto OS kan ikke sende, slette, arkivere eller mærke mail.
+- Mailtekst gemmes aldrig, kun assistentens resumé og trådens afsender, emne og dato. Kun læsning (`gmail.readonly`): HeyOtto OS kan ikke sende, slette, arkivere eller mærke mail.
 
 **Opsætning:** slå **Gmail API** til i Google Cloud-projektet (*APIs & Services → Library*). Tryk så **Giv adgang til mail** i Indbakken eller under Indstillinger → Forbindelser, og sæt flueben ved Gmail hos Google.
 
-### Omplanlæg med Otto (M9)
+### Omplanlæg med assistenten (M9)
 
-Knappen **Omplanlæg med Otto** står i "Otto siger" på forsiden og åbner `#omplan`. Skriv evt. noget, Otto skal vide ("Jeg er syg torsdag"), og tryk **Lav forslag**. Efter ca. et minut kommer:
+Knappen **Omplanlæg med assistenten** står i "Assistenten siger" på forsiden og åbner `#omplan`. Skriv evt. noget, assistenten skal vide ("Jeg er syg torsdag"), og tryk **Lav forslag**. Efter ca. et minut kommer:
 
 - et kort resumé og **før/efter** (i risiko eller over deadline, røde alarmer, overbookede uger). Tallene regnes af prognosen (`dashboard/lib/forecast.mjs`) på serveren, ikke af Claude
 - en **ændringsliste med flueben**. Ny deadline og "Droppet" er fravalgt som standard, og deadlines er altid mærket *kræver aftale*
-- spørgsmål, hvis Otto mangler noget, og de ændringer, serveren afviste (med grund)
+- spørgsmål, hvis assistenten mangler noget, og de ændringer, serveren afviste (med grund)
 
 **Anvend valgte** lægger ændringerne ind og gemmer. Er en opgave ændret, siden forslaget blev lavet, springes den over. Alt kan fortrydes under Historik.
 
-Otto må kun foreslå felterne `sprint` (skal findes i projektet), `start`, `end`, `hours`, `remaining`, `priority`, `status` (kun *I gang* eller *Droppet*) og `due`, og kun på åbne opgaver. Den kan ikke oprette eller slette opgaver. Kørslen har kun `data_read`, `forecast_run`, `calendar_list` og `plan_propose_changes`, som gemmer forslaget i `plans/<kørsels-id>` uden for data.
+Assistenten må kun foreslå felterne `sprint` (skal findes i projektet), `start`, `end`, `hours`, `remaining`, `priority`, `status` (kun *I gang* eller *Droppet*) og `due`, og kun på åbne opgaver. Den kan ikke oprette eller slette opgaver. Kørslen har kun `data_read`, `forecast_run`, `calendar_list` og `plan_propose_changes`, som gemmer forslaget i `plans/<kørsels-id>` uden for data.
 
-**Ugeforslag** (Indstillinger → Otto, slået fra som standard): mandag kl. 7. Det kører kun, når prognosen har røde alarmer eller overbookede uger, og sender en notifikation, når der er et forslag.
+**Ugeforslag** (Indstillinger → Assistent, slået fra som standard): mandag kl. 7. Det kører kun, når prognosen har røde alarmer eller overbookede uger, og sender en notifikation, når der er et forslag.
 
 ### Sæt Claude API op (én gang pr. installation)
 
@@ -284,7 +284,7 @@ Kørsler, hvis startsignal går tabt, startes igen af Workerens cron (`server/jo
 
 ## Tasks, Projekter og Rutiner
 
-Sidebaren har tre enheder under Kapacitet, Spørg Otto og Indbakke. Hver har sin egen landingsside, og listen under folder sig selv ud, mens du er i enheden. Der er ingen pile at trykke på.
+Sidebaren har tre enheder under Kapacitet, Spørg assistenten og Indbakke. Hver har sin egen landingsside, og listen under folder sig selv ud, mens du er i enheden. Der er ingen pile at trykke på.
 
 | Enhed | Landingsside | Liste i sidebaren |
 |---|---|---|
@@ -411,8 +411,8 @@ HeyOtto Tasks kører kun på Cloudflare (planen: `projects/heyotto-os-iteratione
 |---|---|
 | API | `worker/index.mts` → `fetch` → `server/api.mts` |
 | Lager | D1 (`worker/store.mts`, tabellen `docs`: én række pr. nøgle) |
-| Otto-kørsler | Queue `heyotto-tasks-otto` → `queue` |
-| Planlagte job | Cron hvert 15. minut (kalender, Ottos plan) og hver time (alarmer) → `scheduled` |
+| Assistentens kørsler | Queue `heyotto-tasks-otto` → `queue` |
+| Planlagte job | Cron hvert 15. minut (kalender, assistentens plan) og hver time (alarmer) → `scheduled` |
 | Hemmeligheder | `npx wrangler secret put` |
 | Testmiljø | `--env test` med egen D1 og kø |
 
@@ -435,11 +435,11 @@ Kan data slet ikke tegnes eller hentes, vises fejlen i stedet for en hvid skærm
 Farver, skrift og former følger Hey Otto-designsystemet — se [`brand/hey-otto/guidelines.md`](../brand/hey-otto/guidelines.md). Alle farver ligger som CSS-variabler øverst i `<style>`, så et farveskift er ét sted.
 
 - **Skrift:** Geist til alt, også de små etiketter. Geist Mono bruges kun til kode og nøgler. Begge hentes fra Google Fonts; uden net falder siden tilbage til Helvetica Neue / Arial, og intet layout afhænger af en bestemt fonts mål.
-- **Farver:** sort, grå og hvid. Der er ingen gradienter og ingen lilla flader i appen. Den primære farve er blæk (Onyx i lyst tema, Tåge i mørkt), og knapper, valgte faner, kurver og „i dag“-linjen står i den. Lilla findes kun i Otto selv. Fokusringen ved tastaturnavigation står i blæk (2 px), ligesom resten af grænsefladen.
+- **Farver:** sort, grå og hvid. Der er ingen gradienter og ingen lilla flader i appen. Den primære farve er blæk (Onyx i lyst tema, Tåge i mørkt), og knapper, valgte faner, kurver og „i dag“-linjen står i den. Lilla findes kun i assistenten selv. Fokusringen ved tastaturnavigation står i blæk (2 px), ligesom resten af grænsefladen.
 - **Signalfarve:** én rød (`#B42318`, `#F97066` i mørkt tema) bruges kun til blokeret, overskredet deadline og overbooket. Den findes ikke i brandet, men appen er et arbejdsredskab, og de tre ting skal kunne ses med det samme.
 - **Statusfarver:** Ikke startet = lysegrå, I gang = blæk, Blokeret = rød med skravering, Færdig = mellemgrå, Droppet = stiplet. Skraveringen gør, at Blokeret kan skelnes i sort/hvid-print og af en farveblind læser.
 - **Former:** knapper og chips er helt runde og i tekstfarven, kort har 22 px hjørner, felter 10 px med 1,5 px kant, alt er 1 px-linjer uden skygger. Knapper løfter sig 1 px ved hover, og bevægelse slås fra ved `prefers-reduced-motion`. Hovedkolonnen står mellem tynde lodrette linjer med plus-mærker, hvor de møder de vandrette.
-- **Otto:** maskotten ligger som PNG'er med gennemsigtig baggrund i `dashboard/otto/` (udskåret fra Kaspers illustrationer). Han står altid i en lys flise (`--otto-tile`), så han ser ens ud i begge temaer: med tommel op på login, tænkende i tomme tilstande, ved computeren mens Claude arbejder, jublende når et udkast er klar, og på kapacitetssiden efter stemningen — kaffe ved plads tilbage, løb ved på kanten, hårdt arbejde ved overbooket. Hans hoved er fane-ikon og står ved ordmærket i sidebaren. `laeser.png` og `praesenterer.png` ligger klar, men er ikke i brug endnu.
+- **Assistenten:** maskotten ligger som PNG'er med gennemsigtig baggrund i `dashboard/otto/` (udskåret fra Kaspers illustrationer). Han står altid i en lys flise (`--otto-tile`), så han ser ens ud i begge temaer: med tommel op på login, tænkende i tomme tilstande, ved computeren mens Claude arbejder, jublende når et udkast er klar, og på kapacitetssiden efter stemningen — kaffe ved plads tilbage, løb ved på kanten, hårdt arbejde ved overbooket. Hans hoved er fane-ikon og står ved ordmærket i sidebaren. `laeser.png` og `praesenterer.png` ligger klar, men er ikke i brug endnu.
 
 Tidslinjen er CSS Grid, ikke SVG: en Gantt er i praksis en tabel, og grid giver sticky navnekolonne, tooltips og korrekt zoom uden koordinatmatematik.
 

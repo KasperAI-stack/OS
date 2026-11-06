@@ -1,4 +1,4 @@
-/* Forbindelsestest: knappen "Test Otto" under Indstillinger → Otto. Billigst mulige kørsel. */
+/* Forbindelsestest: knappen "Test assistenten" under Indstillinger → Assistent. Billigst mulige kørsel. */
 
 export default `Kørsel: Forbindelsestest.
 

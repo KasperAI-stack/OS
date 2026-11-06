@@ -159,7 +159,7 @@ export async function run(store: Store, subject: string, now = new Date(), send:
     const yellows = list.filter((a: any) => a.level === 2).length;
     if (reds.length || yellows) {
       msgs.push({
-        title: reds.length ? "Otto: " + plural(reds.length, "ting kræver", "ting kræver") + " din opmærksomhed" : "Otto: " + plural(yellows, "ting at holde øje med", "ting at holde øje med"),
+        title: reds.length ? "Tasks: " + plural(reds.length, "ting kræver", "ting kræver") + " din opmærksomhed" : "Tasks: " + plural(yellows, "ting at holde øje med", "ting at holde øje med"),
         body: list.slice(0, 3).map((a: any) => a.title).join(" · ") + (list.length > 3 ? " · +" + (list.length - 3) : ""),
         url: "/#kapacitet", tag: "morgen"
       });
@@ -168,7 +168,7 @@ export async function run(store: Store, subject: string, now = new Date(), send:
   } else if (st.prefs.instant) {
     const fresh = reds.filter((a: any) => !st.sent[a.key]);
     if (fresh.length === 1) msgs.push({ title: fresh[0].title, body: fresh[0].why, url: "/#kapacitet", tag: fresh[0].key });
-    else if (fresh.length > 1) msgs.push({ title: "Otto: " + fresh.length + " nye alarmer", body: fresh.slice(0, 3).map((a: any) => a.title).join(" · "), url: "/#kapacitet", tag: "nye" });
+    else if (fresh.length > 1) msgs.push({ title: "Tasks: " + fresh.length + " nye alarmer", body: fresh.slice(0, 3).map((a: any) => a.title).join(" · "), url: "/#kapacitet", tag: "nye" });
     for (const a of fresh) st.sent[a.key] = now.toISOString();
   }
 

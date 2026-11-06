@@ -26,14 +26,14 @@
      POST   /api/push/subscribe              { subscription, label, tz } — slå notifikationer til på en enhed
      POST   /api/push/unsubscribe            { endpoint }
      POST   /api/push/test                   { endpoint } — send en prøve til én enhed
-     GET    /api/agent                       Otto: sat op?, indstillinger, dagens forbrug, slags og modeller
+     GET    /api/agent                       assistenten: sat op?, indstillinger, dagens forbrug, slags og modeller
      PUT    /api/agent/settings              { enabled?, budgetDkk?, usdDkk?, kinds?: { <id>: { enabled?, model? } } }
      GET    /api/agent/runs                  de seneste kørsler (uden trin)
      POST   /api/agent/runs                  { kind, input?, parent? } → læg en kørsel i kø og start den (kun Kasper)
      GET    /api/agent/runs/:id              én kørsel med hvert trin, tokens og pris
-     GET    /api/inbox                       { suggestions, handled, mail } — Ottos forslag fra mail
+     GET    /api/inbox                       { suggestions, handled, mail } — Assistentens forslag fra mail
      PUT    /api/inbox/:id                   { status: "oprettet" | "ignoreret" | "ny", taskId? } (kun Kasper)
-     GET    /api/plans                       Ottos seneste planforslag (M9)
+     GET    /api/plans                       assistentens seneste planforslag (M9)
      GET    /api/plans/:id                   ét forslag (id = kørslens id)
      PUT    /api/plans/:id                   { status: "anvendt" | "kasseret" } (kun Kasper)
 
@@ -497,7 +497,7 @@ async function alertRoutes(req: Request, store: Store, who: Who, path: string) {
   }
   if (path === "/api/push/test" && req.method === "POST") {
     const endpoint = String(body?.endpoint || "");
-    const r = await alarm.sendAll(store, [{ title: "HeyOtto Tasks", body: "Sådan ser en notifikation fra Otto ud.", url: "/#kapacitet", tag: "test" }],
+    const r = await alarm.sendAll(store, [{ title: "HeyOtto Tasks", body: "Sådan ser en notifikation fra assistenten ud.", url: "/#kapacitet", tag: "test" }],
                                   new URL(req.url).origin, undefined, endpoint);
     if (!r.sent) return fail(400, r.removed ? "Enheden er ikke tilmeldt længere. Slå notifikationer til igen." : "Kunne ikke sende til enheden.");
     return json(200, r);
@@ -505,15 +505,15 @@ async function alertRoutes(req: Request, store: Store, who: Who, path: string) {
   return fail(400, "Ukendt adresse eller metode: " + req.method + " " + path);
 }
 
-/* ---------- Otto: agent-kernen (M7) ----------
+/* ---------- Assistenten: agent-kernen (M7) ----------
    Selve kørslerne sker i køen (worker/index.mts → queue).
    Her ligger status, indstillinger, loggen og "start en kørsel". Kun du kan starte
-   Otto og ændre indstillingerne. Claude (routinen) kan læse loggen. */
+   Assistenten og ændre indstillingerne. Claude (routinen) kan læse loggen. */
 
 const AGENT_PER_HOUR = 30;
 const AGENT_INPUT_MAX = 2000;
-const AGENT_NOT_SET_UP = "Otto er ikke sat op endnu: Claude API mangler. Sæt ANTHROPIC_API_KEY som hemmelighed i Cloudflare (`npx wrangler secret put`). " +
-                         "Vejledningen står under Indstillinger → Otto.";
+const AGENT_NOT_SET_UP = "Assistenten er ikke sat op endnu: Claude API mangler. Sæt ANTHROPIC_API_KEY som hemmelighed i Cloudflare (`npx wrangler secret put`). " +
+                         "Vejledningen står under Indstillinger → Assistent.";
 
 const agentReady = () => agentConfigured(env);
 
@@ -541,14 +541,14 @@ async function startAgentRun(req: Request, store: agent.Store, platform: Platfor
   if (kind.needsInput && !input) return fail(400, "Skriv dit spørgsmål først.");
   if (!agentReady()) return fail(400, AGENT_NOT_SET_UP);
   const s = await agent.readSettings(store);
-  if (!s.enabled) return fail(400, "Otto er slået fra under Indstillinger → Otto.");
-  if (!s.kinds[kind.id]?.enabled) return fail(400, `„${kind.label}“ er slået fra under Indstillinger → Otto.`);
+  if (!s.enabled) return fail(400, "Assistenten er slået fra under Indstillinger → Assistent.");
+  if (!s.kinds[kind.id]?.enabled) return fail(400, `„${kind.label}“ er slået fra under Indstillinger → Assistent.`);
   const spend = await agent.readSpend(store, agent.dayIn(s.tz));
   if (spend.usd * s.usdDkk >= s.budgetDkk) {
-    return fail(400, `Dagsbudgettet på ${s.budgetDkk} kr. er brugt. Hæv det under Indstillinger → Otto, eller vent til i morgen.`);
+    return fail(400, `Dagsbudgettet på ${s.budgetDkk} kr. er brugt. Hæv det under Indstillinger → Assistent, eller vent til i morgen.`);
   }
   const lastHour = (await agent.runIds(store)).filter((id) => Date.now() - (dateOf(id)?.getTime() ?? 0) < 3_600_000).length;
-  if (lastHour >= AGENT_PER_HOUR) return fail(429, `Otto kan højst startes ${AGENT_PER_HOUR} gange i timen. Prøv igen om lidt.`);
+  if (lastHour >= AGENT_PER_HOUR) return fail(429, `Assistenten kan højst startes ${AGENT_PER_HOUR} gange i timen. Prøv igen om lidt.`);
   if (kind.id === "indbakke") {
     const accounts = await google.readAccounts(store as any);
     if (!accounts.some((a) => a.scopes.includes("gmail"))) {
@@ -556,7 +556,7 @@ async function startAgentRun(req: Request, store: agent.Store, platform: Platfor
     }
     const busy = (await agent.readRuns(store, 10)).find((r) => r.kind === "indbakke" && (r.status === "i kø" || r.status === "kører") &&
                                                           Date.now() - Date.parse(r.updatedAt) < 16 * 60_000);
-    if (busy) return json(200, { run: busy, started: true, note: "Otto er allerede i gang med at hente mails." });
+    if (busy) return json(200, { run: busy, started: true, note: "Assistenten er allerede i gang med at hente mails." });
   }
   let parent = clip(body?.parent, 60);
   const p = parent ? await agent.readRun(store, parent) : null;
@@ -577,7 +577,7 @@ async function agentRoutes(req: Request, store: agent.Store, who: Who, path: str
     const run = await agent.readRun(store, decodeURIComponent(one[1]));
     return run ? json(200, { run }) : fail(410, "Kørslen findes ikke længere.");
   }
-  if (who !== "dig") return fail(401, "Kun du kan starte Otto og ændre Ottos indstillinger — log ind i appen.");
+  if (who !== "dig") return fail(401, "Kun du kan starte assistenten og ændre assistentens indstillinger — log ind i appen.");
   if (path === "/api/agent/settings" && req.method === "PUT") {
     await agent.updateSettings(store, await readJson(req));
     return json(200, await agentStatus(store));
@@ -586,7 +586,7 @@ async function agentRoutes(req: Request, store: agent.Store, who: Who, path: str
   return fail(400, "Ukendt adresse eller metode: " + req.method + " " + path);
 }
 
-/* ---------- Indbakke: Ottos forslag fra mail (M8) ----------
+/* ---------- Indbakke: Assistentens forslag fra mail (M8) ----------
    "Hent mails" er bare en kørsel af slagsen indbakke (POST /api/agent/runs). Her ligger
    forslagene, og du markerer dem som oprettet eller ignoreret. Selve opgaven laves af
    appen og gemmes med PUT /api/data som alt andet. */
@@ -612,7 +612,7 @@ async function inboxRoutes(req: Request, store: agent.Store, who: Who, path: str
   return fail(400, "Ukendt adresse eller metode: " + req.method + " " + path);
 }
 
-/* ---------- Planforslag: omplanlæg med Otto (M9) ----------
+/* ---------- Planforslag: omplanlæg med assistenten (M9) ----------
    Start: POST /api/agent/runs { kind: "omplanlaeg", input? }. Forslaget gemmes under
    kørslens id. Ændringerne lægges ind i data af appen, når du trykker Anvend. */
 
@@ -621,7 +621,7 @@ async function planRoutes(req: Request, store: agent.Store, who: Who, path: stri
   const one = path.match(/^\/api\/plans\/([^/]+)$/);
   if (one && req.method === "GET") {
     const p = await plans.readPlan(store as any, decodeURIComponent(one[1]));
-    return p ? json(200, { plan: p }) : fail(410, "Forslaget findes ikke (Otto lavede måske intet forslag, fordi alt når i mål).");
+    return p ? json(200, { plan: p }) : fail(410, "Forslaget findes ikke (Assistenten lavede måske intet forslag, fordi alt når i mål).");
   }
   if (one && req.method === "PUT") {
     if (who !== "dig") return fail(401, "Kun du kan anvende eller kassere et forslag — log ind i appen.");

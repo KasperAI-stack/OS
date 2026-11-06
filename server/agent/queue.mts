@@ -1,4 +1,4 @@
-/* HeyOtto Tasks — læg en Otto-kørsel i kø.
+/* HeyOtto Tasks — læg en assistent-kørsel i kø.
 
    Udløsere er kun planen (scheduleTick), hændelser og dig (knapper i appen). Agenten kan
    ikke starte kørsler selv: ingen af dens værktøjer kan kalde herind. Selve starten sker

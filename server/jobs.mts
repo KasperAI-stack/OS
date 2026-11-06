@@ -1,7 +1,7 @@
 /* HeyOtto Tasks — baggrundsjob og planlagte job, uafhængigt af platformen.
 
-     runAgent       én Otto-kørsel (fra køen)
-     scheduleTick   Ottos planlagte udløser og oprydning, hvert 15. minut
+     runAgent       én assistent-kørsel (fra køen)
+     scheduleTick   assistentens planlagte udløser og oprydning, hvert 15. minut
      calendarTick   henter de forbundne Google-kalendere, hvert 15. minut
      alertsTick     alarmer som push-notifikationer, hver time
 
@@ -17,7 +17,7 @@ import { metrics, readPlan } from "./plans.mts";
 import { wall, zonedSnapshot } from "./zone.mts";
 import type { DocStore, Env } from "./platform.mts";
 
-/* ---------- Én Otto-kørsel ---------- */
+/* ---------- Én assistent-kørsel ---------- */
 
 export async function runAgent(blobs: DocStore, id: string, origin: string) {
   const store = blobs as unknown as Store;
@@ -32,13 +32,13 @@ export async function runAgent(blobs: DocStore, id: string, origin: string) {
     // Morgenbriefen sendes også som notifikation: første linje som titel
     if (run.kind === "morgenbrief" && run.status === "færdig" && run.output) {
       const [first, ...rest] = run.output.split("\n").map((l) => l.replace(/^[-*#\s]+/, "").trim()).filter(Boolean);
-      if (first) await notify("Otto: " + first.slice(0, 80), rest.join(" · ").slice(0, 180), "morgenbrief");
+      if (first) await notify("Tasks: " + first.slice(0, 80), rest.join(" · ").slice(0, 180), "morgenbrief");
     }
     // Ugeforslaget: kun en besked, når der faktisk er et forslag at se på
     if (run.kind === "ugeforslag" && run.status === "færdig") {
       const plan = await readPlan(store as any, run.id);
       if (plan && plan.changes.length) {
-        await notify("Otto har et forslag til ugen",
+        await notify("Assistenten har et forslag til ugen",
           `${plan.changes.length} ændringer. I risiko: ${plan.before.atRisk + plan.before.overdue} → ${plan.after.atRisk + plan.after.overdue}.`, "ugeforslag", "/#omplan");
       }
     }
@@ -54,7 +54,7 @@ export async function runAgent(blobs: DocStore, id: string, origin: string) {
   }
 }
 
-/* ---------- Ottos planlagte udløser ----------
+/* ---------- Assistentens planlagte udløser ----------
    Lægger planlagte kørsler i kø og starter dem. Rydder desuden op:
      * en kørsel, der har stået i kø i over 2 minutter (startsignalet gik tabt), startes igen
      * en kørsel, der har "kørt" i over 16 minutter, markeres som fejlet

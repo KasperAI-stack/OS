@@ -2,7 +2,7 @@
 
    API'et (api.mts) og jobbene (jobs.mts) kender kun denne type, så de kan testes uden
    Cloudflare (test/). worker/index.mts laver den: lager (D1), miljøvariabler og
-   hemmeligheder, klientens IP, waitUntil og hvordan en Otto-kørsel startes (Queue). */
+   hemmeligheder, klientens IP, waitUntil og hvordan en assistent-kørsel startes (Queue). */
 
 // Et simpelt nøgle/værdi-lager med metadata. worker/store.mts giver det oven på D1.
 export type DocStore = {

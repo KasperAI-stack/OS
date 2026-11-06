@@ -1,8 +1,8 @@
-/* HeyOtto OS — indbakken: Ottos forslag til opgaver fra mail (M8).
+/* HeyOtto OS — indbakken: Assistentens forslag til opgaver fra mail (M8).
 
      inbox/suggestions   [{ id, threadId, account, accountEmail, url, from, subject, date,
                             title, note, due, estimate, project, confidence, status, runId, createdAt, handledAt, taskId }]
-     inbox/state         { processed: { threadId: seneste besked-id } } — tråde, Otto har vurderet
+     inbox/state         { processed: { threadId: seneste besked-id } } — tråde, assistenten har vurderet
 
    Forslag ligger uden for data. Først når du trykker Opret, bliver det til en opgave,
    og den gemmes som alt andet (og står i Historik). Ignorerede tråde kommer ikke igen,

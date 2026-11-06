@@ -6,7 +6,7 @@
    der er ingen kode til det, og scopet tillader det ikke.
 
    Kun det nødvendige læses: afsender, modtagere, emne, dato og teksten uden citeret
-   historik, klippet. Intet af mailens tekst gemmes, kun Ottos korte resumé i forslaget. */
+   historik, klippet. Intet af mailens tekst gemmes, kun assistentens korte resumé i forslaget. */
 
 import { accessToken, googleJson, readAccounts, serverSecret, type Account } from "./google.mts";
 
@@ -43,7 +43,7 @@ const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n) + " …" : 
 export const threadUrl = (email: string, threadId: string) =>
   "https://mail.google.com/mail/u/?authuser=" + encodeURIComponent(email) + "#all/" + encodeURIComponent(threadId);
 
-// Nye tråde (de seneste dage) fra én konto. processed: threadId → seneste besked, Otto har set.
+// Nye tråde (de seneste dage) fra én konto. processed: threadId → seneste besked, assistenten har set.
 export async function newThreads(store: Store, env: Env, acc: Account, processed: Record<string, string>, now = new Date()) {
   const tok = await token(store, env, acc);
   const after = Math.floor(now.getTime() / 1000) - WINDOW_DAYS * 86400;
