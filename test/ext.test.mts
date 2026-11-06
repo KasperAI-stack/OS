@@ -178,23 +178,3 @@ test("kalenderen kan læses (null uden forbundne konti)", async () => {
   assert.deepEqual((await ext(ro, "GET", "/ext/calendar")).body, { snapshot: null });
 });
 
-test("jobs: Claude henter jobbet og melder tilbage; lukkede jobs kan ikke ændres", async () => {
-  const { ext, rw, ro, db } = await withTokens();
-  const id = "2026-11-06T18-00-00-000Z-ab12";
-  const job = { id, taskId: "t1", task: { title: "Skriv nyhedsbrev" }, instruction: "", startedBy: "knap", status: "sendt",
-                sessionUrl: "", result: "", error: "", createdAt: "2026-11-06T18:00:00.000Z", updatedAt: "2026-11-06T18:00:00.000Z" };
-  await db.prepare("INSERT INTO docs (key, value, updated_at) VALUES (?, ?, ?)").bind("claude-jobs/" + id, JSON.stringify(job), job.updatedAt).run();
-
-  assert.equal((await ext(ro, "GET", "/ext/jobs/" + id)).body.job.task.title, "Skriv nyhedsbrev");
-  assert.equal((await ext(ro, "GET", "/ext/jobs/2026-11-06T18-00-00-000Z-ffff")).status, 404);
-  assert.equal((await ext(ro, "PATCH", "/ext/jobs/" + id, { status: "i gang" })).status, 403);
-  assert.equal((await ext(rw, "PATCH", "/ext/jobs/" + id, { status: "godkendt" })).status, 400, "Claude kan ikke godkende sig selv");
-  assert.equal((await ext(rw, "PATCH", "/ext/jobs/" + id, { status: "til godkendelse" })).status, 400, "mangler result");
-  assert.equal((await ext(rw, "PATCH", "/ext/jobs/" + id, { status: "i gang" })).body.job.status, "i gang");
-  const done = await ext(rw, "PATCH", "/ext/jobs/" + id, { status: "til godkendelse", result: "Emne: Nyt fra os\n\nHej …" });
-  assert.equal(done.body.job.status, "til godkendelse");
-  assert.equal(done.body.job.result, "Emne: Nyt fra os\n\nHej …");
-
-  await db.prepare("UPDATE docs SET value = ? WHERE key = ?").bind(JSON.stringify({ ...job, status: "kasseret" }), "claude-jobs/" + id).run();
-  assert.equal((await ext(rw, "PATCH", "/ext/jobs/" + id, { status: "i gang" })).status, 410);
-});

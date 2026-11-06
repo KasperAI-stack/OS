@@ -12,7 +12,8 @@
    Opsætningen står i wrangler.jsonc. Hemmeligheder (adgangskode, Claude- og
    Google-nøgler) sættes med `wrangler secret put` og ligger aldrig i repoet. */
 
-import { handle } from "../server/api.mts";
+import { handle, studioCommenter } from "../server/api.mts";
+import * as studio from "../server/studio.mts";
 import { ext } from "../server/ext.mts";
 import { gate } from "../server/gate.mts";
 import { alertsTick, calendarTick, runAgent, scheduleTick } from "../server/jobs.mts";
@@ -38,6 +39,7 @@ type Ctx = { waitUntil(p: Promise<unknown>): void };
 
 export const CRON_EVERY_15 = "*/15 * * * *";
 export const CRON_HOURLY = "0 * * * *";
+export const CRON_EVERY_MINUTE = "* * * * *";
 
 const envOf = (env: WorkerEnv): EnvFn => (k) => (typeof env[k] === "string" ? (env[k] as string) : undefined);
 
@@ -94,6 +96,8 @@ export default {
     if (controller.cron === CRON_EVERY_15) {
       try { console.log("kalender —", await calendarTick(store, envOf(env))); } catch (e) { console.error("kalender fejlede:", e); }
       try { console.log("otto —", await scheduleTick(store, startRun(env))); } catch (e) { console.error("otto-planen fejlede:", e); }
+    } else if (controller.cron === CRON_EVERY_MINUTE) {
+      try { const r = await studio.tick(store, envOf(env), studioCommenter(store)); if (r.checked) console.log("studio —", r); } catch (e) { console.error("studio fejlede:", e); }
     } else if (controller.cron === CRON_HOURLY) {
       try { console.log("alarmer —", await alertsTick(store, env.APP_URL || "")); } catch (e) { console.error("alarmer fejlede:", e); }
     }

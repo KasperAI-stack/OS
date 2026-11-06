@@ -71,7 +71,7 @@ The server checks the shape. What it can't check is up to you:
 - **Never invent** hours, dates or owners. Leave them out, and tell Kasper what is missing.
 - Tasks with `routine` set are made by the app from a routine. Don't create those by hand.
 
-Jobs Kasper sends to Claude from the app ("Lad Claude udføre", or owner "Claude") are handled by the `heyotto-tasks-job` skill.
+Tasks Kasper sends to HeyOtto Studio from the app ("Send til Studio") are handled by Studio, not by you. Studio's reply arrives as a comment by "Studio".
 
 ## 5. Conventions
 

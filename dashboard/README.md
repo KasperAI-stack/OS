@@ -60,45 +60,23 @@ Claude kan læse og rette dine data — fx lægge opgaver ind fra Asana, når du
 
 Alt, hvad Claude gemmer, står i Historik under tokenets navn og kan fortrydes. Tilbagekald tokenet under API-tokens for at lukke adgangen. Sletning, projekter og rutiner sker kun i appen. Fremgangsmåden for Claude står i `.claude/skills/heyotto-tasks-data/SKILL.md`. Siden **Claude-adgang** viser de samme trin.
 
-## Claude udfører opgaver
+## Send til Studio
 
-Claude kan gå i gang med en opgave, så snart du beder om det, fx skrive et mailudkast, lave en ugerapport eller foreslå annoncetekster. Der er to måder at starte på:
+Du kan sende en opgave til **HeyOtto Studio** (`otto.heyotto.win`), hvor Studios Otto tager den. Koden står i `server/studio.mts`.
 
-- Åbn opgaven, og tryk **✦ Lad Claude udføre**. Feltet over knappen er valgfrit. Står der ingenting, arbejder Claude ud fra titel og note.
-- Skriv **Claude** som ejer, og gem. Det virker både på nye opgaver og på opgaver, du giver videre til Claude.
+- Åbn opgaven. Under **Studio** står en tekst med titel, note, projekt, deadline og opgavens id. Ret den, hvis du vil, og tryk **Send til Studio**.
+- Opgaven viser, hvad Studio gør: **Studio arbejder**, **Venter på dig** (med et link til Studio, hvor du godkender) eller **Svar fra Studio**.
+- Når Studio er færdig, står svaret som en **kommentar på opgaven** fra "Studio". Det står også i Historik.
+- Tasks spørger Studio om nyt hvert minut (Workerens cron) og hvert 20. sekund, mens appen er åben.
 
-Claude arbejder i skyen i en **Claude Code Routine** på dette repo, med dine agenter, skills og forbindelser. Mens Claude arbejder, står der „Claude arbejder …“ på kortet. Når Claude er færdig, står der **Klar til dig**, og i opgaven ser du udkastet med knapperne **Kopiér**, **Godkend**, **Kassér** og **Se Claudes session**. Siden opdager selv, når Claude er færdig, så du behøver ikke genindlæse.
+**Opsætning (én gang).**
 
-**Claude laver kun udkast.** En automatisk start kan ikke give samtykke til noget, så Claude sender ingen mails, svarer ikke på invitationer, ændrer ingen annoncer og bruger ingen penge. Vil du have noget sendt, åbner du Claudes session og siger det dér. Så er det din beslutning.
+1. Studio → **Agenter → Integrationer → Adgang udefra** → nyt token "HeyOtto Tasks" med **task** og **read**.
+2. Cloudflare → Workers & Pages → heyotto-tasks → Settings → Variables and Secrets → **Add**, **Type: Secret**: `HEYOTTO_TOKEN` med tokenet. (`HEYOTTO_URL` behøves kun, hvis Studio ligger et andet sted end `https://otto.heyotto.win/ext`.)
 
-**Opsætning (én gang).** Trinene står også på siden **Claude-adgang**, hvor instruktionen kan kopieres med én knap.
+**Når Studio er slukket.** Studio kører på din pc gennem en Cloudflare Tunnel. Kan den ikke nås, står opgaven som **Studio er offline**, og Tasks prøver igen hvert 5. minut i en time. Derefter står den som **Ikke sendt**, og du kan sende igen. Svarer Studio ikke i tide, ved Tasks ikke, om opgaven kom frem, så den sendes **ikke** igen af sig selv. Se efter i Studio først.
 
-1. Giv Claude adgang med et API-token (se ovenfor), i det Claude-miljø routinen skal bruge.
-2. På [claude.ai/code/routines](https://claude.ai/code/routines) → **New routine**:
-   - navn: „HeyOtto OS-opgaver“
-   - repo: `KasperAI-stack/OS`
-   - miljø: det fra trin 1
-   - forbindelser: fjern dem, opgaverne ikke skal bruge
-   - instruktion: teksten fra Claude-adgang
-3. Under **Select a trigger**: vælg **API**, og tryk **Create**. Åbn routinen igen → **Edit** → API-triggeren. Kopiér URL'en, og tryk **Generate token**. Tokenet vises kun én gang.
-4. I Cloudflare gemmer du (`npx wrangler secret put <navn>`):
-   - **`CLAUDE_ROUTINE_URL`** med URL'en
-   - **`CLAUDE_ROUTINE_TOKEN`** med tokenet
-
-   Lav derefter et nyt deploy (*Deploys → Trigger deploy*).
-
-Routinen bruger skillen `.claude/skills/heyotto-tasks-job/SKILL.md` fra `main`. Claude henter jobbet med `GET /ext/jobs/{id}` og melder tilbage med `PATCH /ext/jobs/{id}`. Routinen kloner altid `main`, så ændringer i skillen virker først, når de er merget.
-
-**Grænser og sikkerhed**
-
-- **Starter Claude?** Kun du kan starte Claude. Claudes nøgle kan ikke, og hverken Claudes egne gem eller en gendannelse fra Historik sætter noget i gang. Så kan Claude aldrig starte sig selv.
-- **Hvad sendes med?** Routinen får kun job-id'et og opgavens titel. Resten henter Claude selv fra API'et.
-- **Hvor mange?** Højst ét aktivt job pr. opgave og 10 starter i timen. Gemmer du mange opgaver med Claude som ejer på én gang, starter kun 3 automatisk; resten startes med knappen. Anthropic tillader desuden 30 starter i timen pr. routine.
-- **Hvad koster det?** Kørslerne bruger af dit Claude-abonnement, ligesom almindelige sessioner.
-- **Hvis noget går galt.** Melder Claude ikke tilbage inden for to timer, viser opgaven „Intet svar“, og du kan starte igen. Fejler starten (forkert token, routinen sat på pause, for mange kørsler), står en dansk forklaring på opgaven.
-- **Hvor ligger jobbene?** I lageret under `claude-jobs/`, ved siden af dine data, og de seneste 100 gemmes. Når Claude skriver et resultat, ændres dine data ikke. Derfor giver det aldrig „data er ændret et andet sted“.
-
-Routines er stadig en testfunktion hos Anthropic, så navne og grænser kan ændre sig.
+**Grænser.** Højst én Studio-opgave ad gangen pr. opgave, tekst højst 20.000 tegn. Opfølgning på en opgave sker i Studio, fordi Studios API endnu ikke har en svar-rute. Studio-opgaverne ligger i lageret under `studio-tasks/`, ved siden af dine data.
 
 ## API'et
 
@@ -109,14 +87,13 @@ Alle svar er JSON. Fejl er `{ "error": "dansk besked" }`.
 | `POST /api/login` `{ password }` | Log ind → session-cookie |
 | `POST /api/logout` | Log ud |
 | `GET /api/data` | `{ rev, data }` |
-| `PUT /api/data` `{ rev, data }` | Gem → `{ rev }`, plus `claude: { started, skipped }`, hvis gemmet satte Claude i gang. **409**, hvis `rev` ikke længere er den nyeste |
+| `PUT /api/data` `{ rev, data }` | Gem → `{ rev }`. **409**, hvis `rev` ikke længere er den nyeste |
 | `GET /api/history` | `{ versions: [...] }` |
 | `POST /api/history/:id/restore` | Gør en gammel version gældende |
-| `GET` / `POST` / `DELETE /api/claude-key` | Status / lav ny / fjern — kun for dig, ikke for Claude |
-| `GET /api/claude/jobs` | `{ connected, jobs }`: er routinen sat op, og de seneste 40 jobs |
-| `POST /api/claude/jobs` `{ taskId, task, instruction }` | Sæt Claude i gang. Kun for dig, ikke for Claude |
-| `GET /api/claude/jobs/:id` | Ét job |
-| `PUT /api/claude/jobs/:id` `{ status, result?, error? }` | Claude: `i gang` / `til godkendelse` / `fejlet`. Dig: `godkendt` / `kasseret`. **410**, hvis jobbet er lukket |
+| `GET /api/studio` | `{ configured, online, error, app }`: er Studio sat op og tændt? |
+| `GET /api/studio/tasks` | `{ configured, tasks }`: opgaver sendt til Studio. Spørger Studio om nyt først |
+| `POST /api/studio/tasks` `{ taskId, title, text }` | Send opgaven til Studio. Kun for dig. **409**, hvis Studio allerede har den |
+| `DELETE /api/studio/tasks/:taskId` | Glem en afsluttet Studio-opgave, så en ny kan sendes |
 | `GET /api/google` | `{ configured, missing, redirectUri, accounts }`. Kun for dig. Tokens sendes aldrig |
 | `GET /api/google/connect?scopes=calendar` | Sender browseren til Google for at forbinde en konto. Kun for dig |
 | `GET /api/google/callback` | Google sender browseren tilbage hertil. Ender på `/?google=forbundet` eller `?google=fejl&besked=…` |

@@ -14,15 +14,15 @@
 - Access-applikationen for `tasks.heyotto.win` og AUD-tagget i `wrangler.jsonc`. Appen åbnes uden adgangskode
 - Hemmelighederne `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_ID` og `GOOGLE_CLIENT_SECRET`. Otto kører
 - Google forbundet med kalender og mail. Kalenderen "Renas" (den primære) er slået til, og mailen læses
-- Skillsene hedder nu `heyotto-tasks-data` og `heyotto-tasks-job` og bruger et API-token (`HEYOTTO_TASKS_TOKEN`) på `tasks-api.heyotto.win/ext`. `/ext` har fået sprints, kalenderen og jobs, så skillsene ikke behøver `/api`
+- Skillen hedder nu `heyotto-tasks-data` og bruger et API-token (`HEYOTTO_TASKS_TOKEN`) på `tasks-api.heyotto.win/ext`. `/ext` har fået sprints og kalenderen, så skillen ikke behøver `/api`. Tokenet "Claude" er lavet og virker
+- Claude Code Routine-delen ("Lad Claude udføre", ejer "Claude", `heyotto-tasks-job`) er fjernet. Opgaver sendes i stedet til Studio (M15)
 - Den gamle Claude-nøgle (`/api/claude-key`) er fjernet fra app og server. Siden Claude-adgang viser i stedet, hvordan man laver et token
 
 ## Mangler
 
 1. **Slet Netlify-sitet**, og frakobl GitHub-repoet fra Netlify (Kasper).
-2. **Token til Claude:** Kasper laver et token "Claude" under Indstillinger → API-tokens og gemmer det som `HEYOTTO_TASKS_TOKEN`, når Claude skal arbejde i Tasks.
 
-**Udskudt:** push på pc og telefon (Kasper, 2026-11-06: "ikke endnu"). Routinen "HeyOtto OS-opgaver" er ikke sat op (`CLAUDE_ROUTINE_URL`/`CLAUDE_ROUTINE_TOKEN` mangler); den kan sættes op senere med de samme trin.
+**Udskudt:** push på pc og telefon (Kasper, 2026-11-06: "ikke endnu").
 
 
 - Alt i appen virker på `tasks.heyotto.win` med Access-login

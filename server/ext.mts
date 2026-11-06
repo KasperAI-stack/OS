@@ -13,7 +13,7 @@
    Fuld beskrivelse: dashboard/README.md under "API'et /ext". */
 
 import { Hono, type Context, type MiddlewareHandler } from "hono";
-import { HttpError, getJob, readData, reportJob, saveData } from "./api.mts";
+import { HttpError, readData, saveData } from "./api.mts";
 import { readSnapshot } from "./google.mts";
 import { readSettings } from "./agent/store.mts";
 import { localIso } from "../dashboard/lib/forecast.mjs";
@@ -280,17 +280,6 @@ ext.post("/sprints", async (c) => {
 ext.get("/calendar", async (c) => {
   need(c, "read");
   return c.json({ snapshot: await readSnapshot(c.env.p.store) });
-});
-
-// Jobs, du har sat Claude på i appen. Claude henter jobbet og melder tilbage (kun udkast).
-ext.get("/jobs/:id", async (c) => {
-  need(c, "read");
-  return c.json({ job: await getJob(c.env.p.store, c.req.param("id")) });
-});
-
-ext.patch("/jobs/:id", async (c) => {
-  need(c, "write");
-  return c.json({ job: await reportJob(c.env.p.store, c.req.param("id"), c.get("body")) });
 });
 
 ext.notFound((c) => err(c, 404, "Ukendt adresse: " + c.req.method + " " + scrub(new URL(c.req.url).pathname)));

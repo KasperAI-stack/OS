@@ -1,6 +1,6 @@
 # M15: Tasks og Studio taler sammen
 
-**Status (2026-11-06):** planlagt. Svarer til afsnit 3 og 4 i Studios guide. Bygger på M11–M14. Erstatter den tidligere M10-plan (Studio på pc'en med `/actions` og `/runs` via tunnel). Studio har nu sit eget API på `otto.heyotto.win/ext`, og Tasks bruger det, som det er.
+**Status (2026-11-06):** del 1 (Tasks → Studio) er bygget: `server/studio.mts`, knappen Send til Studio på opgaven, cron hvert minut og svaret som kommentar. Tokenet ligger som `HEYOTTO_TOKEN`. Afvigelse: Studio-opgaven gemmes under `studio-tasks/<opgave-id>` ved siden af data, ikke på tasken, så Gem i browseren aldrig støder ind i den. Den gamle Claude Code Routine-del er fjernet. Del 2 (Studio → Tasks via MCP) venter på M14. Svarer til afsnit 3 og 4 i Studios guide. Bygger på M11–M14. Erstatter den tidligere M10-plan (Studio på pc'en med `/actions` og `/runs` via tunnel). Studio har nu sit eget API på `otto.heyotto.win/ext`, og Tasks bruger det, som det er.
 
 > "jeg vil have at OS og Studio får en API connection"
 

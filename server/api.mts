@@ -9,11 +9,10 @@
      PUT    /api/data                        { rev, data } → { rev }   (409 hvis rev er forældet)
      GET    /api/history                     de seneste gemte versioner
      POST   /api/history/:id/restore         gør en gammel version til den gældende
-     GET    /api/claude/jobs                 { connected, jobs } — de seneste opgaver, Claude er sat på
-     POST   /api/claude/jobs                 { taskId, task, instruction } → sæt Claude i gang (kun Kasper)
-     GET    /api/claude/jobs/:id             ét job
-     PUT    /api/claude/jobs/:id             { status: "godkendt" | "kasseret" } (kun Kasper). Claude melder
-                                             tilbage gennem /ext/jobs/:id med et API-token (server/ext.mts)
+     GET    /api/studio                      { configured, online, error, app } — er Studio sat op og tændt?
+     GET    /api/studio/tasks                { tasks } — opgaver sendt til Studio, med status (spørger Studio om nyt)
+     POST   /api/studio/tasks                { taskId, title, text } → send opgaven til Studio (kun Kasper)
+     DELETE /api/studio/tasks/:taskId        glem en afsluttet Studio-opgave
      GET    /api/google                      { configured, missing, redirectUri, accounts } — forbindelsens status
      GET    /api/google/connect?scopes=…     send browseren til Google for at forbinde en konto
      GET    /api/google/callback             Google sender browseren tilbage hertil (ingen cookie, signeret state)
@@ -56,6 +55,7 @@ import * as inbox from "./inbox.mts";
 import * as plans from "./plans.mts";
 import type { DocStore, Env, Platform } from "./platform.mts";
 import * as tokens from "./tokens.mts";
+import * as studio from "./studio.mts";
 
 type Store = DocStore;
 type Who = "dig" | "Claude";
@@ -112,6 +112,7 @@ function json(status: number, body: unknown, headers: Record<string, string> = {
   });
 }
 const fail = (status: number, error: string) => json(status, { error });
+const clip = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest();
@@ -283,7 +284,7 @@ async function getData(store: Store) {
   return json(200, { rev: revOf(found), data: found.data });
 }
 
-async function putData(req: Request, p: Platform, store: Store, who: Who) {
+async function putData(req: Request, store: Store, who: Who) {
   const body = await readJson(req);
   const problem = checkData(body?.data);
   if (problem) return fail(400, problem);
@@ -291,8 +292,7 @@ async function putData(req: Request, p: Platform, store: Store, who: Who) {
   const before = await store.getWithMetadata(DATA_KEY, { type: "json" });
   if (body.rev !== revOf(before)) return fail(409, CONFLICT);
   const rev = await write(store, body.data, who);
-  const claude = who === "dig" ? await autoStart(p, store, before?.data, body.data) : null;
-  return json(200, claude ? { rev, claude } : { rev });
+  return json(200, { rev });
 }
 
 async function history(store: Store) {
@@ -335,241 +335,51 @@ async function tokenRoutes(req: Request, store: Store, path: string) {
   return fail(400, "Ukendt adresse eller metode: " + req.method + " " + path);
 }
 
-/* ---------- Claude udfører opgaver ----------
-   Et job er én opgave, Claude er sat til at udføre. HeyOtto OS starter en
-   Claude Code Routine (hemmelighederne CLAUDE_ROUTINE_URL og CLAUDE_ROUTINE_TOKEN i Cloudflare) og
-   sender kun job-id'et med. Routinen henter selv jobbet her med Claudes nøgle,
-   laver arbejdet — kun udkast, aldrig noget der sendes — og skriver resultatet
-   tilbage. Jobs ligger ved siden af data, så Claudes svar aldrig giver
-   "data er ændret et andet sted" i browseren. */
+/* ---------- Send til Studio (M15) ----------
+   Selve arbejdet står i server/studio.mts. Studios svar skrives som kommentar på opgaven. */
 
-type JobStatus = "sendt" | "i gang" | "til godkendelse" | "fejlet" | "godkendt" | "kasseret";
-type TaskSnapshot = { title: string; note: string; owner: string; due: string; status: string;
-                      project: string; projectName: string; sprintGoal: string };
-type Job = {
-  id: string; taskId: string; task: TaskSnapshot; instruction: string; startedBy: "knap" | "ejer";
-  status: JobStatus; sessionUrl: string; result: string; error: string; createdAt: string; updatedAt: string;
-};
-type Wanted = Pick<Job, "taskId" | "task" | "instruction" | "startedBy">;
-
-const JOBS = "claude-jobs/";
-const JOBS_KEEP = 100;                 // så mange jobs gemmes i alt …
-const JOBS_LISTED = 40;                // … og så mange vises
-const JOBS_PER_HOUR = 10;
-const AUTO_PER_SAVE = 3;
-const STALE_MS = 2 * 3_600_000;        // et job uden livstegn i to timer tæller ikke længere som i gang
-const FIRE_TIMEOUT_MS = 8000;          // svaret til browseren venter ikke længere
-const MAX_RESULT = 20_000;
-const SNAPSHOT_LIMITS: Record<keyof TaskSnapshot, number> = {
-  title: 200, note: 2000, owner: 60, due: 10, status: 30, project: 60, projectName: 100, sprintGoal: 400
-};
-
-const NOT_CONNECTED = "Claude er ikke forbundet endnu. Sæt CLAUDE_ROUTINE_URL og CLAUDE_ROUTINE_TOKEN " +
-                      "som hemmelighed i Cloudflare (`npx wrangler secret put`) — vejledningen står under Claude-adgang i appen.";
-
-const clip = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
-const isClaude = (owner: unknown) => typeof owner === "string" && owner.trim().toLowerCase() === "claude";
-const busy = (j: Job) => (j.status === "sendt" || j.status === "i gang") && Date.now() - Date.parse(j.updatedAt) < STALE_MS;
-
-function routine() {
-  const url = (env("CLAUDE_ROUTINE_URL") || "").trim();
-  const token = (env("CLAUDE_ROUTINE_TOKEN") || "").trim();
-  return url && token ? { url, token } : null;
-}
-
-function cleanSnapshot(s: any): TaskSnapshot {
-  const out = {} as TaskSnapshot;
-  for (const k of Object.keys(SNAPSHOT_LIMITS) as (keyof TaskSnapshot)[]) out[k] = clip(s?.[k], SNAPSHOT_LIMITS[k]);
-  return out;
-}
-
-// Samme oplysninger, som appen sender med, når du trykker på knappen.
-function snapshotOf(data: any, t: any): TaskSnapshot {
-  const p = data.projects.find((x: any) => x?.id === t.project);
-  const s = data.sprints.find((x: any) => x?.project === t.project && x?.month === t.sprint);
-  return cleanSnapshot({ ...t, projectName: p?.name, sprintGoal: s?.goal });
-}
-
-async function jobIds(store: Store) {
-  const { blobs } = await store.list({ prefix: JOBS });
-  return blobs.map((b) => b.key.slice(JOBS.length)).filter((id) => dateOf(id)).sort().reverse();
-}
-
-async function readJob(store: Store, id: string) {
-  return dateOf(id) ? ((await store.get(JOBS + id, { type: "json" })) as Job | null) : null;
-}
-
-async function readJobs(store: Store, ids: string[]) {
-  return (await Promise.all(ids.map((id) => readJob(store, id)))).filter((j): j is Job => !!j);
-}
-
-async function saveJob(store: Store, job: Job) {
-  job.updatedAt = new Date().toISOString();
-  await store.setJSON(JOBS + job.id, job);
-  return job;
-}
-
-// Opretter jobbene, hvis grænserne tillader det. Selve starten sker i launch().
-async function createJobs(store: Store, wanted: Wanted[]) {
-  const ids = await jobIds(store);
-  const recent = await readJobs(store, ids.slice(0, JOBS_LISTED));
-  let lastHour = ids.filter((id) => Date.now() - dateOf(id)!.getTime() < 3_600_000).length;
-  const jobs: Job[] = [];
-  const skipped: string[] = [];
-  for (const w of wanted) {
-    if (recent.some((j) => j.taskId === w.taskId && busy(j))) {
-      skipped.push(`„${w.task.title}“: Claude arbejder allerede på den.`);
-    } else if (lastHour >= JOBS_PER_HOUR) {
-      skipped.push(`„${w.task.title}“: Claude kan højst sættes i gang ${JOBS_PER_HOUR} gange i timen. Prøv igen senere.`);
-    } else {
-      const now = new Date().toISOString();
-      const job: Job = { id: newId(), ...w, status: "sendt", sessionUrl: "", result: "", error: "", createdAt: now, updatedAt: now };
-      await store.setJSON(JOBS + job.id, job);
-      jobs.push(job);
-      lastHour++;
+export function studioCommenter(store: Store): studio.Commenter {
+  return async (taskId, text) => {
+    try {
+      await saveData(store, "Studio", (data) => {
+        const t = data.tasks.find((x: any) => x?.id === taskId);
+        if (!t) return;                               // opgaven er slettet imens
+        t.comments = [...(Array.isArray(t.comments) ? t.comments : []), { at: new Date().toISOString(), by: "Studio", text }].slice(-100);
+      });
+    } catch (e) {
+      console.error("Studios svar kunne ikke gemmes på opgaven:", e);
+      throw e;
     }
-  }
-  for (const old of ids.slice(Math.max(0, JOBS_KEEP - jobs.length))) await store.delete(JOBS + old);
-  return { jobs, skipped };
+  };
 }
 
-function fireError(status: number, retryAfter: string | null) {
-  if (status === 401) return "Routine-nøglen virker ikke. Lav en ny under routinens API-trigger på claude.ai/code/routines, og ret CLAUDE_ROUTINE_TOKEN i Cloudflare.";
-  if (status === 404) return "Routinen findes ikke. Tjek CLAUDE_ROUTINE_URL i Cloudflare.";
-  if (status === 403) return "Din Claude-konto har ikke adgang til at starte routines.";
-  if (status === 429) {
-    const min = Math.ceil(Number(retryAfter) / 60);
-    return "Claude har nået grænsen for kørsler i timen. " + (min > 0 ? `Prøv igen om ${min} min.` : "Prøv igen senere.");
-  }
-  if (status === 400) return "Claude afviste at starte. Er routinen sat på pause på claude.ai/code/routines?";
-  return `Claude svarer ikke lige nu (fejl ${status}). Prøv igen om lidt.`;
-}
-
-// Starter routinen for et job. Går det galt, står fejlen på jobbet, så den kan ses i appen.
-async function launch(store: Store, job: Job): Promise<Job> {
-  const r = routine();
-  let sessionUrl = "";
-  let error = "";
+async function studioRoutes(req: Request, store: Store, who: Who, path: string) {
   try {
-    if (!r) throw new HttpError(400, NOT_CONNECTED);
-    if (!/^https:\/\/\S+\/fire$/.test(r.url) && !/^http:\/\/(127\.0\.0\.1|localhost)[:/]\S*\/fire$/.test(r.url)) {
-      throw new HttpError(400, "CLAUDE_ROUTINE_URL ser forkert ud. Den skal være den URL, claude.ai viser ved routinens API-trigger, og slutte med /fire.");
+    if (path === "/api/studio" && req.method === "GET") return json(200, await studio.health(env));
+    if (path === "/api/studio/tasks" && req.method === "GET") {
+      await studio.tick(store, env, studioCommenter(store));
+      return json(200, { configured: !!studio.config(env), tasks: await studio.readAll(store) });
     }
-    const res = await fetch(r.url, {
-      method: "POST",
-      headers: { Authorization: "Bearer " + r.token, "anthropic-version": "2023-06-01", "Content-Type": "application/json" },
-      body: JSON.stringify({ text: `HeyOtto OS-job ${job.id}\nOpgave: ${job.task.title}` }),
-      signal: AbortSignal.timeout(FIRE_TIMEOUT_MS)
-    });
-    if (!res.ok) throw new HttpError(502, fireError(res.status, res.headers.get("retry-after")));
-    const body = (await res.json().catch(() => null)) as { claude_code_session_url?: unknown } | null;
-    sessionUrl = typeof body?.claude_code_session_url === "string" ? body.claude_code_session_url : "";
+    if (who !== "dig") return fail(401, "Kun du kan sende opgaver til Studio.");
+    if (path === "/api/studio/tasks" && req.method === "POST") {
+      const body = await readJson(req);
+      const taskId = typeof body?.taskId === "string" ? body.taskId.trim().slice(0, 80) : "";
+      if (!taskId) return fail(400, "Opgaven mangler et id.");
+      const r = await studio.send(store, env, {
+        taskId, title: typeof body.title === "string" ? body.title : "", text: typeof body.text === "string" ? body.text : ""
+      });
+      return json(200, { task: r });
+    }
+    const m = path.match(/^\/api\/studio\/tasks\/([^/]+)$/);
+    if (m && req.method === "DELETE") {
+      await studio.forget(store, decodeURIComponent(m[1]));
+      return json(200, { ok: true });
+    }
+    return fail(400, "Ukendt adresse eller metode: " + req.method + " " + path);
   } catch (e) {
-    error = e instanceof HttpError ? e.message
-      : e instanceof Error && e.name === "TimeoutError" ? "Claude svarede ikke i tide. Måske er den alligevel gået i gang — se efter på claude.ai/code. Ellers prøv igen."
-      : "Kunne ikke nå Claude. Prøv igen om lidt.";
-    if (!(e instanceof HttpError)) console.error("routine-start fejlede:", e);
+    if (e instanceof studio.StudioError) return fail(e.status, e.message);
+    throw e;
   }
-  // Læs jobbet igen: routinen kan allerede have meldt sig.
-  const job2 = (await readJob(store, job.id)) || job;
-  if (sessionUrl) job2.sessionUrl = sessionUrl;
-  if (error && job2.status === "sendt") {
-    job2.status = "fejlet";
-    job2.error = error;
-  }
-  return await saveJob(store, job2);
-}
-
-// Ejer = "Claude" betyder "udfør den". Det gælder kun, når DU gemmer, og kun
-// opgaver, der lige er givet til Claude. Claudes egne gem og gendannelser fra
-// Historik sætter aldrig noget i gang, så Claude ikke kan starte sig selv.
-async function autoStart(p: Platform, store: Store, before: any, data: any) {
-  const had = new Map<string, unknown>((Array.isArray(before?.tasks) ? before.tasks : []).map((t: any) => [t?.id, t?.owner]));
-  const fresh = data.tasks.filter((t: any) => isClaude(t.owner) && !isClaude(had.get(t.id)) &&
-                                              !/^(færdig|faerdig|droppet)$/i.test(String(t.status ?? "").trim()));
-  if (!fresh.length) return null;
-  if (!routine()) return { started: 0, skipped: [NOT_CONNECTED] };
-
-  const now = fresh.slice(0, AUTO_PER_SAVE);
-  const { jobs, skipped } = await createJobs(store, now.map((t: any) => ({
-    taskId: t.id, task: snapshotOf(data, t), instruction: "", startedBy: "ejer" as const
-  })));
-  for (const t of fresh.slice(AUTO_PER_SAVE)) {
-    skipped.push(`„${clip(t.title, 120)}“: højst ${AUTO_PER_SAVE} opgaver startes ad gangen. Åbn den, og tryk ✦ Lad Claude udføre.`);
-  }
-  // Svaret til browseren venter ikke på, at Claude starter. Fejl kan ses på jobbet.
-  for (const job of jobs) p.waitUntil(launch(store, job));
-  return { started: jobs.length, skipped };
-}
-
-async function startByHand(req: Request, store: Store) {
-  const body = await readJson(req);
-  const taskId = clip(body?.taskId, 80);
-  const task = cleanSnapshot(body?.task);
-  if (!taskId || !task.title) return fail(400, "Opgaven skal have et id og en titel.");
-  if (!routine()) return fail(400, NOT_CONNECTED);
-  const { jobs, skipped } = await createJobs(store, [{ taskId, task, instruction: clip(body?.instruction, 2000), startedBy: "knap" }]);
-  if (!jobs.length) return fail(400, skipped[0]);
-  return json(200, { job: await launch(store, jobs[0]) });
-}
-
-// Claude (eller et API-token) melder tilbage på et job. Bruges af /api og /ext.
-export async function getJob(store: Store, id: string) {
-  const job = await readJob(store, id);
-  if (!job) throw new HttpError(404, "Jobbet findes ikke.");
-  return job;
-}
-
-export async function reportJob(store: Store, id: string, body: any) {
-  const job = await getJob(store, id);
-  const status = body?.status;
-  if (!["i gang", "til godkendelse", "fejlet"].includes(status)) {
-    throw new HttpError(400, 'status skal være "i gang", "til godkendelse" eller "fejlet".');
-  }
-  if (job.status === "godkendt" || job.status === "kasseret") {
-    throw new HttpError(410, `Kasper har allerede lukket jobbet (${job.status}). Intet er gemt.`);
-  }
-  if (typeof body.result === "string") {
-    if (body.result.length > MAX_RESULT) throw new HttpError(400, `Resultatet må højst være ${MAX_RESULT} tegn.`);
-    job.result = body.result.trim();
-  }
-  job.error = status === "fejlet" ? clip(body.error, 1000) : "";
-  if (status === "til godkendelse" && !job.result) throw new HttpError(400, "Et job til godkendelse skal have et result.");
-  if (status === "fejlet" && !job.error) throw new HttpError(400, "Skriv i error, hvorfor jobbet fejlede.");
-  job.status = status;
-  return await saveJob(store, job);
-}
-
-async function updateJob(req: Request, store: Store, who: Who, id: string) {
-  const body = await readJson(req);
-  if (who === "Claude") return json(200, { job: await reportJob(store, id, body) });
-  const job = await readJob(store, id);
-  if (!job) return fail(410, "Jobbet findes ikke længere.");
-  if (!["godkendt", "kasseret"].includes(body?.status)) {
-    return fail(400, 'Du kan sætte status til "godkendt" eller "kasseret".');
-  }
-  job.status = body.status;
-  return json(200, { job: await saveJob(store, job) });
-}
-
-async function claudeJobs(req: Request, store: Store, who: Who, path: string) {
-  if (path === "/api/claude/jobs") {
-    if (req.method === "GET") {
-      return json(200, { connected: !!routine(), jobs: await readJobs(store, (await jobIds(store)).slice(0, JOBS_LISTED)) });
-    }
-    if (req.method === "POST") {
-      if (who !== "dig") return fail(401, "Claude kan ikke sætte sig selv i gang — det gør Kasper i appen.");
-      return await startByHand(req, store);
-    }
-    return fail(405, "Brug GET eller POST.");
-  }
-  const id = decodeURIComponent(path.slice("/api/claude/jobs/".length));
-  if (req.method === "GET") {
-    const job = await readJob(store, id);
-    return job ? json(200, { job }) : fail(410, "Jobbet findes ikke længere.");
-  }
-  if (req.method === "PUT") return await updateJob(req, store, who, id);
-  return fail(405, "Brug GET eller PUT.");
 }
 
 /* ---------- Google: konti og kalender ----------
@@ -858,7 +668,7 @@ export async function handle(req: Request, p: Platform): Promise<Response> {
 
     if (path === "/api/data") {
       if (method === "GET") return await getData(store);
-      if (method === "PUT") return await putData(req, p, store, who);
+      if (method === "PUT") return await putData(req, store, who);
       return fail(405, "Brug GET eller PUT.");
     }
     if (path === "/api/history" && method === "GET") return await history(store);
@@ -868,7 +678,7 @@ export async function handle(req: Request, p: Platform): Promise<Response> {
       if (who !== "dig") return fail(401, "Kun du kan lave og tilbagekalde API-tokens — log ind i appen.");
       return await tokenRoutes(req, store, path);
     }
-    if (path === "/api/claude/jobs" || /^\/api\/claude\/jobs\/[^/]+$/.test(path)) return await claudeJobs(req, store, who, path);
+    if (path === "/api/studio" || path.startsWith("/api/studio/")) return await studioRoutes(req, store, who, path);
     if (path === "/api/google" || path.startsWith("/api/google/")) return await googleRoutes(req, store, who, path);
     if (path === "/api/calendar" || path === "/api/calendar/refresh") return await calendarRoutes(req, store, who, path);
     if (path === "/api/alerts" || path.startsWith("/api/alerts/") || path.startsWith("/api/push/")) return await alertRoutes(req, store, who, path);
