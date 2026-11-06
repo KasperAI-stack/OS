@@ -25,4 +25,7 @@ export type Platform = {
   // Start en kørsel, der allerede ligger i kø (agent-runs/<id>). false = startsignalet
   // gik tabt; den planlagte oprydning starter den igen.
   startRun(id: string): Promise<boolean>;
+  // Rate limit pr. nøgle (fx et API-tokens id): true = kaldet må gå igennem.
+  // Workeren bruger Cloudflares Rate Limiting (60 pr. minut). Udeladt = ingen grænse.
+  rateLimit?(key: string): Promise<boolean>;
 };

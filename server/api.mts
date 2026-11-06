@@ -62,10 +62,12 @@ import { configured as agentConfigured } from "./agent/runtime.mts";
 import * as inbox from "./inbox.mts";
 import * as plans from "./plans.mts";
 import type { DocStore, Env, Platform } from "./platform.mts";
+import * as tokens from "./tokens.mts";
 
 type Store = DocStore;
 type Who = "dig" | "Claude";
-type IndexEntry = { id: string; by: Who; projects: number; tasks: number; restoredFrom?: string };
+// by: "dig", "Claude" eller navnet på det API-token, der gemte (fx "Studio")
+type IndexEntry = { id: string; by: string; projects: number; tasks: number; restoredFrom?: string };
 
 const DATA_KEY = "data";
 const INDEX_KEY = "historik-index";
@@ -83,7 +85,7 @@ const MAX_BODY = 4_000_000;
 const CONFLICT = "Data er ændret et andet sted, siden du åbnede siden — fx på telefonen eller af Claude. " +
                  "Intet er gemt. Genindlæs for at se de nye data; dine ugemte ændringer kan gendannes bagefter.";
 
-class HttpError extends Error {
+export class HttpError extends Error {
   status: number;
   constructor(status: number, message: string) {
     super(message);
@@ -92,7 +94,7 @@ class HttpError extends Error {
 }
 
 // Tom start: Drift og Ad hoc findes altid, fordi kapacitetsmodellen regner i dem.
-function emptyData() {
+export function emptyData() {
   return {
     meta: { updated: "", note: "" },
     kapacitet: { contract: 37, meetings: 6, admin: 5, other: 2, ceiling: 85, adhoc: 6 },
@@ -215,7 +217,7 @@ function revOf(found: { metadata?: Record<string, unknown> } | null) {
 }
 
 // Groft skema-tjek. Dashboardet viser selv de finere problemer (ukendt status osv.).
-function checkData(d: any): string | null {
+export function checkData(d: any): string | null {
   if (!d || typeof d !== "object" || Array.isArray(d)) return "data skal være et objekt.";
   for (const k of ["projects", "sprints", "tasks", "uger"]) {
     if (!Array.isArray(d[k])) return `data.${k} skal være en liste.`;
@@ -253,7 +255,7 @@ async function readIndex(store: Store): Promise<IndexEntry[]> {
 const newId = () => new Date().toISOString().replace(/[:.]/g, "-") + "-" + randomBytes(2).toString("hex");
 
 // Hver gemt version lægges også i historikken — de ældste ryddes, så der højst er KEEP.
-async function write(store: Store, data: any, by: Who, restoredFrom?: string) {
+async function write(store: Store, data: any, by: string, restoredFrom?: string) {
   const id = newId();
   const text = JSON.stringify(data);
   await store.set(DATA_KEY, text, { metadata: { rev: id } });
@@ -264,6 +266,27 @@ async function write(store: Store, data: any, by: Who, restoredFrom?: string) {
   await store.setJSON(INDEX_KEY, index.slice(0, KEEP));
   for (const old of index.slice(KEEP)) await store.delete(HISTORY + old.id);
   return id;
+}
+
+export async function readData(store: Store) {
+  const found = await store.getWithMetadata(DATA_KEY, { type: "json" });
+  return found ? found.data : emptyData();
+}
+
+// Ændring fra serveren (API'et /ext): læs, ret, gem. Har nogen gemt imens, prøves forfra,
+// så en ændring aldrig overskriver en anden. Står i Historik med navnet i by.
+export async function saveData<T>(store: Store, by: string, change: (data: any) => T) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const found = await store.getWithMetadata(DATA_KEY, { type: "json" });
+    const rev = revOf(found);
+    const data = found ? found.data : emptyData();
+    const result = change(data);
+    const problem = checkData(data);
+    if (problem) throw new HttpError(400, problem);
+    if (revOf(await store.getMetadata(DATA_KEY)) !== rev) continue;
+    return { rev: await write(store, data, by), result };
+  }
+  throw new HttpError(409, "Data blev ændret flere gange samtidig. Prøv igen.");
 }
 
 async function getData(store: Store) {
@@ -318,6 +341,30 @@ async function claudeKey(req: Request, store: Store) {
     return json(200, { key, createdAt });
   }
   return fail(405, "Metoden understøttes ikke her.");
+}
+
+/* ---------- API-tokens (M11) ----------
+   Til /ext og /mcp. Laves og tilbagekaldes kun af dig (cookie). Tokenet vises én gang. */
+
+async function tokenRoutes(req: Request, store: Store, path: string) {
+  if (path === "/api/tokens" && req.method === "GET") {
+    return json(200, { tokens: (await tokens.listTokens(store)).map(tokens.publicToken), scopes: tokens.SCOPES });
+  }
+  if (path === "/api/tokens" && req.method === "POST") {
+    const body = await readJson(req);
+    try {
+      const { token, record } = await tokens.createToken(store, body?.name, body?.scopes);
+      return json(200, { token, record: tokens.publicToken(record) });
+    } catch (e) {
+      return fail(400, e instanceof Error ? e.message : String(e));
+    }
+  }
+  const one = path.match(/^\/api\/tokens\/([0-9a-f]{16})$/);
+  if (one && req.method === "DELETE") {
+    const rec = await tokens.revokeToken(store, one[1]);
+    return rec ? json(200, { record: tokens.publicToken(rec) }) : fail(410, "Tokenet findes ikke.");
+  }
+  return fail(400, "Ukendt adresse eller metode: " + req.method + " " + path);
 }
 
 /* ---------- Claude udfører opgaver ----------
@@ -836,6 +883,10 @@ export async function handle(req: Request, p: Platform): Promise<Response> {
     if (path === "/api/claude-key") {
       if (who !== "dig") return fail(401, "Kun du kan lave eller fjerne Claudes nøgle — log ind i appen.");
       return await claudeKey(req, store);
+    }
+    if (path === "/api/tokens" || path.startsWith("/api/tokens/")) {
+      if (who !== "dig") return fail(401, "Kun du kan lave og tilbagekalde API-tokens — log ind i appen.");
+      return await tokenRoutes(req, store, path);
     }
     if (path === "/api/claude/jobs" || /^\/api\/claude\/jobs\/[^/]+$/.test(path)) return await claudeJobs(req, store, who, path);
     if (path === "/api/google" || path.startsWith("/api/google/")) return await googleRoutes(req, store, who, path);

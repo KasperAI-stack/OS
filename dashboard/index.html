@@ -641,6 +641,17 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
               color: var(--muted); font-weight: 500; margin-bottom: 6px; }
 .set-sec .hint { margin-top: 8px; }
 .set-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.tok-list { margin: 0 0 12px; }
+.tok-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.tok-row .tok-main { flex: 1; min-width: 0; }
+.tok-row.revoked .tok-main { opacity: .55; }
+.tok-new { margin: 0 0 12px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; }
+.tok-new code { display: block; margin: 6px 0 8px; word-break: break-all; font-size: 12px; }
+.tok-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.tok-form input[type=text] { flex: 1; min-width: 160px; }
+.tcomments { display: flex; flex-direction: column; gap: 8px; }
+.tcom { margin: 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; white-space: pre-wrap; }
+.tcom .tcom-hd { display: block; font-size: 12px; opacity: .7; margin-bottom: 2px; }
 .set-ft { display: flex; align-items: center; gap: 10px; padding: 14px 24px 18px; border-top: 1px solid var(--border);
           position: sticky; bottom: 0; background: var(--surface); }
 .set-ft .hint { margin-right: auto; }
@@ -1901,6 +1912,11 @@ a.btn { text-decoration: none; }
       (isNew ? "" : forecastLine(t)) +
       field("Note", '<textarea id="f-note" rows="3" maxlength="400">' + esc(t.note) + "</textarea>",
             isNew ? "skriv Claude som ejer, så går Claude i gang med opgaven, når du har gemt" : "") +
+      (!isNew && Array.isArray(t.comments) && t.comments.length ? '<div class="frow"><span class="flab">Kommentarer</span><div class="tcomments">' +
+        t.comments.slice().reverse().map(function (c) {
+          return '<p class="tcom"><span class="tcom-hd"><b>' + esc(c.by) + "</b> · " +
+            esc(new Date(c.at).toLocaleString("da-DK", { dateStyle: "medium", timeStyle: "short" })) + "</span>" + esc(c.text) + "</p>";
+        }).join("") + "</div></div>" : "") +
       (isNew ? "" : '<div class="cbox" id="cbox" data-id="' + esc(t.id) + '">' + jobBox(t) + "</div>"),
 
       function () {
@@ -2055,6 +2071,15 @@ a.btn { text-decoration: none; }
     if (a === "pushon")  { enablePush(el); return; }
     if (a === "pushoff") { disablePush(el); return; }
     if (a === "pushtest") { testPush(el); return; }
+    if (a === "tokennew") { createApiToken(el); return; }
+    if (a === "copytoken") { copyText(NEW_TOKEN, "Tokenet er kopieret."); return; }
+    if (a === "tokenrevoke") {
+      if (!confirm("Tilbagekald „" + el.getAttribute("data-name") + "“? Det holder op med at virke med det samme og kan ikke genoplives.")) return;
+      api("DELETE", "/api/tokens/" + encodeURIComponent(el.getAttribute("data-id")), {})
+        .then(function () { flash("Tokenet er tilbagekaldt."); return loadTokens(); })
+        .catch(function (err) { flash("Kunne ikke tilbagekalde: " + err.message, true); });
+      return;
+    }
     if (a === "snooze") {
       var skey = el.getAttribute("data-key");
       var until = FC.localIso(FC.addDays(new Date(), Number(el.getAttribute("data-days")) || 1));
@@ -3058,8 +3083,9 @@ a.btn { text-decoration: none; }
     { id: "alarmer", title: "Alarmer", html: function () { return alarmsHtml(); } },
     { id: "forbindelser", title: "Forbindelser", html: function () { return connectionsHtml(); } },
     { id: "otto", title: "Otto (agent)", html: function () { return ottoSettingsHtml(); } },
+    { id: "tokens", title: "API-tokens", html: function () { return tokensHtml(); } },
     { id: "konto", title: "Konto og adgang", html: function () {
-        return '<p class="hint" style="margin-top:0">Historik, Claudes nøgle og log ud.</p>' +
+        return '<p class="hint" style="margin-top:0">Historik, Claudes nøgle og log ud. API-tokens til andre værktøjer står ovenfor.</p>' +
           '<div class="set-links">' +
             '<a class="btn" href="#versioner" data-act="settingsclose">Historik</a>' +
             '<a class="btn" href="#claude" data-act="settingsclose">Claude-adgang</a>' +
@@ -3218,6 +3244,48 @@ a.btn { text-decoration: none; }
       '<p class="hint">Vejledningen står også i <code>dashboard/README.md</code> under „Google: kalender og mail“.</p>';
   }
 
+  /* ---------- API-tokens (M11) ----------
+     Til /ext (og MCP fra M14): Studio, n8n og andre værktøjer. Serveren gemmer kun en hash,
+     så tokenet vises én gang, lige når det er lavet. */
+  var TOKENS = null, NEW_TOKEN = "";
+  function loadTokens() {
+    return api("GET", "/api/tokens")
+      .then(function (r) { TOKENS = r.tokens || []; })
+      .catch(function (e) { TOKENS = { error: e.message }; })
+      .then(function () { rerenderSettingsSection("tokens"); });
+  }
+  function tokensHtml() {
+    var intro = '<p class="hint" style="margin-top:0">Til Studio, n8n og andre værktøjer: API\'et på <code>/ext</code> med <code>Authorization: Bearer &lt;token&gt;</code>. ' +
+      "Et token kan læse og/eller skrive tasks, men aldrig slette, se Historik eller godkende noget. Ændringer står i Historik med tokenets navn.</p>";
+    if (!TOKENS) return intro + '<p class="hint">Henter …</p>';
+    if (TOKENS.error) return intro + '<p class="hint">Kunne ikke hente tokens: ' + esc(TOKENS.error) + "</p>";
+    var day = function (iso) { return iso ? fmtDate(iso.slice(0, 10)) : "aldrig"; };
+    var fresh = NEW_TOKEN ? '<div class="tok-new"><b>Kopiér tokenet nu.</b> Det vises kun denne ene gang.<code id="tok-new">' + esc(NEW_TOKEN) + "</code>" +
+      '<button class="btn" data-act="copytoken" type="button">Kopiér</button></div>' : "";
+    var rows = TOKENS.length ? '<div class="tok-list">' + TOKENS.map(function (t) {
+      return '<div class="tok-row' + (t.revokedAt ? " revoked" : "") + '"><div class="tok-main"><b>' + esc(t.name) + "</b> · " + esc(t.scopes.join(" + ")) +
+        '<br><span class="hint">Lavet ' + day(t.createdAt) + " · sidst brugt " + day(t.lastUsedAt) + (t.revokedAt ? " · tilbagekaldt " + day(t.revokedAt) : "") + "</span></div>" +
+        (t.revokedAt ? "" : '<button class="btn" data-act="tokenrevoke" data-id="' + esc(t.id) + '" data-name="' + esc(t.name) + '" type="button">Tilbagekald</button>') + "</div>";
+    }).join("") + "</div>" : '<p class="hint">Ingen tokens endnu.</p>';
+    return intro + fresh + rows +
+      '<div class="tok-form"><input id="tok-name" type="text" maxlength="60" placeholder="Navn, fx Studio" aria-label="Tokenets navn">' +
+      '<label class="gcal"><input type="checkbox" id="tok-read" checked> <span>Læse</span></label>' +
+      '<label class="gcal"><input type="checkbox" id="tok-write"> <span>Skrive</span></label>' +
+      '<button class="btn primary" data-act="tokennew" type="button">Lav token</button></div>';
+  }
+  function createApiToken(el) {
+    var name = (document.getElementById("tok-name").value || "").trim();
+    var scopes = [];
+    if (document.getElementById("tok-read").checked) scopes.push("read");
+    if (document.getElementById("tok-write").checked) scopes.push("write");
+    if (!name) { flash("Giv tokenet et navn, fx Studio.", true); return; }
+    if (!scopes.length) { flash("Vælg mindst én rettighed.", true); return; }
+    el.disabled = true;
+    api("POST", "/api/tokens", { name: name, scopes: scopes })
+      .then(function (r) { NEW_TOKEN = r.token; return loadTokens(); })
+      .catch(function (err) { flash("Kunne ikke lave tokenet: " + err.message, true); el.disabled = false; });
+  }
+
   var SET_SCROLL_TO = null;
   function rerenderSettingsSection(id) {
     if (!setDlg.open) return;
@@ -3256,6 +3324,7 @@ a.btn { text-decoration: none; }
     loadGoogle();
     loadAlerts();
     loadAgent();
+    loadTokens();
     checkDevice();
     setDlg.innerHTML =
       '<div class="set-hd"><h3 id="set-title">Indstillinger</h3>' +
@@ -3293,6 +3362,7 @@ a.btn { text-decoration: none; }
     var g = document.querySelector('#main [data-act="settings"].gear-btn');
     if (g && closedByKey) g.focus();
     closedByKey = false;
+    NEW_TOKEN = "";   // et nyt token vises kun, så længe panelet er åbent
   });
 
   function applyCap(el) {

@@ -23,6 +23,8 @@
   "d1_databases": [
     { "binding": "DB", "database_name": "heyotto-tasks", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
   ],
+  // /ext og /mcp: højst 60 kald i minuttet pr. token
+  "ratelimits": [{ "name": "EXT_LIMITER", "namespace_id": "1001", "simple": { "limit": 60, "period": 60 } }],
   "queues": {
     "producers": [{ "binding": "AGENT_QUEUE", "queue": "heyotto-tasks-otto" }],
     "consumers": [{ "queue": "heyotto-tasks-otto", "max_batch_size": 1, "max_retries": 0 }]
@@ -35,6 +37,7 @@
       "d1_databases": [
         { "binding": "DB", "database_name": "heyotto-tasks-test", "database_id": "cd14081d-2c54-46a0-9e62-8430bbe9d568", "migrations_dir": "migrations" }
       ],
+      "ratelimits": [{ "name": "EXT_LIMITER", "namespace_id": "1002", "simple": { "limit": 60, "period": 60 } }],
       "queues": {
         "producers": [{ "binding": "AGENT_QUEUE", "queue": "heyotto-tasks-otto-test" }],
         "consumers": [{ "queue": "heyotto-tasks-otto-test", "max_batch_size": 1, "max_retries": 0 }]

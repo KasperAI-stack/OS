@@ -3,7 +3,8 @@
   "private": true,
   "description": "HeyOtto Tasks — appen og serveren bag den på Cloudflare Workers. Se dashboard/README.md.",
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.5.0"
+    "@anthropic-ai/sdk": "^1.5.0",
+    "hono": "^4.13.16"
   },
   "devDependencies": {
     "web-push": "^3.6.7",

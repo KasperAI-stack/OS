@@ -146,6 +146,30 @@ Du er logget ind med enten session-cookien eller `Authorization: Bearer <nøgle>
 
 **Udrulning.** `npm run cf:deploy:test` til testmiljøet, `npx wrangler deploy --env=""` til produktion.
 
+## API'et /ext (til andre værktøjer)
+
+Studio, n8n og andre værktøjer bruger `/ext` med et API-token. Tokens laves og tilbagekaldes under **Indstillinger → API-tokens**. Tokenet vises én gang, og kun en hash gemmes. Koden står i `server/ext.mts` og `server/tokens.mts`.
+
+```
+Authorization: Bearer tsk_…
+```
+
+| Kald | Rettighed | Hvad |
+|---|---|---|
+| `GET /ext/health` | alle | `{ ok, token, scopes }` |
+| `GET /ext/tasks?status=&project=&due_before=&include_done=true` | `read` | Åbne tasks (eller alle med `include_done`), med projekt og kommentarer |
+| `GET /ext/tasks/{id}` | `read` | Én task |
+| `POST /ext/tasks` | `write` | Ny task: `title` (krævet), `project`, `status`, `due`, `owner`, `note`, `hours`, `remaining`, `priority`, `sprint`. Uden `project` havner den under "Uden projekt". Svarer `201` |
+| `PATCH /ext/tasks/{id}` | `write` | Ret de samme felter (ikke `project`) |
+| `POST /ext/tasks/{id}/comments` | `write` | `{ text }` (højst 4.000 tegn). Vises på opgaven i appen. Svarer `201` |
+| `GET /ext/projects` | `read` | Projekter med antal åbne og færdige tasks |
+| `GET /ext/routines` | `read` | Rutinerne |
+
+- **Ingen sletning**, ingen Historik og ingen tokens via `/ext`. Ændringer gemmes med versionstjek og står i Historik med tokenets navn, så de kan fortrydes.
+- **Grænser:** 60 kald i minuttet pr. token (Cloudflares Rate Limiting, omtrentlig pr. datacenter), body højst 256 KB.
+- **Fejl** er JSON `{ "error": "…" }` på dansk: `400` ugyldigt, `401` token, `403` rettighed, `404` ukendt task eller adresse, `413` for stor, `429` for mange kald.
+- **Log:** én linje pr. kald med tokenets navn, metode, sti og status. Tokens renses (`tsk_***`) i logs og stier.
+
 ## Forsiden: kapacitet
 
 Dashboardet åbner på kapacitetskontrollen, fordi det er dét, man åbner det for: hvor mange timer er der reelt tilbage, når drift, projekter og det uplanlagte er trukket fra.
@@ -379,6 +403,7 @@ Et epic-filter fra ét projekt tømmer ikke et andet: gælder filteret ikke for 
 
 | `routine` | et `id` fra `rutiner` eller udeladt | Sat, når opgaven er én forekomst af en rutine. Id'et er `r-<rutine>-<dato>` |
 | `source` | `{ type: "gmail", id, url }` eller udeladt | Sat, når opgaven kom fra Indbakken |
+| `comments` | `[{ at, by, text }]` eller udeladt | Kommentarer fra API'et `/ext` (fx Studio). `by` er tokenets navn. Højst 100 pr. opgave |
 
 Projekter har desuden `kind` (`drift` / `projekt` / `adhoc`), som afgør hvilken bås deres timer havner i på forsiden. Kun `projekt` vises under **Projekter** i sidebaren. Projektet med `kind: "adhoc"` er **"Uden projekt"**: tasks dér er løse tasks, og deres timer trækker først fra ad hoc-bufferen. `drift` vises under **Rutiner**.
 

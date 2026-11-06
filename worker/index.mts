@@ -1,6 +1,7 @@
 /* HeyOtto Tasks på Cloudflare Workers.
 
-     fetch       /api/* → API'et (server/api.mts). Alt andet: appens statiske filer
+     fetch       /api/* → appens API (server/api.mts). /ext/* → det offentlige API med
+                 tokens (server/ext.mts). Alt andet: appens statiske filer
                  (dashboard/), som Cloudflare serverer uden om Workeren.
      queue       én Otto-kørsel pr. besked (Cloudflare Queue)
      scheduled   hvert 15. minut: kalender + Ottos planlagte udløser. Hver time: alarmer.
@@ -9,6 +10,7 @@
    Google-nøgler) sættes med `wrangler secret put` og ligger aldrig i repoet. */
 
 import { handle } from "../server/api.mts";
+import { ext } from "../server/ext.mts";
 import { alertsTick, calendarTick, runAgent, scheduleTick } from "../server/jobs.mts";
 import type { Env as EnvFn, Platform } from "../server/platform.mts";
 import { d1Store, type D1Like } from "./store.mts";
@@ -19,6 +21,7 @@ export type WorkerEnv = {
   DB: D1Like;
   ASSETS: { fetch(req: Request): Promise<Response> };
   AGENT_QUEUE: { send(body: { runId: string }): Promise<unknown> };
+  EXT_LIMITER?: { limit(opts: { key: string }): Promise<{ success: boolean }> };   // 60 kald/min pr. token
   APP_URL?: string;              // appens egen https-adresse (links i notifikationer, VAPID)
   [k: string]: unknown;
 };
@@ -48,7 +51,8 @@ export function platform(req: Request, env: WorkerEnv, ctx: Ctx): Platform {
     env: envOf(env),
     ip: req.headers.get("cf-connecting-ip") || "",
     waitUntil: (p) => ctx.waitUntil(p),
-    startRun: startRun(env)
+    startRun: startRun(env),
+    rateLimit: async (key) => (env.EXT_LIMITER ? (await env.EXT_LIMITER.limit({ key })).success : true)
   };
 }
 
@@ -56,6 +60,7 @@ export default {
   async fetch(req: Request, env: WorkerEnv, ctx: Ctx): Promise<Response> {
     const path = new URL(req.url).pathname;
     if (path === "/api" || path.startsWith("/api/")) return handle(req, platform(req, env, ctx));
+    if (path === "/ext" || path.startsWith("/ext/")) return ext.fetch(req, { p: platform(req, env, ctx) });
     return env.ASSETS.fetch(req);
   },
 

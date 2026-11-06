@@ -1,6 +1,11 @@
 # M11: API-tokens og Tasks' eget API (`/ext`)
 
-**Status (2026-11-06):** planlagt. Svarer til M1 i Studios guide. Bygger på M10.
+**Status (2026-11-06):** bygget og deployet i testmiljøet (branchen `claude/m10-cloudflare`). 8 nye tests (i alt 28). Testet udefra: `401` uden og med forkert eller slettet token, opret, ret og kommentér, og `429` (Cloudflares Rate Limiting slog til ved kald nr. 66, fordi den tæller omtrentligt pr. datacenter; i testen i hukommelsen præcist ved nr. 61).
+
+Afvigelser fra planen:
+- Tokens ligger i D1-lageret som `api-tokens/<sha256>` (samme lager som resten) i stedet for en egen tabel. Opslag sker direkte på hashen.
+- Claude-nøglen er ikke flyttet ind som token, fordi Tasks starter forfra (M13). `heyotto-os-data`-skillen skifter til et token, når Tasks går live.
+- Kommentarer er et nyt felt på tasks (`comments: [{ at, by, text }]`) og vises i opgave-dialogen. Svarer til M1 i Studios guide. Bygger på M10.
 
 > "jeg vil gerne have at OS og studio ligger som dedikerede tools, hvor jeg kan bygge API indgange"
 
