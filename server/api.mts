@@ -1,8 +1,7 @@
 /* HeyOtto Tasks — API'et bag appen.
 
-   Alt indhold ligger som JSON i lageret (Netlify Blobs eller D1 på Cloudflare, se
-   platform.mts). Ingen filer. Netlify kalder handle() fra netlify/functions/api.mts,
-   Cloudflare fra worker/index.mts.
+   Alt indhold ligger som JSON i lageret (D1 på Cloudflare, se worker/store.mts).
+   Ingen filer. Workeren (worker/index.mts) kalder handle() for alt under /api.
 
      POST   /api/login                       log ind med adgangskoden → session-cookie
      POST   /api/logout                      log ud
@@ -51,9 +50,7 @@
 
    Mangler adgangskoden, svarer alt med 503. Der er aldrig en åben dør.
 
-   API'et svarer aldrig 403 eller 404: Netlify prøver ved de koder at finde en
-   statisk side i stedet (/api/login.html …), og så kommer det forkerte svar frem.
-   Afvisninger er derfor 400/401, og en forsvundet version er 410. */
+   Afvisninger er 400/401, og en forsvundet version er 410. */
 
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import * as google from "./google.mts";
@@ -64,9 +61,9 @@ import { enqueue } from "./agent/queue.mts";
 import { configured as agentConfigured } from "./agent/runtime.mts";
 import * as inbox from "./inbox.mts";
 import * as plans from "./plans.mts";
-import type { Blobs, Env, Platform } from "./platform.mts";
+import type { DocStore, Env, Platform } from "./platform.mts";
 
-type Store = Blobs;
+type Store = DocStore;
 type Who = "dig" | "Claude";
 type IndexEntry = { id: string; by: Who; projects: number; tasks: number; restoredFrom?: string };
 
@@ -325,7 +322,7 @@ async function claudeKey(req: Request, store: Store) {
 
 /* ---------- Claude udfører opgaver ----------
    Et job er én opgave, Claude er sat til at udføre. HeyOtto OS starter en
-   Claude Code Routine (CLAUDE_ROUTINE_URL og CLAUDE_ROUTINE_TOKEN i Netlify) og
+   Claude Code Routine (hemmelighederne CLAUDE_ROUTINE_URL og CLAUDE_ROUTINE_TOKEN i Cloudflare) og
    sender kun job-id'et med. Routinen henter selv jobbet her med Claudes nøgle,
    laver arbejdet — kun udkast, aldrig noget der sendes — og skriver resultatet
    tilbage. Jobs ligger ved siden af data, så Claudes svar aldrig giver
@@ -346,14 +343,14 @@ const JOBS_LISTED = 40;                // … og så mange vises
 const JOBS_PER_HOUR = 10;
 const AUTO_PER_SAVE = 3;
 const STALE_MS = 2 * 3_600_000;        // et job uden livstegn i to timer tæller ikke længere som i gang
-const FIRE_TIMEOUT_MS = 8000;          // Netlify giver funktionen 10 sekunder
+const FIRE_TIMEOUT_MS = 8000;          // svaret til browseren venter ikke længere
 const MAX_RESULT = 20_000;
 const SNAPSHOT_LIMITS: Record<keyof TaskSnapshot, number> = {
   title: 200, note: 2000, owner: 60, due: 10, status: 30, project: 60, projectName: 100, sprintGoal: 400
 };
 
 const NOT_CONNECTED = "Claude er ikke forbundet endnu. Sæt CLAUDE_ROUTINE_URL og CLAUDE_ROUTINE_TOKEN " +
-                      "i Netlify — vejledningen står under Claude-adgang i appen.";
+                      "som hemmelighed i Cloudflare (`npx wrangler secret put`) — vejledningen står under Claude-adgang i appen.";
 
 const clip = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 const isClaude = (owner: unknown) => typeof owner === "string" && owner.trim().toLowerCase() === "claude";
@@ -422,8 +419,8 @@ async function createJobs(store: Store, wanted: Wanted[]) {
 }
 
 function fireError(status: number, retryAfter: string | null) {
-  if (status === 401) return "Routine-nøglen virker ikke. Lav en ny under routinens API-trigger på claude.ai/code/routines, og ret CLAUDE_ROUTINE_TOKEN i Netlify.";
-  if (status === 404) return "Routinen findes ikke. Tjek CLAUDE_ROUTINE_URL i Netlify.";
+  if (status === 401) return "Routine-nøglen virker ikke. Lav en ny under routinens API-trigger på claude.ai/code/routines, og ret CLAUDE_ROUTINE_TOKEN i Cloudflare.";
+  if (status === 404) return "Routinen findes ikke. Tjek CLAUDE_ROUTINE_URL i Cloudflare.";
   if (status === 403) return "Din Claude-konto har ikke adgang til at starte routines.";
   if (status === 429) {
     const min = Math.ceil(Number(retryAfter) / 60);
@@ -549,7 +546,7 @@ async function claudeJobs(req: Request, store: Store, who: Who, path: string) {
 }
 
 /* ---------- Google: konti og kalender ----------
-   Selve arbejdet står i netlify/lib/google.mts. Kalenderen ligger uden for data,
+   Selve arbejdet står i server/google.mts. Kalenderen ligger uden for data,
    så en synk aldrig giver "data er ændret et andet sted" i browseren. */
 
 function redirect(location: string) {
@@ -628,7 +625,7 @@ async function calendarRoutes(req: Request, store: Store, who: Who, path: string
 }
 
 /* ---------- Alarmer og push ----------
-   Reglerne står i dashboard/lib/forecast.mjs, kørslen og lageret i netlify/lib/alerts.mts.
+   Reglerne står i dashboard/lib/forecast.mjs, kørslen og lageret i server/alerts.mts.
    Udsættelser ligger på serveren, så de gælder på alle enheder. */
 
 const isoDay = (v: unknown) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
@@ -672,13 +669,13 @@ async function alertRoutes(req: Request, store: Store, who: Who, path: string) {
 }
 
 /* ---------- Otto: agent-kernen (M7) ----------
-   Selve kørslerne sker i baggrundsfunktionen (netlify/functions/agent-background.mts).
+   Selve kørslerne sker i køen (worker/index.mts → queue).
    Her ligger status, indstillinger, loggen og "start en kørsel". Kun du kan starte
    Otto og ændre indstillingerne. Claude (routinen) kan læse loggen. */
 
 const AGENT_PER_HOUR = 30;
 const AGENT_INPUT_MAX = 2000;
-const AGENT_NOT_SET_UP = "Otto er ikke sat op endnu: Claude API mangler. Slå AI Gateway til i Netlify, eller sæt ANTHROPIC_API_KEY. " +
+const AGENT_NOT_SET_UP = "Otto er ikke sat op endnu: Claude API mangler. Sæt ANTHROPIC_API_KEY som hemmelighed i Cloudflare (`npx wrangler secret put`). " +
                          "Vejledningen står under Indstillinger → Otto.";
 
 const agentReady = () => agentConfigured(env);
@@ -809,7 +806,7 @@ export async function handle(req: Request, p: Platform): Promise<Response> {
     const password = configuredPassword();
     if (!password) {
       return fail(503, "HeyOtto OS er ikke sat op endnu: sæt en adgangskode på mindst " + MIN_PASSWORD +
-                       " tegn som miljøvariablen HEYOTTO_PASSWORD i Netlify.");
+                       " tegn som hemmeligheden HEYOTTO_PASSWORD i Cloudflare (`npx wrangler secret put HEYOTTO_PASSWORD`).");
     }
     const store = p.store;
 

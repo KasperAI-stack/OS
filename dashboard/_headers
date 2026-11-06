@@ -1,4 +1,4 @@
-# Samme headers som i netlify.toml, så de også gælder på Cloudflare Workers (static assets).
+# Headers på appens statiske filer (Cloudflare Workers static assets).
 
 /*
   X-Frame-Options: DENY

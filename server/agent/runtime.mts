@@ -1,4 +1,4 @@
-/* HeyOtto OS — Ottos kørselsmotor: en tool use-løkke mod Claude API.
+/* HeyOtto Tasks — Ottos kørselsmotor: en tool use-løkke mod Claude API.
 
    Send beskeder + værktøjsliste → udfør de værktøjskald, Claude beder om → send
    resultaterne tilbage → gentag, til Claude er færdig. Løkken er skrevet i hånden
@@ -9,9 +9,8 @@
    Dagsbudgettet tjekkes før HVERT kald til Claude. Når det er nået, stopper kørslen,
    og du får én push-besked om dagen.
 
-   Claude kaldes med det officielle SDK. Nøglen kommer fra Netlify AI Gateway
-   (ANTHROPIC_API_KEY og ANTHROPIC_BASE_URL sættes automatisk) eller fra din egen
-   ANTHROPIC_API_KEY i Netlify. Koden er den samme. */
+   Claude kaldes med det officielle SDK med nøglen ANTHROPIC_API_KEY (en hemmelighed i
+   Cloudflare, som Workeren også lægger i process.env, hvor SDK'et læser den). */
 
 import Anthropic from "@anthropic-ai/sdk";
 import { BASE_PROMPT, KINDS, costUsd } from "./kinds.mts";
@@ -47,9 +46,9 @@ export function configured(env: (k: string) => string | undefined = (k) => proce
 }
 
 function apiError(e: unknown) {
-  if (e instanceof Anthropic.AuthenticationError) return "Claude API afviste nøglen. Tjek ANTHROPIC_API_KEY i Netlify, eller fjern den, så AI Gateway bruges.";
+  if (e instanceof Anthropic.AuthenticationError) return "Claude API afviste nøglen. Tjek ANTHROPIC_API_KEY i Cloudflare (`npx wrangler secret put ANTHROPIC_API_KEY`).";
   if (e instanceof Anthropic.PermissionDeniedError) return "Nøglen har ikke adgang til modellen. Vælg en anden model under Indstillinger → Otto.";
-  if (e instanceof Anthropic.NotFoundError) return "Modellen findes ikke hos Claude API (eller AI Gateway). Vælg en anden model under Indstillinger → Otto.";
+  if (e instanceof Anthropic.NotFoundError) return "Modellen findes ikke hos Claude API. Vælg en anden model under Indstillinger → Otto.";
   if (e instanceof Anthropic.RateLimitError) return "Claude API har for travlt lige nu (for mange kald). Prøv igen om lidt.";
   if (e instanceof Anthropic.BadRequestError) return "Claude API afviste kaldet: " + clip(e.message, 300);
   if (e instanceof Anthropic.APIConnectionTimeoutError) return "Claude API svarede ikke i tide. Prøv igen.";
@@ -90,7 +89,7 @@ export async function execute(store: Store, id: string, opts: { call?: ModelCall
   const env = opts.env || ((k: string) => process.env[k]);
   const run = await readRun(store, id);
   if (!run) return null;
-  if (run.status !== "i kø") return run;          // allerede taget (Netlify kan prøve igen)
+  if (run.status !== "i kø") return run;          // allerede taget (køen kan levere en besked igen)
 
   const kind = KINDS[run.kind];
   const settings = await readSettings(store);

@@ -6,7 +6,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createECDH, randomBytes } from "node:crypto";
 import { createRequire } from "node:module";
-import { b64url, encryptPayload, generateVapidKeys, unb64url, vapidAuthorization } from "../netlify/lib/webpush.mts";
+import { b64url, encryptPayload, generateVapidKeys, unb64url, vapidAuthorization } from "../server/webpush.mts";
 
 const require = createRequire(import.meta.url);
 const ece = require("http_ece");

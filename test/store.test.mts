@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { d1Store, MAX_VALUE } from "../worker/store.mts";
 import { memoryD1 } from "./helpers.mts";
 
-test("D1-lageret opfører sig som Netlify Blobs", async () => {
+test("D1-lageret: get, metadata, list, set og delete", async () => {
   const s = d1Store(memoryD1());
   assert.equal(await s.get("mangler"), null);
   assert.equal(await s.get("mangler", { type: "json" }), null);

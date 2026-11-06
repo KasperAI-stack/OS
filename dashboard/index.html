@@ -1,10 +1,10 @@
 <meta charset="utf-8">
 
 <!-- =========================================================================
-     HEYOTTO OS — en webapp på Netlify.
+     HEYOTTO TASKS — en webapp på Cloudflare Workers.
 
      Al kode er denne ene fil. Alt indhold ligger i skyen og hentes som JSON
-     fra API'et i netlify/functions/api.mts — der er ingen datafiler. Uden
+     fra API'et i server/api.mts — der er ingen datafiler. Uden
      login viser siden kun login-skærmen; data er aldrig en del af HTML'en.
      ========================================================================= -->
 
@@ -1528,7 +1528,7 @@ a.btn { text-decoration: none; }
   }
 
   /* ====================== Skyen ======================
-     Alt indhold ligger i skyen bag API'et (netlify/functions/api.mts).
+     Alt indhold ligger i skyen bag API'et (server/api.mts).
      DATA_REV er den version, siden hentede. Den sendes med, når der gemmes,
      så to enheder — eller Claude — ikke overskriver hinanden i stilhed: er
      data ændret et andet sted imens, afviser serveren og siger det. */
@@ -2397,7 +2397,7 @@ a.btn { text-decoration: none; }
   }
 
   /* ====================== Kalender ======================
-     Møderne hentes af serveren fra de forbundne Google-kalendere (netlify/lib/google.mts)
+     Møderne hentes af serveren fra de forbundne Google-kalendere (server/google.mts)
      og ligger uden for data. Her regnes de om til timer i den aktuelle uge:
        møder  = optagede, ikke-afviste møder inden for arbejdstiden, overlap talt én gang
        fravær = "Ikke til stede"-hændelser og heldagshændelser som "Ferie" eller "Syg"
@@ -3210,11 +3210,11 @@ a.btn { text-decoration: none; }
           "Tryk derefter <b>Publish app</b>, så adgangen ikke udløber efter 7 dage. Google viser en advarsel om en „ikke verificeret app“ første gang — det er forventet til eget brug.</li>" +
         "<li>Under <i>Clients</i> (Credentials): <b>Create client → Web application</b>. Tilføj denne adresse under <b>Authorized redirect URIs</b>:" +
           '<div class="copyrow"><code id="g-uri">' + esc(uri) + '</code><button class="btn" data-act="copyuri" type="button">Kopiér</button></div></li>' +
-        "<li>I Netlify (<i>Project configuration → Environment variables</i>): tilføj <code>GOOGLE_CLIENT_ID</code> og <code>GOOGLE_CLIENT_SECRET</code> (markér den som hemmelig) fra klienten. " +
+        "<li>Gem klientens id og hemmelighed i Cloudflare: <code>npx wrangler secret put GOOGLE_CLIENT_ID</code> og <code>npx wrangler secret put GOOGLE_CLIENT_SECRET</code>. " +
           "Lav så et nyt deploy (<i>Deploys → Trigger deploy</i>).</li>" +
         "<li>Kom tilbage hertil, og tryk <b>Forbind Google Kalender</b>.</li>" +
       "</ol>" +
-      (GOOGLE.missing && GOOGLE.missing.length ? '<p class="hint">Mangler i Netlify: ' + GOOGLE.missing.map(function (k) { return "<code>" + esc(k) + "</code>"; }).join(" og ") + ".</p>" : "") +
+      (GOOGLE.missing && GOOGLE.missing.length ? '<p class="hint">Mangler i Cloudflare: ' + GOOGLE.missing.map(function (k) { return "<code>" + esc(k) + "</code>"; }).join(" og ") + ".</p>" : "") +
       '<p class="hint">Vejledningen står også i <code>dashboard/README.md</code> under „Google: kalender og mail“.</p>';
   }
 
@@ -3571,8 +3571,8 @@ a.btn { text-decoration: none; }
           '<button class="btn" data-act="copyprompt" type="button">Kopiér instruktionen</button></li>' +
         "<li>Under <b>Select a trigger</b>: vælg <b>API</b>, og tryk <b>Create</b>. Åbn routinen igen → <b>Edit</b> → API-triggeren. " +
           "Kopiér URL'en, og tryk <b>Generate token</b>. Tokenet vises kun én gang.</li>" +
-        "<li>I Netlify: <b>Project configuration → Environment variables</b>. Tilføj <code>CLAUDE_ROUTINE_URL</code> med URL'en " +
-          "og <code>CLAUDE_ROUTINE_TOKEN</code> med tokenet (markér det som hemmeligt). Lav så et nyt deploy (<b>Deploys → Trigger deploy</b>).</li>" +
+        "<li>I Cloudflare: <code>npx wrangler secret put CLAUDE_ROUTINE_URL</code> med URL'en " +
+          "og <code>npx wrangler secret put CLAUDE_ROUTINE_TOKEN</code> med tokenet. Hemmeligheder virker med det samme, uden nyt deploy.</li>" +
       "</ol>" +
       '<p class="hint">Skriv aldrig tokenet i en chat. Det kan kun starte denne ene routine.</p>';
   }
@@ -3613,7 +3613,7 @@ a.btn { text-decoration: none; }
 
   /* ====================== Otto: agent-kernen (M7) ======================
      Otto er OS'ets egen agent: Claude API og OS'ets egne værktøjer, kørt på serveren
-     (netlify/lib/agent/). Spørg Otto læser alt, men ændrer intet. Hver kørsel kan ses
+     (server/agent/). Spørg Otto læser alt, men ændrer intet. Hver kørsel kan ses
      under Aktivitet med hvert værktøjskald og prisen. Indstillingerne ligger på
      serveren, ikke i data, så de gemmes med det samme. */
 
@@ -3683,7 +3683,7 @@ a.btn { text-decoration: none; }
     if (AGENT && AGENT.error) { box.innerHTML = '<p class="hint">Kunne ikke hente Otto: ' + esc(AGENT.error) + "</p>"; return; }
     if (AGENT && !AGENT.configured) {
       box.innerHTML = '<p class="kp-lead">Otto er ikke sat op endnu</p>' +
-        '<p class="hint">Otto bruger Claude API. Det sættes op én gang, enten med Netlify AI Gateway eller din egen nøgle.</p>' +
+        '<p class="hint">Otto bruger Claude API. Det sættes op én gang med din egen nøgle.</p>' +
         '<p style="margin-top:12px"><button class="btn primary" data-act="settings" data-section="otto" type="button">Se hvordan</button></p>';
       return;
     }
@@ -3862,12 +3862,10 @@ a.btn { text-decoration: none; }
     var setup = AGENT.configured
       ? '<p class="hint" style="margin-top:0">' + icon("spark") + " Claude API er forbundet. Otto læser data, prognose og kalender. " +
         "Otto kan ikke sende mails, svare på invitationer eller ændre kalenderen. Det er låst i koden.</p>"
-      : '<p style="margin:0 0 10px">Otto bruger Claude API, som betales pr. forbrug. Det sættes op én gang, på én af to måder:</p>' +
+      : '<p style="margin:0 0 10px">Otto bruger Claude API, som betales pr. forbrug. Det sættes op én gang:</p>' +
         '<ol class="steps">' +
-          "<li><b>Netlify AI Gateway</b> (nemmest): Netlify giver funktionerne adgang til Claude uden en nøgle og trækker forbruget fra dine Netlify-kreditter. " +
-            "Det er slået til som standard på planer med kreditter og virker efter første produktionsdeploy. Lav et nyt deploy (<i>Deploys → Trigger deploy</i>), og genindlæs.</li>" +
-          '<li><b>Din egen nøgle</b>: lav en API-nøgle på <a href="https://platform.claude.com" target="_blank" rel="noopener">platform.claude.com</a>, ' +
-            "og tilføj den i Netlify (<i>Project configuration → Environment variables</i>) som <code>ANTHROPIC_API_KEY</code>, markeret som hemmelig. Lav så et nyt deploy.</li>" +
+          '<li>Lav en API-nøgle på <a href="https://platform.claude.com" target="_blank" rel="noopener">platform.claude.com</a>.</li>' +
+          "<li>Gem den i Cloudflare: <code>npx wrangler secret put ANTHROPIC_API_KEY</code> i repoet, og genindlæs.</li>" +
         "</ol>";
     var kinds = AGENT.kinds.map(function (k) {
       var ks = s.kinds[k.id] || {};

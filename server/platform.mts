@@ -1,13 +1,11 @@
-/* HeyOtto Tasks — det, der er forskelligt fra platform til platform.
+/* HeyOtto Tasks — det, serveren får fra Cloudflare Workers.
 
-   API'et (api.mts) og jobbene (jobs.mts) kender kun denne type. Netlify
-   (netlify/functions/*) og Cloudflare Workers (worker/index.mts) laver hver deres
-   Platform: lager, miljøvariabler, klientens IP, waitUntil og hvordan en
-   Otto-kørsel startes (Netlify: baggrundsfunktion, Cloudflare: Queue). */
+   API'et (api.mts) og jobbene (jobs.mts) kender kun denne type, så de kan testes uden
+   Cloudflare (test/). worker/index.mts laver den: lager (D1), miljøvariabler og
+   hemmeligheder, klientens IP, waitUntil og hvordan en Otto-kørsel startes (Queue). */
 
-// Det udsnit af Netlify Blobs' interface, koden bruger. worker/store.mts giver det
-// samme oven på D1.
-export type Blobs = {
+// Et simpelt nøgle/værdi-lager med metadata. worker/store.mts giver det oven på D1.
+export type DocStore = {
   get(key: string, opts?: { type?: "json" | "text" }): Promise<any>;
   getWithMetadata(key: string, opts?: { type?: "json" | "text" }): Promise<{ data: any; metadata: Record<string, unknown> } | null>;
   getMetadata(key: string): Promise<{ metadata: Record<string, unknown> } | null>;
@@ -20,7 +18,7 @@ export type Blobs = {
 export type Env = (k: string) => string | undefined;
 
 export type Platform = {
-  store: Blobs;
+  store: DocStore;
   env: Env;
   ip: string;
   waitUntil(p: Promise<unknown>): void;

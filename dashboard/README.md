@@ -1,21 +1,21 @@
 # HeyOtto Tasks — appen (tidligere HeyOtto OS)
 
-Et Scrum-/projektoverblik over de store initiativer, med kapacitet på forsiden. Det er en webapp på **heyotto-os.netlify.app**, som du bruger fra computer og telefon. Alt ligger i skyen — der er ingen filer at holde styr på.
+Et Scrum-/projektoverblik over de store initiativer, med kapacitet på forsiden. Det er en webapp på Cloudflare Workers (fra flytningen i M13: **tasks-ui.heyotto.win**), som du bruger fra computer og telefon. Alt ligger i skyen — der er ingen filer at holde styr på.
 
 ## Sådan hænger det sammen
 
 | Hvad | Hvor |
 |---|---|
 | Prognose og alarmregler (deles af app og server) | `dashboard/lib/forecast.mjs` |
-| Alarmer og push-notifikationer | `netlify/lib/alerts.mts`, kørt hver time af `netlify/functions/alerts-sync.mts`. Service worker: `dashboard/sw.js` |
-| Otto, agent-kernen (Claude API + egne værktøjer) | `netlify/lib/agent/` (motor, værktøjer, slags, skills, lager). Kørsler i `netlify/functions/agent-background.mts`, planen i `agent-schedule.mts` |
-| Google-forbindelsen og kalendersynken | `netlify/lib/google.mts`, kørt hvert 15. minut af `netlify/functions/calendar-sync.mts` |
+| Alarmer og push-notifikationer | `server/alerts.mts` og `server/webpush.mts`, kørt hver time af Workerens cron. Service worker: `dashboard/sw.js` |
+| Otto, agent-kernen (Claude API + egne værktøjer) | `server/agent/` (motor, værktøjer, slags, skills, lager). Kørsler i køen (`worker/index.mts` → `queue`), planen i `server/jobs.mts` |
+| Google-forbindelsen og kalendersynken | `server/google.mts`, kørt hvert 15. minut af Workerens cron |
 | Appen (layout, logik, redigering) | `dashboard/index.html` — én HTML-fil, intet byggetrin, ingen biblioteker |
 | Otto-illustrationerne | `dashboard/otto/` — PNG'er med gennemsigtig baggrund |
-| API'et (login, data, historik, Claudes nøgle, Claude-jobs) | `netlify/lib/api.mts` (`handle(req, platform)`). Netlify: `netlify/functions/api.mts`. Cloudflare: `worker/index.mts` |
-| Platformslaget (lager, miljø, kø) | `netlify/lib/platform.mts`. Job: `netlify/lib/jobs.mts`. Se "Cloudflare Workers" nedenfor |
-| Indholdet (projekter, sprints, opgaver, kapacitet) | Netlify Blobs — Netlifys indbyggede lager. Aldrig i git |
-| Opsætningen | `netlify.toml` — Netlify bygger fra `main` på GitHub. Cloudflare: `wrangler.jsonc`. Headers: `dashboard/_headers` (begge) |
+| API'et (login, data, historik, Claudes nøgle, Claude-jobs) | `server/api.mts` (`handle(req, platform)`), kaldt af `worker/index.mts` |
+| Workeren (fetch, queue, cron) | `worker/index.mts`. Det, serveren får fra den: `server/platform.mts`. Job: `server/jobs.mts` |
+| Indholdet (projekter, sprints, opgaver, kapacitet) | D1 — Cloudflares database (`worker/store.mts`, tabellen `docs`). Aldrig i git |
+| Opsætningen | `wrangler.jsonc` (Worker, D1, kø, cron). Headers: `dashboard/_headers` |
 | Tests | `test/` — `npm test` (Node, ingen server og ingen Cloudflare) |
 
 Siden indeholder ingen data. Den henter dem fra API'et som JSON, når du er logget ind, og gemmer dem samme vej.
@@ -24,8 +24,8 @@ Siden indeholder ingen data. Den henter dem fra API'et som JSON, når du er logg
 
 Første gang i en browser beder appen om adgangskoden. Derefter husker browseren dig i 90 dage. **Log ud** står nederst i sidebaren.
 
-- Adgangskoden er miljøvariablen **`HEYOTTO_PASSWORD`** i Netlify (*Project configuration → Environment variables*). Den skal være mindst 12 tegn. Står den der ikke, kan ingen logge ind, og appen siger det.
-- Vil du skifte adgangskode, så ret variablen i Netlify og lav et nyt deploy (*Deploys → Trigger deploy*). Alle, der var logget ind, bliver logget ud.
+- Adgangskoden er hemmeligheden **`HEYOTTO_PASSWORD`** i Cloudflare (`npx wrangler secret put HEYOTTO_PASSWORD`). Den skal være mindst 12 tegn. Står den der ikke, kan ingen logge ind, og appen siger det.
+- Vil du skifte adgangskode, så sæt hemmeligheden igen. Alle, der var logget ind, bliver logget ud.
 - Efter 10 forkerte forsøg fra samme sted spærres der i et kvarter.
 
 ## Gem, kladde og to enheder
@@ -55,7 +55,7 @@ Claude kan læse og rette dine data direkte — fx lægge opgaver ind fra Asana,
 1. Åbn **Claude-adgang** nederst i sidebaren, og klik **Lav en nøgle til Claude**. Nøglen vises kun den ene gang.
 2. I Claude: miljøets indstillinger (miljø-menuen i sessionens titellinje → **Edit**):
    - tilføj miljøvariablen **`HEYOTTO_API_KEY`** med nøglen som værdi
-   - under **Network access**: vælg **Custom**, og tilføj `heyotto-os.netlify.app` under Allowed domains (behold standardlisten)
+   - under **Network access**: vælg **Custom**, og tilføj appens adresse (fx `tasks-ui.heyotto.win`) under Allowed domains (behold standardlisten)
 3. Start en ny session.
 
 Claude kan ikke se din adgangskode eller lave nye nøgler. Alt, hvad Claude gemmer, står i Historik som „gemt af Claude“. **Lav en ny nøgle** udskifter nøglen (den gamle holder op med at virke med det samme), og **Fjern Claudes adgang** lukker helt. Fremgangsmåden for Claude står i `.claude/skills/heyotto-os-data/SKILL.md`.
@@ -81,9 +81,9 @@ Claude arbejder i skyen i en **Claude Code Routine** på dette repo, med dine ag
    - forbindelser: fjern dem, opgaverne ikke skal bruge
    - instruktion: teksten fra Claude-adgang
 3. Under **Select a trigger**: vælg **API**, og tryk **Create**. Åbn routinen igen → **Edit** → API-triggeren. Kopiér URL'en, og tryk **Generate token**. Tokenet vises kun én gang.
-4. I Netlify (*Project configuration → Environment variables*) tilføjer du:
+4. I Cloudflare gemmer du (`npx wrangler secret put <navn>`):
    - **`CLAUDE_ROUTINE_URL`** med URL'en
-   - **`CLAUDE_ROUTINE_TOKEN`** med tokenet, markeret som hemmeligt
+   - **`CLAUDE_ROUTINE_TOKEN`** med tokenet
 
    Lav derefter et nyt deploy (*Deploys → Trigger deploy*).
 
@@ -96,7 +96,7 @@ Routinen bruger skillen `.claude/skills/heyotto-os-job/SKILL.md` fra `main`. Rou
 - **Hvor mange?** Højst ét aktivt job pr. opgave og 10 starter i timen. Gemmer du mange opgaver med Claude som ejer på én gang, starter kun 3 automatisk; resten startes med knappen. Anthropic tillader desuden 30 starter i timen pr. routine.
 - **Hvad koster det?** Kørslerne bruger af dit Claude-abonnement, ligesom almindelige sessioner.
 - **Hvis noget går galt.** Melder Claude ikke tilbage inden for to timer, viser opgaven „Intet svar“, og du kan starte igen. Fejler starten (forkert token, routinen sat på pause, for mange kørsler), står en dansk forklaring på opgaven.
-- **Hvor ligger jobbene?** I Netlify Blobs under `claude-jobs/`, ved siden af dine data, og de seneste 100 gemmes. Når Claude skriver et resultat, ændres dine data ikke. Derfor giver det aldrig „data er ændret et andet sted“.
+- **Hvor ligger jobbene?** I lageret under `claude-jobs/`, ved siden af dine data, og de seneste 100 gemmes. Når Claude skriver et resultat, ændres dine data ikke. Derfor giver det aldrig „data er ændret et andet sted“.
 
 Routines er stadig en testfunktion hos Anthropic, så navne og grænser kan ændre sig.
 
@@ -140,11 +140,11 @@ Alle svar er JSON. Fejl er `{ "error": "dansk besked" }`.
 | `GET /api/plans` · `GET /api/plans/:id` | Ottos seneste planforslag / ét forslag (id = kørslens id) |
 | `PUT /api/plans/:id` `{ status }` | `anvendt` eller `kasseret`. Kun for dig |
 
-Du er logget ind med enten session-cookien eller `Authorization: Bearer <nøgle>` (Claude). Ændringer med cookie skal komme fra appen selv: JSON og samme oprindelse. API'et svarer aldrig 403 eller 404. Netlify ville ved de koder lede efter en statisk side i stedet, så afvisninger er 400/401, og en forsvundet version er 410.
+Du er logget ind med enten session-cookien eller `Authorization: Bearer <nøgle>` (Claude). Ændringer med cookie skal komme fra appen selv: JSON og samme oprindelse. Afvisninger er 400/401, og en forsvundet version er 410.
 
-**Test rører aldrig rigtige data.** Kun produktionen (`heyotto-os.netlify.app`) bruger det rigtige lager. En Deploy Preview af en pull request — eller et branch-deploy — får sit eget, tomme lager med sin egen Claude-nøgle. Netlify kræver desuden team-login på previews.
+**Test rører aldrig rigtige data.** Miljøet `test` i `wrangler.jsonc` har sin egen D1-database og sin egen kø. `npm test` kører API'et, Workeren og prognosen i Node uden Cloudflare.
 
-**Udrulning.** Netlify bygger fra `main` på GitHub. Merger du en pull request, er den live et minut efter. Prøv den først på den Deploy Preview, Netlify linker til i pull requesten.
+**Udrulning.** `npm run cf:deploy:test` til testmiljøet, `npx wrangler deploy --env=""` til produktion.
 
 ## Forsiden: kapacitet
 
@@ -214,7 +214,7 @@ Under **Indstillinger → Alarmer** slår du notifikationer til på den enhed, d
 
 Begge dele kan slås fra. Udsatte alarmer sendes ikke, og samme alarm sendes ikke to gange. Tiden regnes i den tidszone, enheden havde, da notifikationer blev slået til.
 
-**Intet at sætte op.** HeyOtto OS laver selv sine push-nøgler (VAPID) og gemmer dem krypteret i Netlify Blobs. Afsenderen er sitets egen adresse. Det virker derfor i en ny installation uden miljøvariabler.
+**Intet at sætte op.** HeyOtto OS laver selv sine push-nøgler (VAPID) og gemmer dem krypteret i lageret. Afsenderen er sitets egen adresse. Det virker derfor i en ny installation uden miljøvariabler.
 
 **iPhone og iPad:** notifikationer virker kun, når HeyOtto OS ligger på hjemmeskærmen. Tryk *Del → Føj til hjemmeskærm*, og åbn appen derfra. Siden har et manifest og et app-ikon (`dashboard/manifest.webmanifest`, `otto/app-192.png` og `otto/app-512.png`). Service workeren (`dashboard/sw.js`) viser kun notifikationer og cacher ikke noget.
 
@@ -236,13 +236,13 @@ Otto er HeyOtto OS' egen agent. Den kører på serveren og kalder Claude API dir
 | `propose` | `inbox_suggest_task`, `inbox_skip` (M8), `plan_propose_changes` (M9) | Skriver kun i forslagslagre uden for data |
 | `write` | (ingen endnu) | Kun når automatik er slået til for kørslen |
 
-Der findes ingen klasse til handlinger udenfor (mail, invitationer, kampagner), og serveren starter ikke, hvis et værktøj har en ukendt klasse. Hver slags kørsel får kun sine egne værktøjer (`netlify/lib/agent/kinds.mts`), og et kald til andre værktøjer afvises i løkken. Agenten kan ikke starte kørsler selv: udløsere er kun planen og dig. Baggrundsfunktionen kræver en HMAC-signatur.
+Der findes ingen klasse til handlinger udenfor (mail, invitationer, kampagner), og serveren starter ikke, hvis et værktøj har en ukendt klasse. Hver slags kørsel får kun sine egne værktøjer (`server/agent/kinds.mts`), og et kald til andre værktøjer afvises i løkken. Agenten kan ikke starte kørsler selv: udløsere er kun planen og dig. Baggrundsfunktionen kræver en HMAC-signatur.
 
 **Grænser:** højst 20 trin, 400.000 tokens og 10 minutter pr. kørsel, 30 kørsler i timen fra appen, og et **dagsbudget** (standard 20 kr.). Budgettet tjekkes før hvert kald til Claude. Når det er brugt, stopper Otto til næste dag, og du får én notifikation. Prisen regnes ud fra Claudes listepriser i `kinds.mts` og omregnes med dollarkursen fra indstillingerne.
 
 **Modeller (standard):** Haiku 5.5 til testen, Sonnet 5.5 til morgenbriefen og Opus 5.5 til Spørg Otto. De faste instruktioner caches (prompt caching), så gentagne kørsler bliver billigere.
 
-**Skills** (instruktionerne til hver slags kørsel) ligger i `netlify/lib/agent/skills/` som tekst i `.mts`-filer, så de versioneres i git og følger med, når Netlify pakker funktionerne.
+**Skills** (instruktionerne til hver slags kørsel) ligger i `server/agent/skills/` som tekst i `.mts`-filer, så de versioneres i git og følger med, når Workeren pakkes.
 
 ### Indbakke: mail → opgaver (M8)
 
@@ -272,12 +272,9 @@ Otto må kun foreslå felterne `sprint` (skal findes i projektet), `start`, `end
 
 ### Sæt Claude API op (én gang pr. installation)
 
-Vælg én af to måder:
+Lav en API-nøgle på platform.claude.com, og gem den i Cloudflare: `npx wrangler secret put ANTHROPIC_API_KEY`.
 
-1. **Netlify AI Gateway** (nemmest): Netlify sætter `ANTHROPIC_API_KEY` og `ANTHROPIC_BASE_URL` for funktionerne og trækker forbruget fra dine Netlify-kreditter. Det kræver en plan med kreditter og mindst ét produktionsdeploy. Gatewayen tager højst 200.000 tokens input pr. kald.
-2. **Din egen nøgle**: lav en API-nøgle på platform.claude.com, og sæt den som `ANTHROPIC_API_KEY` (hemmelig) i Netlify. Så bruges den i stedet for gatewayen. Lav et nyt deploy bagefter.
-
-Kørsler, hvis startsignal går tabt, startes igen af `agent-schedule.mts` inden for et kvarter. Planlagte funktioner kører kun på produktion.
+Kørsler, hvis startsignal går tabt, startes igen af Workerens cron (`server/jobs.mts`) inden for et kvarter.
 
 ## Tasks, Projekter og Rutiner
 
@@ -322,11 +319,11 @@ Det gør den, der ejer HeyOtto OS-installationen. Vejledningen står også i app
 1. Lav et projekt i [Google Cloud](https://console.cloud.google.com/projectcreate), fx „HeyOtto OS“.
 2. *APIs & Services → Library*: slå **Google Calendar API** til. (Når mail kommer: også **Gmail API**.)
 3. *Google Auth Platform* (OAuth consent screen): vælg **External**, og skriv app-navn og e-mail. Tryk **Publish app**. I *Testing* udløber adgangen efter 7 dage. Til eget brug viser Google en advarsel om en „ikke verificeret app“ første gang. Klik *Avanceret → Fortsæt*.
-4. *Clients*: **Create client → Web application**. Under **Authorized redirect URIs** tilføjes `https://<din-adresse>/api/google/callback`, fx `https://heyotto-os.netlify.app/api/google/callback`. Skal en Deploy Preview også kunne forbindes, tilføjes dens adresse på samme måde.
-5. I Netlify (*Project configuration → Environment variables*): `GOOGLE_CLIENT_ID` og `GOOGLE_CLIENT_SECRET` (markér den som hemmelig). Lav et nyt deploy.
+4. *Clients*: **Create client → Web application**. Under **Authorized redirect URIs** tilføjes `https://<din-adresse>/api/google/callback`, fx `https://tasks-ui.heyotto.win/api/google/callback`. Skal testmiljøet også kunne forbindes, tilføjes dets adresse på samme måde.
+5. Gem dem i Cloudflare: `npx wrangler secret put GOOGLE_CLIENT_ID` og `npx wrangler secret put GOOGLE_CLIENT_SECRET`.
 6. I appen: **Indstillinger → Forbindelser → Forbind Google Kalender**. Gentag for hver konto.
 
-**Til andre end dig selv.** Hver installation har sin egen adgangskode og sine egne data, så en anden person laver sit eget Netlify-site fra repoet og sin egen OAuth-klient. Skal mange personer bruge den *samme* OAuth-klient, kræver Google, at appen bliver verificeret. Til Gmail (`gmail.readonly`) kræver Google desuden en sikkerhedsvurdering, når appen bruges af andre end en lille gruppe testbrugere.
+**Til andre end dig selv.** Hver installation har sin egen adgangskode og sine egne data, så en anden person laver sin egen Worker fra repoet og sin egen OAuth-klient. Skal mange personer bruge den *samme* OAuth-klient, kræver Google, at appen bliver verificeret. Til Gmail (`gmail.readonly`) kræver Google desuden en sikkerhedsvurdering, når appen bruges af andre end en lille gruppe testbrugere.
 
 **Når noget går galt**, står fejlen på kontoen under Forbindelser, og de seneste møder bliver liggende:
 
@@ -399,22 +396,22 @@ Projekter har desuden `kind` (`drift` / `projekt` / `adhoc`), som afgør hvilken
 
 **Hvorfor måneder og ikke datoer:** en sprint *er* en måned, og tidslinjens kolonner *er* måneder. Månedsstrenge rører aldrig `Date`, så ingen tidszone kan skubbe november til oktober. `due` er undtagelsen, hvor dagen faktisk betyder noget.
 
-## Cloudflare Workers (M10, på vej)
+## Cloudflare Workers
 
-HeyOtto Tasks flytter fra Netlify til Cloudflare Workers (planen: `projects/heyotto-os-iterationer/M10`–`M15`). Indtil flytningen (M13) kører samme kode begge steder:
+HeyOtto Tasks kører kun på Cloudflare (planen: `projects/heyotto-os-iterationer/M10`–`M15`).
 
-| | Netlify (i dag) | Cloudflare |
-|---|---|---|
-| API | `netlify/functions/api.mts` | `worker/index.mts` → `fetch` |
-| Lager | Netlify Blobs | D1 (`worker/store.mts`, tabellen `docs` med de samme nøgler) |
-| Otto-kørsler | baggrundsfunktion `/agent-run` (HMAC-signeret) | Queue `heyotto-tasks-otto` → `queue` |
-| Planlagte job | `agent-schedule`, `calendar-sync`, `alerts-sync` | Cron hvert 15. minut og hver time → `scheduled` |
-| Hemmeligheder | Netlify-miljøvariabler | `wrangler secret put` |
-| Test-lager | Deploy Previews (`getDeployStore`) | miljøet `test` med egen D1 og kø |
+| | Hvor |
+|---|---|
+| API | `worker/index.mts` → `fetch` → `server/api.mts` |
+| Lager | D1 (`worker/store.mts`, tabellen `docs`: én række pr. nøgle) |
+| Otto-kørsler | Queue `heyotto-tasks-otto` → `queue` |
+| Planlagte job | Cron hvert 15. minut (kalender, Ottos plan) og hver time (alarmer) → `scheduled` |
+| Hemmeligheder | `npx wrangler secret put` |
+| Testmiljø | `--env test` med egen D1 og kø |
 
-- Prognose og alarmer regnes på serveren i brugerens tidszone med `netlify/lib/zone.mts` (Workers kører altid i UTC, og `process.env.TZ` virker ikke der).
-- Push sendes med Web Crypto (`netlify/lib/webpush.mts`), så det virker på begge platforme. Nøglerne er de samme.
-- Data kopieres med `scripts/copy-blobs-to-d1.mjs` (se kommentaren øverst i filen).
+- Prognose og alarmer regnes på serveren i brugerens tidszone med `server/zone.mts` (Workers kører altid i UTC, og `process.env.TZ` virker ikke der).
+- Push sendes med Web Crypto (`server/webpush.mts`).
+- Data fra det gamle Netlify-site kopieres én gang med `scripts/copy-blobs-to-d1.mjs` (se kommentaren øverst i filen).
 
 ## Valideringen
 

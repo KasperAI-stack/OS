@@ -1,11 +1,11 @@
 /* HeyOtto Tasks — baggrundsjob og planlagte job, uafhængigt af platformen.
 
-     runAgent       én Otto-kørsel (Netlify: agent-background, Cloudflare: Queue)
+     runAgent       én Otto-kørsel (fra køen)
      scheduleTick   Ottos planlagte udløser og oprydning, hvert 15. minut
      calendarTick   henter de forbundne Google-kalendere, hvert 15. minut
      alertsTick     alarmer som push-notifikationer, hver time
 
-   Netlify-funktionerne i netlify/functions og worker/index.mts kalder herind. */
+   worker/index.mts kalder herind (queue og scheduled). */
 
 import { readState, run as runAlerts, sendAll } from "./alerts.mts";
 import { client, readAccounts, readSnapshot, syncAll } from "./google.mts";
@@ -15,11 +15,11 @@ import { STALE_QUEUE_MS, STALE_RUN_MS, configured, execute } from "./agent/runti
 import { dayIn, readRun, readRuns, readSettings, saveRun, saveSettings, type Store } from "./agent/store.mts";
 import { metrics, readPlan } from "./plans.mts";
 import { wall, zonedSnapshot } from "./zone.mts";
-import type { Blobs, Env } from "./platform.mts";
+import type { DocStore, Env } from "./platform.mts";
 
 /* ---------- Én Otto-kørsel ---------- */
 
-export async function runAgent(blobs: Blobs, id: string, origin: string) {
+export async function runAgent(blobs: DocStore, id: string, origin: string) {
   const store = blobs as unknown as Store;
   const notify = async (title: string, text: string, tag: string, url = "/#otto") => {
     await sendAll(store as any, [{ title, body: text, url, tag }], origin);
@@ -63,7 +63,7 @@ export async function runAgent(blobs: Blobs, id: string, origin: string) {
 
 const WEEKDAY: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
 
-export async function scheduleTick(blobs: Blobs, startRun: (id: string) => Promise<boolean>, now = new Date()) {
+export async function scheduleTick(blobs: DocStore, startRun: (id: string) => Promise<boolean>, now = new Date()) {
   const store = blobs as unknown as Store;
   const log: string[] = [];
 
@@ -109,7 +109,7 @@ export async function scheduleTick(blobs: Blobs, startRun: (id: string) => Promi
 
 /* ---------- Kalender og alarmer ---------- */
 
-export async function calendarTick(store: Blobs, env: Env) {
+export async function calendarTick(store: DocStore, env: Env) {
   if (!client(env)) return "Google er ikke sat op";
   if (!(await readAccounts(store as any)).length) return "ingen konti forbundet";
   const snap = await syncAll(store as any, env);
@@ -117,7 +117,7 @@ export async function calendarTick(store: Blobs, env: Env) {
 }
 
 // subject = appens egen https-adresse (VAPID-afsender og links i notifikationer)
-export async function alertsTick(store: Blobs, subject: string) {
+export async function alertsTick(store: DocStore, subject: string) {
   if (!/^https:\/\//.test(subject)) return "appens adresse mangler, intet sendt";
   return JSON.stringify(await runAlerts(store as any, subject));
 }

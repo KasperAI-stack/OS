@@ -1,11 +1,11 @@
-/* HeyOtto OS — Google-forbindelsen: login hos Google (OAuth), konti og kalendersynk.
+/* HeyOtto Tasks — Google-forbindelsen: login hos Google (OAuth), konti og kalendersynk.
 
    Intet her er bundet til en bestemt person. OS'et kan forbinde én eller flere
    Google-konti, og en anden person kan sætte sit eget HeyOtto OS op med sin egen
-   OAuth-klient (GOOGLE_CLIENT_ID og GOOGLE_CLIENT_SECRET i Netlify). Fremgangsmåden
+   OAuth-klient (hemmelighederne GOOGLE_CLIENT_ID og GOOGLE_CLIENT_SECRET i Cloudflare). Fremgangsmåden
    står i dashboard/README.md under "Google: kalender og mail".
 
-   Lageret (Netlify Blobs):
+   Lageret (nøgler i D1):
      google/accounts     [{ id, email, scopes, refresh (krypteret), calendars, connectedAt, lastSync, error }]
      google/state/<n>    engangsnøgler til login-flowet (10 minutter)
      calendar/snapshot   { fetchedAt, from, to, accounts, events } — det, appen og Claude læser
@@ -28,7 +28,7 @@ export const CALENDAR_KEY = "calendar/snapshot";
 const STATE = "google/state/";
 const SECRET_KEY = "auth/secret";
 const STATE_MS = 10 * 60_000;
-const FETCH_MS = 7000;                  // Netlify giver funktionen 10 sekunder (planlagte: 30)
+const FETCH_MS = 7000;                  // et hængende Google-kald må ikke holde svaret tilbage
 const PAST_DAYS = 7;
 const FUTURE_DAYS = 84;                 // 12 uger frem: kalendervisning og prognose
 export const REFRESH_GAP_MS = 60_000;   // højst én manuel synk i minuttet
@@ -116,7 +116,7 @@ function sign(secret: string, payload: string) {
 
 export async function startUrl(store: Store, env: Env, origin: string, wanted: string[]) {
   const c = client(env);
-  if (!c) throw new GoogleError("Google er ikke sat op: " + missingEnv(env).join(" og ") + " mangler i Netlify.");
+  if (!c) throw new GoogleError("Google er ikke sat op: " + missingEnv(env).join(" og ") + " mangler i Cloudflare (`npx wrangler secret put`).");
   const scopes = wanted.filter((s) => SCOPES[s]);
   if (!scopes.length) throw new GoogleError("Vælg mindst én ting at forbinde (kalender).");
   const nonce = randomBytes(16).toString("base64url");
@@ -198,7 +198,7 @@ const saveAccounts = (store: Store, list: Account[]) => store.setJSON(ACCOUNTS_K
 // Byt koden fra Google til tokens, og gem (eller opdatér) kontoen. Returnerer e-mailen.
 export async function finish(store: Store, env: Env, origin: string, code: string, state: string) {
   const c = client(env);
-  if (!c) throw new GoogleError("Google er ikke sat op i Netlify.");
+  if (!c) throw new GoogleError("Google er ikke sat op endnu (GOOGLE_CLIENT_ID og GOOGLE_CLIENT_SECRET mangler i Cloudflare).");
   const { secret, scopes } = await checkState(store, state);
   if (!code) throw new GoogleError("Google sendte ingen kode tilbage.");
   const tok = await googleJson("https://oauth2.googleapis.com/token", {
@@ -232,7 +232,7 @@ export async function finish(store: Store, env: Env, origin: string, code: strin
 
 export async function accessToken(env: Env, secret: string, acc: Account) {
   const c = client(env);
-  if (!c) throw new GoogleError("Google er ikke sat op i Netlify.");
+  if (!c) throw new GoogleError("Google er ikke sat op endnu (GOOGLE_CLIENT_ID og GOOGLE_CLIENT_SECRET mangler i Cloudflare).");
   const tok = await googleJson("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },

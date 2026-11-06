@@ -1,14 +1,13 @@
-/* HeyOtto Tasks — lageret på Cloudflare: D1 bag samme interface som Netlify Blobs.
+/* HeyOtto Tasks — lageret på Cloudflare: D1 som nøgle/værdi-lager.
 
    Én tabel (migrations/0001_docs.sql):
 
      docs(key TEXT PRIMARY KEY, value TEXT, metadata TEXT, updated_at TEXT)
 
-   Hver nøgle er det samme som en blob på Netlify (data, historik/<id>, agent-runs/<id> …),
-   så resten af koden ikke ved, hvilken platform den kører på. D1 er konsistent (én
+   Én række pr. nøgle (data, historik/<id>, agent-runs/<id> …). D1 er konsistent (én
    primær database), så "data er ændret et andet sted" virker præcis som før. */
 
-import type { Blobs } from "../netlify/lib/platform.mts";
+import type { DocStore } from "../server/platform.mts";
 
 // Det udsnit af D1's API, der bruges (så der ikke skal være en typepakke)
 export type D1Like = {
@@ -30,7 +29,7 @@ const meta = (text: unknown) => {
   try { return JSON.parse(text) as Record<string, unknown>; } catch { return {}; }
 };
 
-export function d1Store(db: D1Like): Blobs {
+export function d1Store(db: D1Like): DocStore {
   async function put(key: string, value: string, metadata?: Record<string, unknown>) {
     if (value.length > MAX_VALUE) {
       throw new Error(`For meget data under „${key}“ (${Math.round(value.length / 1000)} kB). Grænsen er ${MAX_VALUE / 1000} kB.`);

@@ -1,7 +1,7 @@
 /* HeyOtto OS — prognose og alarmer. Ingen AI: et regnestykke.
 
    Bruges både af appen (hentes med import() i dashboard/index.html) og af serveren
-   (netlify/functions/alerts-sync.mts), så der kun findes én udgave af reglerne.
+   (server/alerts.mts), så der kun findes én udgave af reglerne.
 
    Kapacitet pr. uge (de næste 12):
      (arbejdsuge − møder − fravær − mail & admin − øvrigt fravær) × loft − drift − ad hoc-buffer

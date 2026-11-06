@@ -1,4 +1,7 @@
-/* HeyOtto Tasks — kopiér alle data fra Netlify Blobs til en SQL-fil til D1 (M10/M13).
+/* HeyOtto Tasks — engangsflytning: kopiér alle data fra det gamle Netlify-site til D1.
+
+   Netlify er ikke en del af projektet. Biblioteket hentes kun til denne ene kørsel:
+     npm install --no-save @netlify/blobs
 
    Brug:
      NETLIFY_SITE_ID=… NETLIFY_AUTH_TOKEN=… node scripts/copy-blobs-to-d1.mjs <ud.sql> [--uden-push]
@@ -20,7 +23,6 @@
 import { writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { resolve } from "node:path";
-import { getStore } from "@netlify/blobs";
 
 const out = process.argv[2];
 const noPush = process.argv.includes("--uden-push");
@@ -35,6 +37,9 @@ if (resolve(out).startsWith(resolve("."))) {
   process.exit(1);
 }
 
+let getStore;
+try { ({ getStore } = await import("@netlify/blobs")); }
+catch { console.error("Kør først: npm install --no-save @netlify/blobs"); process.exit(1); }
 const store = getStore({ name: "heyotto-os", siteID, token, consistency: "strong" });
 const sql = (v) => (v === null || v === undefined ? "NULL" : "'" + String(v).replace(/'/g, "''") + "'");
 

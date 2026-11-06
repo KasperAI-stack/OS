@@ -1,4 +1,4 @@
-/* HeyOtto OS — agentens lager i Netlify Blobs. Alt ligger uden for data, så en
+/* HeyOtto Tasks — agentens lager (nøgler i D1, se worker/store.mts). Alt ligger uden for data, så en
    kørsel aldrig giver "data er ændret et andet sted" i browseren.
 
      agent/settings        { enabled, budgetDkk, usdDkk, tz, kinds: { <id>: { enabled, model } }, auto: {}, lastScheduled: {} }

@@ -11,7 +11,7 @@
    så en ny installation virker uden miljøvariabler. Afsenderen (VAPID "subject") er sitets
    egen adresse. */
 
-import { alerts as computeAlerts, activeAlerts, localIso } from "../../dashboard/lib/forecast.mjs";
+import { alerts as computeAlerts, activeAlerts, localIso } from "../dashboard/lib/forecast.mjs";
 import { decrypt, encrypt, readSnapshot, serverSecret } from "./google.mts";
 import { wall, zonedSnapshot } from "./zone.mts";
 import { generateVapidKeys, sendPush } from "./webpush.mts";

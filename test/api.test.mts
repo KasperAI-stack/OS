@@ -3,8 +3,8 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { handle } from "../netlify/lib/api.mts";
-import type { Platform } from "../netlify/lib/platform.mts";
+import { handle } from "../server/api.mts";
+import type { Platform } from "../server/platform.mts";
 import { d1Store } from "../worker/store.mts";
 import { memoryD1 } from "./helpers.mts";
 

@@ -2,8 +2,8 @@
    mode "native": som browseren i brugerens tidszone (processen startes med TZ=…).
    mode "zoned":  som serveren: wall() og zonedSnapshot() (processen kan køre i enhver TZ). */
 import { alerts, forecast } from "../../dashboard/lib/forecast.mjs";
-import { metrics } from "../../netlify/lib/plans.mts";
-import { wall, zonedSnapshot } from "../../netlify/lib/zone.mts";
+import { metrics } from "../../server/plans.mts";
+import { wall, zonedSnapshot } from "../../server/zone.mts";
 
 const [mode, nowIso] = process.argv.slice(2);
 const TZ = "Europe/Copenhagen";

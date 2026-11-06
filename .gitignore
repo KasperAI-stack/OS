@@ -4,9 +4,8 @@ Thumbs.db
 .env
 .env.local
 
-# Netlify og npm
+# npm
 node_modules/
-.netlify/
 
 # Cloudflare (wrangler): lokale hemmeligheder og lokal database
 .dev.vars

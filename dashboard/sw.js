@@ -1,6 +1,6 @@
 /* HeyOtto Tasks — service worker. Kun til notifikationer (Web Push).
    Den gemmer intet og cacher intet, så appen altid er den nyeste version.
-   Beskederne sendes af netlify/lib/alerts.mts som { title, body, url, tag }. */
+   Beskederne sendes af server/alerts.mts som { title, body, url, tag }. */
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));

@@ -5,7 +5,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { wall, zonedSnapshot } from "../netlify/lib/zone.mts";
+import { wall, zonedSnapshot } from "../server/zone.mts";
 
 const script = fileURLToPath(new URL("./fixtures/forecast-run.mts", import.meta.url));
 const run = (mode: string, tz: string, now: string) =>

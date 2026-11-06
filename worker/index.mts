@@ -1,16 +1,16 @@
 /* HeyOtto Tasks på Cloudflare Workers.
 
-     fetch       /api/* → API'et (netlify/lib/api.mts). Alt andet: appens statiske filer
+     fetch       /api/* → API'et (server/api.mts). Alt andet: appens statiske filer
                  (dashboard/), som Cloudflare serverer uden om Workeren.
-     queue       én Otto-kørsel pr. besked (erstatter Netlifys baggrundsfunktion)
+     queue       én Otto-kørsel pr. besked (Cloudflare Queue)
      scheduled   hvert 15. minut: kalender + Ottos planlagte udløser. Hver time: alarmer.
 
    Opsætningen står i wrangler.jsonc. Hemmeligheder (adgangskode, Claude- og
    Google-nøgler) sættes med `wrangler secret put` og ligger aldrig i repoet. */
 
-import { handle } from "../netlify/lib/api.mts";
-import { alertsTick, calendarTick, runAgent, scheduleTick } from "../netlify/lib/jobs.mts";
-import type { Env as EnvFn, Platform } from "../netlify/lib/platform.mts";
+import { handle } from "../server/api.mts";
+import { alertsTick, calendarTick, runAgent, scheduleTick } from "../server/jobs.mts";
+import type { Env as EnvFn, Platform } from "../server/platform.mts";
 import { d1Store, type D1Like } from "./store.mts";
 
 type QueueMessage = { body: { runId?: unknown }; ack(): void };

@@ -7,7 +7,7 @@
    før/efter med den samme prognose, som appen viser. Tallene kommer altså ikke fra
    Claude. Intet skrives i data: det gør appen, når du trykker Anvend. */
 
-import { activeAlerts, alerts as computeAlerts, forecast, isOpen } from "../../dashboard/lib/forecast.mjs";
+import { activeAlerts, alerts as computeAlerts, forecast, isOpen } from "../dashboard/lib/forecast.mjs";
 
 type Store = {
   get(key: string, opts?: any): Promise<any>;

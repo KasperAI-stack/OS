@@ -13,7 +13,7 @@
    Værktøjsnavne må kun indeholde bogstaver, tal, _ og - (Claude API'ets regel), derfor
    data_read og ikke data.read som i planen. */
 
-import { activeAlerts, alerts as computeAlerts, forecast, isOpen, localIso } from "../../../dashboard/lib/forecast.mjs";
+import { activeAlerts, alerts as computeAlerts, forecast, isOpen, localIso } from "../../dashboard/lib/forecast.mjs";
 import { readSnapshot } from "../google.mts";
 import { wall, zonedSnapshot } from "../zone.mts";
 import { readState } from "../alerts.mts";

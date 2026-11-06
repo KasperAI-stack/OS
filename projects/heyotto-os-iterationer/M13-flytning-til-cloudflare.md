@@ -4,41 +4,46 @@
 
 ## Mål
 
-`tasks-ui.heyotto.win` er HeyOtto Tasks. Data, Google-forbindelser, Claude-token og push er flyttet, og Netlify-sitet er slukket bagefter, med en vej tilbage indtil da.
+`tasks-ui.heyotto.win` er HeyOtto Tasks. Data, Google-forbindelser og Claude-token er flyttet, og det gamle Netlify-site er slettet.
+
+Netlify er allerede væk fra koden (M10). Det eneste, der er tilbage derovre, er de nuværende data og det kørende site, som ikke ændres mere.
 
 ## Rækkefølge (flyttedag, ca. 30 minutter)
 
-1. **Frys Netlify:** sæt appen skrivebeskyttet (et flag i `data`, så appen viser "Flytter. Kun læsning"), så intet ændres midt i kopieringen.
-2. **Kopiér data** fra Netlify Blobs til produktions-D1 med scriptet fra M10. Alle nøgler: `data`, Historik, `auth/server-secret` (så Google-tokens kan læses), Claude-nøglen, `agent/*`, `agent-runs/*`, `inbox/*`, `plans/*`, push-abonnementer og kalender-snapshots.
-3. **Tjek:** antal nøgler og en hash af `data` er ens begge steder.
-4. **Hemmeligheder** med `wrangler secret put`: `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `CF_ACCESS_TEAM_DOMAIN`, `CF_ACCESS_AUD`, `CLAUDE_ROUTINE_URL`, `CLAUDE_ROUTINE_TOKEN`. `HEYOTTO_PASSWORD` kun så længe adgangskoden findes.
-5. **Google:** tilføj `https://tasks-ui.heyotto.win/api/google/callback` som redirect-adresse i OAuth-klienten. Den gamle bliver stående, til Netlify er slukket. Appen viser allerede den præcise adresse under Forbindelser.
-6. **Netlify-sitet** viser en side med linket til den nye adresse (ingen data, ingen API).
-7. **Opdatér henvisninger:** `CLAUDE.md`, `dashboard/README.md`, `heyotto-os-data`-skillen og `heyotto-os-job`-skillen til `tasks-ui.heyotto.win` (appens `/api`) eller `tasks.heyotto.win/ext` (API'et med token). Det afhænger af, hvad skillen gør.
+1. **Rør ikke den gamle app**, mens der kopieres.
+2. **Kopiér data** til produktions-D1 med `scripts/copy-blobs-to-d1.mjs`. Alle nøgler kommer med: `data`, Historik, `auth/server-secret` (så Google-tokens kan læses), Claude-nøglen, `agent/*`, `agent-runs/*`, `inbox/*`, `plans/*` og kalender-snapshots.
+3. **Tjek**, at antal nøgler og længden af `data` er ens (scriptet skriver begge dele).
+4. **Hemmeligheder** med `wrangler secret put`:
+   - `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+   - `CF_ACCESS_TEAM_DOMAIN`, `CF_ACCESS_AUD`
+   - `CLAUDE_ROUTINE_URL`, `CLAUDE_ROUTINE_TOKEN`
+   - `APP_URL` = `https://tasks-ui.heyotto.win`
+5. **Google:** sæt `https://tasks-ui.heyotto.win/api/google/callback` som redirect-adresse i OAuth-klienten, og fjern den gamle. Appen viser den præcise adresse under Forbindelser.
+6. **Opdatér henvisninger** til `tasks-ui.heyotto.win` (appens `/api`) eller `tasks.heyotto.win/ext` (API'et med token), alt efter hvad skillen gør:
+   - `CLAUDE.md`
+   - `heyotto-os-data`-skillen (omdøbes til `heyotto-tasks-data`)
+   - `heyotto-os-job`-skillen
+7. **Slet Netlify-sitet**, og frakobl GitHub-repoet fra Netlify, så det ikke bygger mere.
 
 ## Det, der ikke kan flyttes
 
-- **Push-notifikationer** er bundet til adressen. Slå dem til igen på hver enhed (Indstillinger → Notifikationer). Appen viser en besked om det første gang.
-- **Login:** man logger ind igen på den nye adresse via Access.
+- **Push-notifikationer** er bundet til adressen. Slå dem til igen på hver enhed (Indstillinger → Notifikationer).
+- **Login:** du logger ind igen på den nye adresse via Access.
 
-## Vejen tilbage
+## Hvis noget går galt
 
-Netlify-koden og Blobs bliver liggende urørt i 14 dage. Går noget galt, fjernes skrivebeskyttelsen på Netlify, og det kører videre som før. Ændringer lavet på Cloudflare i mellemtiden kopieres tilbage med samme script.
-
-## Efter 14 dage
-
-- Slet `netlify/`, `netlify.toml`, `@netlify/*`-pakkerne og AI Gateway-teksterne fra koden og README.
-- Slet sitet i Netlify og fjern den gamle redirect-adresse i Google.
+Data i D1 kan altid hentes igen fra det gamle site, indtil det er slettet. Slet det derfor først, når du har brugt Tasks på Cloudflare i et par dage.
 
 ## Kasper skal selv
 
-- Vælge flyttedagen (appen er skrivebeskyttet i ca. en halv time).
+- Vælge flyttedagen.
 - Rette redirect-adressen i Google Cloud Console.
 - Slå push til igen på pc og telefon.
+- Slette Netlify-sitet til sidst.
 
 ## Færdig når
 
 - Alt i appen virker på `tasks-ui.heyotto.win`, og Google-forbindelserne virker uden at forbinde igen
 - Otto-kørsler, kalendersync, alarmer og push kører på Cloudflare
 - Skillsene bruger den nye adresse
-- Netlify kan slukkes uden, at noget mangler
+- Netlify-sitet er slettet
