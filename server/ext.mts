@@ -13,7 +13,8 @@
    Fuld beskrivelse: dashboard/README.md under "API'et /ext". */
 
 import { Hono, type Context, type MiddlewareHandler } from "hono";
-import { HttpError, readData, saveData } from "./api.mts";
+import { HttpError, getJob, readData, reportJob, saveData } from "./api.mts";
+import { readSnapshot } from "./google.mts";
 import { readSettings } from "./agent/store.mts";
 import { localIso } from "../dashboard/lib/forecast.mjs";
 import { wall } from "./zone.mts";
@@ -244,6 +245,52 @@ ext.get("/routines", async (c) => {
       hours: Number(r.hours) || 0, project: r.project || "", active: r.active !== false, last: r.last || ""
     }))
   });
+});
+
+// Sprints: et mål for ét projekt i én måned. En task kan kun ligge i en sprint, der findes.
+const isMonth = (v: unknown) => typeof v === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(v);
+
+ext.get("/sprints", async (c) => {
+  need(c, "read");
+  const data = await readData(c.env.p.store);
+  const project = c.req.query("project");
+  return c.json({
+    sprints: data.sprints.filter((s: any) => !project || s.project === project)
+      .map((s: any) => ({ project: s.project, month: s.month, goal: s.goal || "" }))
+  });
+});
+
+ext.post("/sprints", async (c) => {
+  need(c, "write");
+  const body = c.get("body");
+  const { result } = await saveData(c.env.p.store, c.get("token").name, (data) => {
+    if (!data.projects.some((p: any) => p?.id === body?.project)) throw new HttpError(400, "Ukendt projekt. Se GET /ext/projects.");
+    if (!isMonth(body?.month)) throw new HttpError(400, "month skal være ÅÅÅÅ-MM.");
+    if (data.sprints.some((s: any) => s.project === body.project && s.month === body.month)) {
+      throw new HttpError(409, `Projektet har allerede en sprint i ${body.month}.`);
+    }
+    const s = { project: body.project, month: body.month, goal: str(body.goal, 400) };
+    data.sprints.push(s);
+    return s;
+  });
+  return c.json({ sprint: result }, 201);
+});
+
+// Kalenderen (kun læsning): møder fra de forbundne Google-konti. null = intet forbundet.
+ext.get("/calendar", async (c) => {
+  need(c, "read");
+  return c.json({ snapshot: await readSnapshot(c.env.p.store) });
+});
+
+// Jobs, du har sat Claude på i appen. Claude henter jobbet og melder tilbage (kun udkast).
+ext.get("/jobs/:id", async (c) => {
+  need(c, "read");
+  return c.json({ job: await getJob(c.env.p.store, c.req.param("id")) });
+});
+
+ext.patch("/jobs/:id", async (c) => {
+  need(c, "write");
+  return c.json({ job: await reportJob(c.env.p.store, c.req.param("id"), c.get("body")) });
 });
 
 ext.notFound((c) => err(c, 404, "Ukendt adresse: " + c.req.method + " " + scrub(new URL(c.req.url).pathname)));

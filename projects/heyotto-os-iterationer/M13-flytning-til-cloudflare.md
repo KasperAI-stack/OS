@@ -1,27 +1,31 @@
 # M13: Tasks går live på Cloudflare
 
-**Status (2026-11-06):** i gang. Produktionen kører allerede; det sidste er Access, nøgler og at rydde op.
+**Status (2026-11-06):** næsten færdig. Tilbage er at slette Netlify-sitet. Push er udskudt.
 
 **Ingen data flyttes** (Kasper, 2026-11-06). Tasks starter forfra på Cloudflare, og der er intet separat testmiljø.
 
 ## Gjort
 
+- D1## Gjort
+
 - D1 `heyotto-tasks`, køen `heyotto-tasks-otto` og migrationen
 - Workeren deployet med custom domains `tasks.heyotto.win` (appen) og `tasks-api.heyotto.win` (API)
 - Det første testmiljø (`tasks-test*`, D1 og kø) er slettet
+- Access-applikationen for `tasks.heyotto.win` og AUD-tagget i `wrangler.jsonc`. Appen åbnes uden adgangskode
+- Hemmelighederne `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_ID` og `GOOGLE_CLIENT_SECRET`. Otto kører
+- Google forbundet med kalender og mail. Kalenderen "Renas" (den primære) er slået til, og mailen læses
+- Skillsene hedder nu `heyotto-tasks-data` og `heyotto-tasks-job` og bruger et API-token (`HEYOTTO_TASKS_TOKEN`) på `tasks-api.heyotto.win/ext`. `/ext` har fået sprints, kalenderen og jobs, så skillsene ikke behøver `/api`
+- Den gamle Claude-nøgle (`/api/claude-key`) er fjernet fra app og server. Siden Claude-adgang viser i stedet, hvordan man laver et token
 
 ## Mangler
 
-1. **Access** (M12): applikationen for `tasks.heyotto.win` og AUD-tagget i `wrangler.jsonc`. Så kan appen åbnes, uden adgangskode.
-2. **Hemmeligheder** med `npx wrangler secret put`: `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (og `CLAUDE_ROUTINE_URL`/`CLAUDE_ROUTINE_TOKEN`, hvis routinen bruges).
-3. **Google:** `https://tasks.heyotto.win/api/google/callback` som redirect-adresse i OAuth-klienten. Forbind kalender og mail igen under Indstillinger → Forbindelser.
-4. **Push:** slå notifikationer til på pc og telefon.
-5. **Henvisninger** til den nye adresse: `CLAUDE.md`, `heyotto-os-data`-skillen (omdøbes til `heyotto-tasks-data` og bruger et API-token på `tasks-api.heyotto.win/ext`) og `heyotto-os-job`-skillen.
-6. **Slet Netlify-sitet**, og frakobl GitHub-repoet fra Netlify.
+1. **Slet Netlify-sitet**, og frakobl GitHub-repoet fra Netlify (Kasper).
+2. **Token til Claude:** Kasper laver et token "Claude" under Indstillinger → API-tokens og gemmer det som `HEYOTTO_TASKS_TOKEN`, når Claude skal arbejde i Tasks.
 
-## Færdig når
+**Udskudt:** push på pc og telefon (Kasper, 2026-11-06: "ikke endnu"). Routinen "HeyOtto OS-opgaver" er ikke sat op (`CLAUDE_ROUTINE_URL`/`CLAUDE_ROUTINE_TOKEN` mangler); den kan sættes op senere med de samme trin.
+
 
 - Alt i appen virker på `tasks.heyotto.win` med Access-login
-- Otto-kørsler, kalendersync, alarmer og push kører på Cloudflare
+- Otto-kørsler, kalendersync og alarmer kører på Cloudflare (push er udskudt)
 - Skillsene bruger den nye adresse
 - Netlify-sitet er slettet

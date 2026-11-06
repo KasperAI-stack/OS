@@ -9,14 +9,11 @@
      PUT    /api/data                        { rev, data } → { rev }   (409 hvis rev er forældet)
      GET    /api/history                     de seneste gemte versioner
      POST   /api/history/:id/restore         gør en gammel version til den gældende
-     GET    /api/claude-key                  findes der en nøgle til Claude?
-     POST   /api/claude-key                  lav (eller udskift) nøglen — vises kun én gang
-     DELETE /api/claude-key                  fjern Claudes adgang
      GET    /api/claude/jobs                 { connected, jobs } — de seneste opgaver, Claude er sat på
      POST   /api/claude/jobs                 { taskId, task, instruction } → sæt Claude i gang (kun Kasper)
      GET    /api/claude/jobs/:id             ét job
-     PUT    /api/claude/jobs/:id             { status, result?, error? } — Claude melder tilbage,
-                                             Kasper godkender eller kasserer
+     PUT    /api/claude/jobs/:id             { status: "godkendt" | "kasseret" } (kun Kasper). Claude melder
+                                             tilbage gennem /ext/jobs/:id med et API-token (server/ext.mts)
      GET    /api/google                      { configured, missing, redirectUri, accounts } — forbindelsens status
      GET    /api/google/connect?scopes=…     send browseren til Google for at forbinde en konto
      GET    /api/google/callback             Google sender browseren tilbage hertil (ingen cookie, signeret state)
@@ -41,14 +38,10 @@
      GET    /api/plans/:id                   ét forslag (id = kørslens id)
      PUT    /api/plans/:id                   { status: "anvendt" | "kasseret" } (kun Kasper)
 
-   To måder at være logget ind på:
-     * Kasper: adgangskoden fra miljøvariablen HEYOTTO_PASSWORD giver en signeret
-       session-cookie (HttpOnly, SameSite=Strict, 90 dage).
-     * Claude: "Authorization: Bearer <nøgle>". Nøglen laves i appen og gemmes kun
-       som hash. Claude kan læse og skrive data, men ikke lave nøgler og ikke
-       sætte sig selv i gang.
-
-   Mangler adgangskoden, svarer alt med 503. Der er aldrig en åben dør.
+   Kun du kommer ind her: via Cloudflare Access (server/gate.mts), eller lokalt med
+   adgangskoden fra HEYOTTO_PASSWORD, som giver en signeret session-cookie (HttpOnly,
+   SameSite=Strict, 90 dage). Uden Access og uden adgangskode svarer alt med 503.
+   Andre værktøjer og Claude bruger /ext med et API-token (server/ext.mts).
 
    Afvisninger er 400/401, og en forsvundet version er 410. */
 
@@ -72,7 +65,6 @@ type IndexEntry = { id: string; by: string; projects: number; tasks: number; res
 const DATA_KEY = "data";
 const INDEX_KEY = "historik-index";
 const HISTORY = "historik/";
-const CLAUDE_KEY = "auth/claude-key";
 const FAILS = "auth/fail/";
 const COOKIE = "heyotto_session";
 const KEEP = 60;                       // så mange gemte versioner beholdes
@@ -171,11 +163,6 @@ async function validSession(req: Request, store: Store, password: string) {
 }
 
 async function caller(req: Request, store: Store, password: string, viaAccess: boolean): Promise<Who | null> {
-  const bearer = (req.headers.get("authorization") || "").match(/^Bearer\s+(\S+)$/i);
-  if (bearer) {
-    const saved = (await store.get(CLAUDE_KEY, { type: "json" })) as { hash?: string } | null;
-    return saved?.hash && same(sha256(bearer[1]).toString("hex"), saved.hash) ? "Claude" : null;
-  }
   if (viaAccess) return "dig";            // Cloudflare Access har allerede logget dig ind
   return (await validSession(req, store, password)) ? "dig" : null;
 }
@@ -322,26 +309,6 @@ async function restore(store: Store, id: string, who: Who) {
   const data = dateOf(id) ? await store.get(HISTORY + id, { type: "json" }) : null;
   if (!data) return fail(410, "Den version findes ikke længere.");
   return json(200, { rev: await write(store, data, who, id) });
-}
-
-/* ---------- Claudes nøgle ---------- */
-
-async function claudeKey(req: Request, store: Store) {
-  if (req.method === "GET") {
-    const saved = (await store.get(CLAUDE_KEY, { type: "json" })) as { createdAt?: string } | null;
-    return json(200, { exists: !!saved, createdAt: saved?.createdAt ?? null });
-  }
-  if (req.method === "DELETE") {
-    await store.delete(CLAUDE_KEY);
-    return json(200, { exists: false });
-  }
-  if (req.method === "POST") {
-    const key = "ho_" + randomBytes(24).toString("base64url");
-    const createdAt = new Date().toISOString();
-    await store.setJSON(CLAUDE_KEY, { hash: sha256(key).toString("hex"), createdAt });
-    return json(200, { key, createdAt });
-  }
-  return fail(405, "Metoden understøttes ikke her.");
 }
 
 /* ---------- API-tokens (M11) ----------
@@ -546,30 +513,42 @@ async function startByHand(req: Request, store: Store) {
   return json(200, { job: await launch(store, jobs[0]) });
 }
 
+// Claude (eller et API-token) melder tilbage på et job. Bruges af /api og /ext.
+export async function getJob(store: Store, id: string) {
+  const job = await readJob(store, id);
+  if (!job) throw new HttpError(404, "Jobbet findes ikke.");
+  return job;
+}
+
+export async function reportJob(store: Store, id: string, body: any) {
+  const job = await getJob(store, id);
+  const status = body?.status;
+  if (!["i gang", "til godkendelse", "fejlet"].includes(status)) {
+    throw new HttpError(400, 'status skal være "i gang", "til godkendelse" eller "fejlet".');
+  }
+  if (job.status === "godkendt" || job.status === "kasseret") {
+    throw new HttpError(410, `Kasper har allerede lukket jobbet (${job.status}). Intet er gemt.`);
+  }
+  if (typeof body.result === "string") {
+    if (body.result.length > MAX_RESULT) throw new HttpError(400, `Resultatet må højst være ${MAX_RESULT} tegn.`);
+    job.result = body.result.trim();
+  }
+  job.error = status === "fejlet" ? clip(body.error, 1000) : "";
+  if (status === "til godkendelse" && !job.result) throw new HttpError(400, "Et job til godkendelse skal have et result.");
+  if (status === "fejlet" && !job.error) throw new HttpError(400, "Skriv i error, hvorfor jobbet fejlede.");
+  job.status = status;
+  return await saveJob(store, job);
+}
+
 async function updateJob(req: Request, store: Store, who: Who, id: string) {
+  const body = await readJson(req);
+  if (who === "Claude") return json(200, { job: await reportJob(store, id, body) });
   const job = await readJob(store, id);
   if (!job) return fail(410, "Jobbet findes ikke længere.");
-  const body = await readJson(req);
-  const status = body?.status;
-
-  if (who === "Claude") {
-    if (!["i gang", "til godkendelse", "fejlet"].includes(status)) {
-      return fail(400, 'Claude kan sætte status til "i gang", "til godkendelse" eller "fejlet".');
-    }
-    if (job.status === "godkendt" || job.status === "kasseret") {
-      return fail(410, `Kasper har allerede lukket jobbet (${job.status}). Intet er gemt.`);
-    }
-    if (typeof body.result === "string") {
-      if (body.result.length > MAX_RESULT) return fail(400, `Resultatet må højst være ${MAX_RESULT} tegn.`);
-      job.result = body.result.trim();
-    }
-    job.error = status === "fejlet" ? clip(body.error, 1000) : "";
-    if (status === "til godkendelse" && !job.result) return fail(400, "Et job til godkendelse skal have et result.");
-    if (status === "fejlet" && !job.error) return fail(400, "Skriv i error, hvorfor jobbet fejlede.");
-  } else if (!["godkendt", "kasseret"].includes(status)) {
+  if (!["godkendt", "kasseret"].includes(body?.status)) {
     return fail(400, 'Du kan sætte status til "godkendt" eller "kasseret".');
   }
-  job.status = status;
+  job.status = body.status;
   return json(200, { job: await saveJob(store, job) });
 }
 
@@ -885,10 +864,6 @@ export async function handle(req: Request, p: Platform): Promise<Response> {
     if (path === "/api/history" && method === "GET") return await history(store);
     const restoreMatch = path.match(/^\/api\/history\/([^/]+)\/restore$/);
     if (restoreMatch && method === "POST") return await restore(store, decodeURIComponent(restoreMatch[1]), who);
-    if (path === "/api/claude-key") {
-      if (who !== "dig") return fail(401, "Kun du kan lave eller fjerne Claudes nøgle — log ind i appen.");
-      return await claudeKey(req, store);
-    }
     if (path === "/api/tokens" || path.startsWith("/api/tokens/")) {
       if (who !== "dig") return fail(401, "Kun du kan lave og tilbagekalde API-tokens — log ind i appen.");
       return await tokenRoutes(req, store, path);

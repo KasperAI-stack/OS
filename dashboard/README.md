@@ -50,15 +50,15 @@ Hver gang der gemmes — af dig eller af Claude — lægges versionen også i **
 
 ## Claude-adgang
 
-Claude kan læse og rette dine data direkte — fx lægge opgaver ind fra Asana, når du beder om det. Det sættes op én gang:
+Claude kan læse og rette dine data — fx lægge opgaver ind fra Asana, når du beder om det. Claude bruger API'et `/ext` med et API-token, ligesom Studio. Det sættes op én gang:
 
-1. Åbn **Claude-adgang** nederst i sidebaren, og klik **Lav en nøgle til Claude**. Nøglen vises kun den ene gang.
-2. I Claude: miljøets indstillinger (miljø-menuen i sessionens titellinje → **Edit**):
-   - tilføj miljøvariablen **`HEYOTTO_API_KEY`** med nøglen som værdi
-   - under **Network access**: vælg **Custom**, og tilføj appens adresse (fx `tasks.heyotto.win`) under Allowed domains (behold standardlisten)
+1. **Indstillinger → API-tokens**: lav et token med navnet **Claude**, med **Læse** og **Skrive**. Tokenet vises kun den ene gang.
+2. Gem det som miljøvariablen **`HEYOTTO_TASKS_TOKEN`**:
+   - på din pc: Windows → *Rediger miljøvariabler for din konto*. Genstart VS Code bagefter.
+   - i et Claude-miljø i skyen (fx routinen): miljøets indstillinger (miljø-menuen i sessionens titellinje → **Edit**). Under **Network access**: vælg **Custom**, og tilføj `tasks-api.heyotto.win` under Allowed domains (behold standardlisten).
 3. Start en ny session.
 
-Claude kan ikke se din adgangskode eller lave nye nøgler. Alt, hvad Claude gemmer, står i Historik som „gemt af Claude“. **Lav en ny nøgle** udskifter nøglen (den gamle holder op med at virke med det samme), og **Fjern Claudes adgang** lukker helt. Fremgangsmåden for Claude står i `.claude/skills/heyotto-os-data/SKILL.md`.
+Alt, hvad Claude gemmer, står i Historik under tokenets navn og kan fortrydes. Tilbagekald tokenet under API-tokens for at lukke adgangen. Sletning, projekter og rutiner sker kun i appen. Fremgangsmåden for Claude står i `.claude/skills/heyotto-tasks-data/SKILL.md`. Siden **Claude-adgang** viser de samme trin.
 
 ## Claude udfører opgaver
 
@@ -73,7 +73,7 @@ Claude arbejder i skyen i en **Claude Code Routine** på dette repo, med dine ag
 
 **Opsætning (én gang).** Trinene står også på siden **Claude-adgang**, hvor instruktionen kan kopieres med én knap.
 
-1. Giv Claude adgang med en nøgle (se ovenfor), i det Claude-miljø routinen skal bruge.
+1. Giv Claude adgang med et API-token (se ovenfor), i det Claude-miljø routinen skal bruge.
 2. På [claude.ai/code/routines](https://claude.ai/code/routines) → **New routine**:
    - navn: „HeyOtto OS-opgaver“
    - repo: `KasperAI-stack/OS`
@@ -87,7 +87,7 @@ Claude arbejder i skyen i en **Claude Code Routine** på dette repo, med dine ag
 
    Lav derefter et nyt deploy (*Deploys → Trigger deploy*).
 
-Routinen bruger skillen `.claude/skills/heyotto-os-job/SKILL.md` fra `main`. Routinen kloner altid `main`, så ændringer i skillen virker først, når de er merget.
+Routinen bruger skillen `.claude/skills/heyotto-tasks-job/SKILL.md` fra `main`. Claude henter jobbet med `GET /ext/jobs/{id}` og melder tilbage med `PATCH /ext/jobs/{id}`. Routinen kloner altid `main`, så ændringer i skillen virker først, når de er merget.
 
 **Grænser og sikkerhed**
 
@@ -164,10 +164,15 @@ Authorization: Bearer tsk_…
 | `POST /ext/tasks/{id}/comments` | `write` | `{ text }` (højst 4.000 tegn). Vises på opgaven i appen. Svarer `201` |
 | `GET /ext/projects` | `read` | Projekter med antal åbne og færdige tasks |
 | `GET /ext/routines` | `read` | Rutinerne |
+| `GET /ext/sprints?project=` | `read` | Sprints: `project`, `month`, `goal` |
+| `POST /ext/sprints` | `write` | Ny sprint: `{ project, month: "ÅÅÅÅ-MM", goal }`. `409`, hvis projektet allerede har en sprint den måned. Svarer `201` |
+| `GET /ext/calendar` | `read` | `{ snapshot }`: møder fra de forbundne Google-konti. `null`, når intet er forbundet |
+| `GET /ext/jobs/{id}` | `read` | Et job, du har sat Claude på i appen |
+| `PATCH /ext/jobs/{id}` | `write` | Claude melder tilbage: `{ status: "i gang" | "til godkendelse" | "fejlet", result?, error? }`. `410`, hvis du har lukket jobbet |
 
 - **Ingen sletning**, ingen Historik og ingen tokens via `/ext`. Ændringer gemmes med versionstjek og står i Historik med tokenets navn, så de kan fortrydes.
 - **Grænser:** 60 kald i minuttet pr. token (Cloudflares Rate Limiting, omtrentlig pr. datacenter), body højst 256 KB.
-- **Fejl** er JSON `{ "error": "…" }` på dansk: `400` ugyldigt, `401` token, `403` rettighed, `404` ukendt task eller adresse, `413` for stor, `429` for mange kald.
+- **Fejl** er JSON `{ "error": "…" }` på dansk: `400` ugyldigt, `401` token, `403` rettighed, `404` ukendt task, job eller adresse, `409` findes allerede, `413` for stor, `429` for mange kald.
 - **Log:** én linje pr. kald med tokenets navn, metode, sti og status. Tokens renses (`tsk_***`) i logs og stier.
 
 ## Forsiden: kapacitet
