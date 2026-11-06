@@ -41,14 +41,14 @@ To retninger, hver med sit eget token:
 ### Opsætning (Kasper, i Studio)
 
 1. Opret et token i Tasks (Indstillinger → API-tokens), fx "Studio", med `read` + `write`.
-2. Læg det i Studios `.env` som `HEYOTTO_TASKS_MCP_TOKEN`.
+2. Læg det i Studios `.env` som `HEYOTTO_TASKS_API` (gjort 2026-11-06, token "Studio").
 3. I `studio.config.json` → `"mcp"`:
    ```jsonc
    "heyotto-tasks": {
      "name": "HeyOtto Tasks",
      "type": "http",
      "url": "https://tasks-api.heyotto.win/mcp",
-     "auth": { "env": "HEYOTTO_TASKS_MCP_TOKEN" },
+     "auth": { "env": "HEYOTTO_TASKS_API" },
      "tools": {
        "read": ["list_tasks", "get_task", "list_projects", "list_routines", "get_forecast"],
        "write": ["create_task", "update_task", "add_comment"],

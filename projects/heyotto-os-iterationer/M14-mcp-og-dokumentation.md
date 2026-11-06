@@ -33,6 +33,14 @@ Navngivet, så Studio kan klassificere dem som læsende, skrivende eller farlige
 - Værktøjerne kalder de samme funktioner som `/ext`, så logikken findes ét sted.
 - Ændringer står i Historik med tokenets navn og kan fortrydes.
 
+### Krav fra Studio (M43 i heyotto-studio, 2026-11-06)
+
+Studio venter på dette endpoint for at kunne lave tasks fra chatten. Studio klassificerer værktøjerne på **navn**, så:
+- **Navnene ovenfor er en kontrakt.** Omdøb eller fjern ikke et værktøj uden at sige det til Kasper. Studio afviser værktøjer, det ikke kender, og markerer nye eller forsvundne værktøjer.
+- Tokenet sendes som `Authorization: Bearer tsk_…`. Studio bruger det eksisterende token "Studio" (`read` + `write`).
+- Fejl returneres som et værktøjsresultat med `isError: true` og en dansk besked, ikke som HTML eller en kastet fejl. Resultater er JSON i `text`-indhold.
+- `/mcp` ligger på `tasks-api.heyotto.win`, ikke bag Cloudflare Access. Test: `initialize` og `tools/list` med `curl` og token giver JSON, og uden token `401`.
+
 ## Dokumentation
 
 - `docs/api.md` på dansk: tokens, scopes, grænser (60/min, 256 KB), fejlkoder (`401`, `403`, `404`, `413`, `429`), alle endpoints og MCP-værktøjer med eksempler i curl.
