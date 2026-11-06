@@ -1,6 +1,6 @@
 # M14: MCP-endpoint og API-dokumentation
 
-**Status (2026-11-06):** bygget og committet (`4384b83`), 52 tests består. **Ikke udrullet endnu:** `npm run cf:deploy` venter på Kaspers ok, derefter test udefra. Svarer til M5 og M6 i Studios guide. Bygger på M11 og M12.
+**Status (2026-11-06):** færdig. Udrullet af Kasper og testet udefra på `tasks-api.heyotto.win/mcp`: `401` uden token, `initialize`, `tools/list` med de 8 værktøjer, `list_tasks`, `add_comment` (står som "Studio"), en ugyldig status som dansk `isError`, tokenet i stien og `GET` → `405`. 52 tests består. Svarer til M5 og M6 i Studios guide. Bygger på M11 og M12.
 
 **Afvigelser:**
 - Skrevet uden `@modelcontextprotocol/sdk` (`server/mcp.mts`, ca. 200 linjer): SDK'ens skemavalidering (ajv) genererer kode med `new Function`, som Workers afviser. Kun værktøjsdelen af protokollen bruges, og felterne valideres af de samme funktioner som `/ext`, så `inputSchema` er almindeligt JSON Schema og ikke zod.
