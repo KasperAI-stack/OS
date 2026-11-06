@@ -1,0 +1,44 @@
+// HeyOtto Tasks på Cloudflare Workers. Se worker/index.mts og projects/heyotto-os-iterationer/M10-cloudflare-fundament.md.
+//
+//   npm run cf:dev            lokalt (Miniflare: lokal D1, kø og cron)
+//   npm run cf:deploy:test    testmiljøet (egen database og kø, kopi af data)
+//
+// Hemmeligheder sættes med `npx wrangler secret put <NAVN> [--env test]` og står aldrig her:
+//   HEYOTTO_PASSWORD, ANTHROPIC_API_KEY, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
+//   CLAUDE_ROUTINE_URL, CLAUDE_ROUTINE_TOKEN
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "heyotto-tasks",
+  "main": "worker/index.mts",
+  "compatibility_date": "2026-09-01",
+  // node:crypto og process.env (hemmelighederne ligger også i process.env, som Claude-SDK'et læser)
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": { "directory": "./dashboard", "binding": "ASSETS" },
+  "observability": { "enabled": true },
+  "triggers": { "crons": ["*/15 * * * *", "0 * * * *"] },
+
+  // Produktion (M13). database_id udfyldes, når databasen er oprettet:
+  //   npx wrangler d1 create heyotto-tasks
+  "vars": { "APP_URL": "" },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "heyotto-tasks", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
+  ],
+  "queues": {
+    "producers": [{ "binding": "AGENT_QUEUE", "queue": "heyotto-tasks-otto" }],
+    "consumers": [{ "queue": "heyotto-tasks-otto", "max_batch_size": 1, "max_retries": 0 }]
+  },
+
+  "env": {
+    // Testmiljøet: egen database og kø, så en test aldrig rører de rigtige data
+    "test": {
+      "vars": { "APP_URL": "" },
+      "d1_databases": [
+        { "binding": "DB", "database_name": "heyotto-tasks-test", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
+      ],
+      "queues": {
+        "producers": [{ "binding": "AGENT_QUEUE", "queue": "heyotto-tasks-otto-test" }],
+        "consumers": [{ "queue": "heyotto-tasks-otto-test", "max_batch_size": 1, "max_retries": 0 }]
+      }
+    }
+  }
+}

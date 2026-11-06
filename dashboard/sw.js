@@ -1,4 +1,4 @@
-/* HeyOtto OS — service worker. Kun til notifikationer (Web Push).
+/* HeyOtto Tasks — service worker. Kun til notifikationer (Web Push).
    Den gemmer intet og cacher intet, så appen altid er den nyeste version.
    Beskederne sendes af netlify/lib/alerts.mts som { title, body, url, tag }. */
 
@@ -8,7 +8,7 @@ self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim(
 self.addEventListener("push", (event) => {
   let d = {};
   try { d = event.data ? event.data.json() : {}; } catch (e) { d = { body: event.data ? event.data.text() : "" }; }
-  event.waitUntil(self.registration.showNotification(d.title || "HeyOtto OS", {
+  event.waitUntil(self.registration.showNotification(d.title || "HeyOtto Tasks", {
     body: d.body || "",
     icon: "/otto/app-192.png",
     badge: "/otto/app-192.png",
@@ -18,7 +18,7 @@ self.addEventListener("push", (event) => {
   }));
 });
 
-// Et klik åbner HeyOtto OS — et vindue, der allerede er åbent, bruges igen
+// Et klik åbner HeyOtto Tasks — et vindue, der allerede er åbent, bruges igen
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = new URL((event.notification.data && event.notification.data.url) || "/", self.location.origin).href;

@@ -1,0 +1,12 @@
+# Samme headers som i netlify.toml, så de også gælder på Cloudflare Workers (static assets).
+
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: same-origin
+
+/lib/*.mjs
+  Content-Type: text/javascript; charset=utf-8
+
+/sw.js
+  Cache-Control: no-cache

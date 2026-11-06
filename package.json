@@ -1,13 +1,22 @@
 {
   "name": "heyotto-os",
   "private": true,
-  "description": "HeyOtto OS — dashboardet og den Netlify-funktion, der gemmer dets data. Se dashboard/README.md.",
+  "description": "HeyOtto Tasks — appen og serveren bag den (Netlify nu, Cloudflare Workers fra M10). Se dashboard/README.md.",
   "dependencies": {
     "@anthropic-ai/sdk": "^1.5.0",
-    "@netlify/blobs": "^11.1.3",
-    "web-push": "^3.6.7"
+    "@netlify/blobs": "^11.1.3"
   },
   "devDependencies": {
-    "@netlify/functions": "^6.0.2"
+    "@netlify/functions": "^6.0.2",
+    "web-push": "^3.6.7",
+    "wrangler": "^4.158.0"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.mts\"",
+    "cf:dev": "wrangler dev --port 8799 --test-scheduled",
+    "cf:migrate:local": "wrangler d1 migrations apply heyotto-tasks --local",
+    "cf:migrate:test": "wrangler d1 migrations apply heyotto-tasks-test --env test --remote",
+    "cf:deploy:test": "wrangler deploy --env test",
+    "cf:copy": "node scripts/copy-blobs-to-d1.mjs"
   }
 }

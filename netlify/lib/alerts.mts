@@ -7,13 +7,14 @@
      push/vapid     { publicKey, privateKey (krypteret) } — laves første gang, intet at sætte op
      push/subs      [{ endpoint, keys, label, tz, createdAt }] — én pr. enhed med notifikationer slået til
 
-   Push sendes med Web Push (VAPID). Nøglerne laves af HeyOtto OS selv og ligger i lageret,
+   Push sendes med Web Push (VAPID, se webpush.mts). Nøglerne laves af appen selv og ligger i lageret,
    så en ny installation virker uden miljøvariabler. Afsenderen (VAPID "subject") er sitets
    egen adresse. */
 
-import webpush from "web-push";
 import { alerts as computeAlerts, activeAlerts, localIso } from "../../dashboard/lib/forecast.mjs";
 import { decrypt, encrypt, readSnapshot, serverSecret } from "./google.mts";
+import { wall, zonedSnapshot } from "./zone.mts";
+import { generateVapidKeys, sendPush } from "./webpush.mts";
 
 type Store = {
   get(key: string, opts?: any): Promise<any>;
@@ -67,7 +68,7 @@ export async function vapid(store: Store) {
   const secret = await serverSecret(store);
   const saved = await store.get(VAPID_KEY, { type: "json" });
   if (saved?.publicKey && saved?.privateKey) return { publicKey: String(saved.publicKey), privateKey: decrypt(secret, String(saved.privateKey)) };
-  const k = webpush.generateVAPIDKeys();
+  const k = await generateVapidKeys();
   await store.setJSON(VAPID_KEY, { publicKey: k.publicKey, privateKey: encrypt(secret, k.privateKey) });
   return k;
 }
@@ -103,9 +104,7 @@ export async function unsubscribe(store: Store, endpoint: string) {
 
 export type Sender = (sub: Sub, payload: string, keys: { publicKey: string; privateKey: string }, subject: string) => Promise<void>;
 export const webPushSender: Sender = async (sub, payload, keys, subject) => {
-  await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload, {
-    TTL: 6 * 3600, urgency: "normal", vapidDetails: { subject, publicKey: keys.publicKey, privateKey: keys.privateKey }
-  });
+  await sendPush({ endpoint: sub.endpoint, keys: sub.keys }, payload, { subject, publicKey: keys.publicKey, privateKey: keys.privateKey });
 };
 
 // Sender til alle (eller én) enheder. Enheder, push-tjenesten siger er væk, fjernes.
@@ -143,13 +142,13 @@ export async function run(store: Store, subject: string, now = new Date(), send:
   const data = await store.get("data", { type: "json" });
   if (!data || !Array.isArray(data.tasks)) return { skipped: "ingen data" };
 
-  // Regn i brugerens tidszone (fra den seneste enhed). Node følger TZ, når den sættes.
-  process.env.TZ = subs[0].tz || DEFAULT_TZ;
-  const local = new Date(now.getTime());
+  // Regn i brugerens tidszone (fra den seneste enhed). Se zone.mts.
+  const tz = subs[0].tz || DEFAULT_TZ;
+  const local = wall(now, tz);
   const hour = local.getHours(), todayIso = localIso(local), weekday = local.getDay() !== 0 && local.getDay() !== 6;
   if (hour < DAY_FROM || hour >= DAY_TO) return { skipped: "uden for " + DAY_FROM + "–" + DAY_TO };
 
-  const cal = await readSnapshot(store);
+  const cal = zonedSnapshot(await readSnapshot(store), tz);
   const st = await readState(store);
   const list = activeAlerts(computeAlerts(data, cal, local), st.snoozed, todayIso);
   const reds = list.filter((a: any) => a.level === 3);

@@ -1,4 +1,4 @@
-# HeyOtto OS — dashboard
+# HeyOtto Tasks — appen (tidligere HeyOtto OS)
 
 Et Scrum-/projektoverblik over de store initiativer, med kapacitet på forsiden. Det er en webapp på **heyotto-os.netlify.app**, som du bruger fra computer og telefon. Alt ligger i skyen — der er ingen filer at holde styr på.
 
@@ -12,9 +12,11 @@ Et Scrum-/projektoverblik over de store initiativer, med kapacitet på forsiden.
 | Google-forbindelsen og kalendersynken | `netlify/lib/google.mts`, kørt hvert 15. minut af `netlify/functions/calendar-sync.mts` |
 | Appen (layout, logik, redigering) | `dashboard/index.html` — én HTML-fil, intet byggetrin, ingen biblioteker |
 | Otto-illustrationerne | `dashboard/otto/` — PNG'er med gennemsigtig baggrund |
-| API'et (login, data, historik, Claudes nøgle, Claude-jobs) | `netlify/functions/api.mts` |
+| API'et (login, data, historik, Claudes nøgle, Claude-jobs) | `netlify/lib/api.mts` (`handle(req, platform)`). Netlify: `netlify/functions/api.mts`. Cloudflare: `worker/index.mts` |
+| Platformslaget (lager, miljø, kø) | `netlify/lib/platform.mts`. Job: `netlify/lib/jobs.mts`. Se "Cloudflare Workers" nedenfor |
 | Indholdet (projekter, sprints, opgaver, kapacitet) | Netlify Blobs — Netlifys indbyggede lager. Aldrig i git |
-| Opsætningen | `netlify.toml` — Netlify bygger fra `main` på GitHub |
+| Opsætningen | `netlify.toml` — Netlify bygger fra `main` på GitHub. Cloudflare: `wrangler.jsonc`. Headers: `dashboard/_headers` (begge) |
+| Tests | `test/` — `npm test` (Node, ingen server og ingen Cloudflare) |
 
 Siden indeholder ingen data. Den henter dem fra API'et som JSON, når du er logget ind, og gemmer dem samme vej.
 
@@ -396,6 +398,23 @@ Projekter har desuden `kind` (`drift` / `projekt` / `adhoc`), som afgør hvilken
 **Hvorfor `sprint` og `start`/`end` er adskilt:** `sprint` er en *forpligtelse* — "det her arbejder jeg på i oktober". `start`/`end` er en *tidslinje*. En opgave, der løber fem måneder, hører stadig kun til i én sprint.
 
 **Hvorfor måneder og ikke datoer:** en sprint *er* en måned, og tidslinjens kolonner *er* måneder. Månedsstrenge rører aldrig `Date`, så ingen tidszone kan skubbe november til oktober. `due` er undtagelsen, hvor dagen faktisk betyder noget.
+
+## Cloudflare Workers (M10, på vej)
+
+HeyOtto Tasks flytter fra Netlify til Cloudflare Workers (planen: `projects/heyotto-os-iterationer/M10`–`M15`). Indtil flytningen (M13) kører samme kode begge steder:
+
+| | Netlify (i dag) | Cloudflare |
+|---|---|---|
+| API | `netlify/functions/api.mts` | `worker/index.mts` → `fetch` |
+| Lager | Netlify Blobs | D1 (`worker/store.mts`, tabellen `docs` med de samme nøgler) |
+| Otto-kørsler | baggrundsfunktion `/agent-run` (HMAC-signeret) | Queue `heyotto-tasks-otto` → `queue` |
+| Planlagte job | `agent-schedule`, `calendar-sync`, `alerts-sync` | Cron hvert 15. minut og hver time → `scheduled` |
+| Hemmeligheder | Netlify-miljøvariabler | `wrangler secret put` |
+| Test-lager | Deploy Previews (`getDeployStore`) | miljøet `test` med egen D1 og kø |
+
+- Prognose og alarmer regnes på serveren i brugerens tidszone med `netlify/lib/zone.mts` (Workers kører altid i UTC, og `process.env.TZ` virker ikke der).
+- Push sendes med Web Crypto (`netlify/lib/webpush.mts`), så det virker på begge platforme. Nøglerne er de samme.
+- Data kopieres med `scripts/copy-blobs-to-d1.mjs` (se kommentaren øverst i filen).
 
 ## Valideringen
 

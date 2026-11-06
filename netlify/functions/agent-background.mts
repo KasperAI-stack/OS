@@ -1,61 +1,22 @@
-/* HeyOtto OS — kører én af Ottos kørsler. Baggrundsfunktion: op til 15 minutter.
+/* HeyOtto Tasks — kører én af Ottos kørsler på Netlify. Baggrundsfunktion: op til 15 minutter.
 
-   Startes af api.mts (dig) og agent-schedule.mts (planen) med en signeret
-   forespørgsel. Selve løkken står i netlify/lib/agent/runtime.mts. */
+   Startes af API'et (dig) og agent-schedule (planen) med en signeret forespørgsel.
+   Selve kørslen står i netlify/lib/jobs.mts (runAgent). */
 
-import { getDeployStore, getStore } from "@netlify/blobs";
 import type { Config, Context } from "@netlify/functions";
-import { sendAll } from "../lib/alerts.mts";
-import { execute } from "../lib/agent/runtime.mts";
 import { validSignature } from "../lib/agent/queue.mts";
-import { readRun, readSettings, saveRun, type Store } from "../lib/agent/store.mts";
-import { readPlan } from "../lib/plans.mts";
+import { runAgent } from "../lib/jobs.mts";
+import { contextStore } from "../lib/netlify-platform.mts";
 
 export default async (req: Request, context: Context) => {
-  // Samme lager som api.mts: kun produktion rører de rigtige data
-  const options = { name: "heyotto-os", consistency: "strong" as const };
-  const store = (context.deploy?.context === "production" ? getStore(options) : getDeployStore(options)) as unknown as Store;
+  const store = contextStore(context);
   const body = (await req.json().catch(() => null)) as { runId?: unknown } | null;
   const id = typeof body?.runId === "string" ? body.runId : "";
-  if (!id || !(await validSignature(store, id, req.headers.get("x-heyotto-signature") || ""))) {
+  if (!id || !(await validSignature(store as any, id, req.headers.get("x-heyotto-signature") || ""))) {
     console.log("agent-run: afvist (mangler gyldig signatur)");
     return;
   }
-
-  // Prognosen regner i lokal tid, ligesom i appen
-  process.env.TZ = (await readSettings(store)).tz;
-  const origin = new URL(req.url).origin;
-  const notify = async (title: string, text: string, tag: string, url = "/#otto") => {
-    await sendAll(store, [{ title, body: text, url, tag }], origin);
-  };
-
-  try {
-    const run = await execute(store, id, { notify });
-    if (!run) return;
-    console.log(`agent-run ${run.id} (${run.kind}): ${run.status}, ${run.steps.length} trin, ${run.costDkk} kr.`);
-    // Morgenbriefen sendes også som notifikation: første linje som titel
-    if (run.kind === "morgenbrief" && run.status === "færdig" && run.output) {
-      const [first, ...rest] = run.output.split("\n").map((l) => l.replace(/^[-*#\s]+/, "").trim()).filter(Boolean);
-      if (first) await notify("Otto: " + first.slice(0, 80), rest.join(" · ").slice(0, 180), "morgenbrief");
-    }
-    // Ugeforslaget: kun en besked, når der faktisk er et forslag at se på
-    if (run.kind === "ugeforslag" && run.status === "færdig") {
-      const plan = await readPlan(store as any, run.id);
-      if (plan && plan.changes.length) {
-        await notify("Otto har et forslag til ugen",
-          `${plan.changes.length} ændringer. I risiko: ${plan.before.atRisk + plan.before.overdue} → ${plan.after.atRisk + plan.after.overdue}.`, "ugeforslag", "/#omplan");
-      }
-    }
-  } catch (e) {
-    console.error("agent-run fejlede:", e);
-    const run = await readRun(store, id);
-    if (run && (run.status === "kører" || run.status === "i kø")) {
-      run.status = "fejlet";
-      run.error = "Serverfejl: " + (e instanceof Error ? e.message : String(e)).slice(0, 300);
-      run.finishedAt = new Date().toISOString();
-      await saveRun(store, run);
-    }
-  }
+  await runAgent(store, id, new URL(req.url).origin);
 };
 
 export const config: Config = {

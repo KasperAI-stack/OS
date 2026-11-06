@@ -15,6 +15,7 @@
 
 import { activeAlerts, alerts as computeAlerts, forecast, isOpen, localIso } from "../../../dashboard/lib/forecast.mjs";
 import { readSnapshot } from "../google.mts";
+import { wall, zonedSnapshot } from "../zone.mts";
 import { readState } from "../alerts.mts";
 import { mailAccounts, newThreads, readThread, threadUrl, type ThreadHead } from "../gmail.mts";
 import { addSuggestion, markProcessed, readProcessed } from "../inbox.mts";
@@ -26,7 +27,9 @@ export const ALLOWED_CLASSES: readonly ToolClass[] = ["read", "propose", "write"
 
 // scratch lever i én kørsel: fx de tråde, gmail_new har vist, så forslag kun kan
 // laves til mails, Otto faktisk har fået i denne kørsel.
-export type ToolCtx = { store: Store; now: Date; env: (k: string) => string | undefined; scratch: Record<string, any> };
+// now er det rigtige øjeblik (til Gmail og tidsstempler). tz er brugerens tidszone:
+// prognose og datoer regnes med wall(now, tz), så de passer med appen (se zone.mts).
+export type ToolCtx = { store: Store; now: Date; tz: string; env: (k: string) => string | undefined; scratch: Record<string, any> };
 export type Tool = {
   name: string;
   description: string;
@@ -84,7 +87,7 @@ const dataRead: Tool = {
     const d = await readData(ctx.store);
     if (!d) return { error: "Der er ingen data endnu." };
     const project = str(input.project, 80);
-    const month = localIso(ctx.now).slice(0, 7);
+    const month = localIso(wall(ctx.now, ctx.tz)).slice(0, 7);
     const tasks = d.tasks
       .filter((t: any) => (!project || t.project === project) && (input.includeDone === true || isOpen(t)))
       .slice(0, MAX_TASKS)
@@ -124,10 +127,11 @@ const forecastRun: Tool = {
   async run(input, ctx) {
     const d = await readData(ctx.store);
     if (!d) return { error: "Der er ingen data endnu." };
-    const cal = await readSnapshot(ctx.store);
-    const fc = forecast(d, cal, ctx.now);
+    const cal = zonedSnapshot(await readSnapshot(ctx.store), ctx.tz);
+    const local = wall(ctx.now, ctx.tz);
+    const fc = forecast(d, cal, local);
     const st = await readState(ctx.store);
-    const list = activeAlerts(computeAlerts(d, cal, ctx.now, fc), st.snoozed, fc.today);
+    const list = activeAlerts(computeAlerts(d, cal, local, fc), st.snoozed, fc.today);
     const n = Math.min(12, Math.max(1, Number(input.weeks) || 6));
     const title = (id: string) => d.tasks.find((t: any) => t.id === id)?.title || id;
     const round = (v: number) => Math.round(v * 10) / 10;
@@ -160,13 +164,13 @@ const calendarList: Tool = {
   async run(input, ctx) {
     const snap = await readSnapshot(ctx.store);
     if (!snap) return { error: "Ingen kalender er forbundet." };
-    const today = localIso(ctx.now);
+    const today = localIso(wall(ctx.now, ctx.tz));
     const from = isDay(input.from) ? input.from : today;
     let to = isDay(input.to) ? input.to : addDays(from, 7);
     if (to < from) to = from;
     if (to > addDays(from, MAX_RANGE_DAYS)) to = addDays(from, MAX_RANGE_DAYS);
     const end = addDays(to, 1);
-    const day = (e: any) => (e.allDay ? String(e.start).slice(0, 10) : localIso(new Date(e.start)));
+    const day = (e: any) => (e.allDay ? String(e.start).slice(0, 10) : localIso(wall(e.start, ctx.tz)));
     const events = snap.events
       .filter((e) => e.response !== "declined")
       // Starter i perioden, eller er en heldagshændelse (fx ferie), der er i gang ved periodens start
@@ -343,7 +347,8 @@ const planPropose: Tool = {
   async run(input, ctx) {
     const d = await readData(ctx.store);
     if (!d) return { error: "Der er ingen data endnu." };
-    const cal = await readSnapshot(ctx.store);
+    const cal = zonedSnapshot(await readSnapshot(ctx.store), ctx.tz);
+    const local = wall(ctx.now, ctx.tz);
     const snoozed = (await readState(ctx.store)).snoozed;
     const { changes, dropped } = validatePlan(d, input.changes);
     const plan: Plan = {
@@ -351,7 +356,7 @@ const planPropose: Tool = {
       createdAt: new Date().toISOString(), summary: str(input.summary, 1200),
       changes, dropped,
       questions: (Array.isArray(input.questions) ? input.questions : []).map((q) => str(q, 300)).filter(Boolean).slice(0, 8),
-      before: planMetrics(d, cal, ctx.now, snoozed), after: planMetrics(applyChanges(d, changes), cal, ctx.now, snoozed),
+      before: planMetrics(d, cal, local, snoozed), after: planMetrics(applyChanges(d, changes), cal, local, snoozed),
       status: "ny", appliedAt: ""
     };
     await savePlan(ctx.store, plan);

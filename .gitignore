@@ -7,3 +7,8 @@ Thumbs.db
 # Netlify og npm
 node_modules/
 .netlify/
+
+# Cloudflare (wrangler): lokale hemmeligheder og lokal database
+.dev.vars
+.dev.vars.*
+.wrangler/

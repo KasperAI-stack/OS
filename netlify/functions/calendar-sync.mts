@@ -1,20 +1,13 @@
-/* HeyOtto OS — henter de forbundne Google-kalendere hvert 15. minut.
+/* HeyOtto Tasks — henter de forbundne Google-kalendere på Netlify. Hvert 15. minut, kun
+   produktion. Appen beder desuden selv om en frisk synk, når den åbnes og kalenderen er
+   over 5 minutter gammel. Logikken står i netlify/lib/jobs.mts og netlify/lib/google.mts. */
 
-   Netlify kører kun planlagte funktioner på produktion, så de rigtige data bruges
-   altid her. Selve synken står i netlify/lib/google.mts. Appen beder desuden selv
-   om en frisk synk, når den åbnes og kalenderen er over 5 minutter gammel. */
-
-import { getStore } from "@netlify/blobs";
 import type { Config } from "@netlify/functions";
-import { client, readAccounts, syncAll } from "../lib/google.mts";
+import { calendarTick } from "../lib/jobs.mts";
+import { netlifyEnv, productionStore } from "../lib/netlify-platform.mts";
 
 export default async () => {
-  const env = (k: string) => Netlify.env.get(k);
-  if (!client(env)) return;                       // Google er ikke sat op: intet at gøre
-  const store = getStore({ name: "heyotto-os", consistency: "strong" });
-  if (!(await readAccounts(store)).length) return; // ingen konti forbundet endnu
-  const snap = await syncAll(store, env);
-  console.log("kalender hentet —", snap.accounts.map((a) => `${a.email}: ${a.ok ? a.events + " hændelser" : a.error}`).join(", "));
+  console.log("kalender —", await calendarTick(productionStore(), netlifyEnv));
 };
 
 // Hvert 15. minut (UTC). Netlify giver planlagte funktioner 30 sekunder.

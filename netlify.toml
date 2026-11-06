@@ -1,4 +1,4 @@
-# HeyOtto OS på Netlify — se dashboard/README.md.
+# HeyOtto Tasks på Netlify (Cloudflare Workers: wrangler.jsonc) — se dashboard/README.md.
 #
 # Intet byggetrin: appen er én HTML-fil (dashboard/index.html). Al data ligger i
 # Netlify Blobs bag netlify/functions/api.mts, som også står for login.
@@ -10,22 +10,5 @@
 [functions]
   directory = "netlify/functions"
 
-# Siden må ikke vises inde i andre sider, og browseren må ikke gætte filtyper.
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "same-origin"
-
-# Prognosemodulet hentes med import() og skal serveres som JavaScript.
-[[headers]]
-  for = "/lib/*.mjs"
-  [headers.values]
-    Content-Type = "text/javascript; charset=utf-8"
-
-# Service workeren (notifikationer) må aldrig hænge fast i en gammel version.
-[[headers]]
-  for = "/sw.js"
-  [headers.values]
-    Cache-Control = "no-cache"
+# Headers (sikkerhed, JavaScript-typen og service workeren) står i dashboard/_headers,
+# som både Netlify og Cloudflare Workers læser.

@@ -195,7 +195,7 @@ export async function execute(store: Store, id: string, opts: { call?: ModelCall
       const logged: Step = { at: new Date(t1).toISOString(), type: "tool", ms: 0, name: tu.name, input: short(input, 300) };
       try {
         if (!allowed.has(tu.name)) throw new Error(`Værktøjet ${tu.name} er ikke tilladt i denne kørsel.`);
-        const out = await tools.find((t) => t.name === tu.name)!.run(input, { store, now: now(), env, scratch });
+        const out = await tools.find((t) => t.name === tu.name)!.run(input, { store, now: now(), tz: settings.tz, env, scratch });
         const textOut = JSON.stringify(out);
         logged.output = short(textOut, 500);
         logged.ms = Date.now() - t1;
