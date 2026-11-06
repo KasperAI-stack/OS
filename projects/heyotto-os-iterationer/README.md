@@ -8,9 +8,9 @@ Status (2026-11-06):
 - **M6** (prognose og alarmer, inkl. push-notifikationer) er bygget på branchen `claude/m6-prognose-alarmer`.
 - **M7** (Otto, agent-kernen) og **M8** (Indbakke med "Hent mails") er merget og live (PR #13 og #14).
 - **M9** (omplanlæg med Otto, inkl. ugeforslag mandag) er bygget på branchen `claude/m9-omplanlaeg`.
-- **M10** er bygget og testet i Node på branchen `claude/m10-cloudflare` (kører i testmiljøet på heyotto-tasks-test.heyotto-tasks.workers.dev). Appen hedder nu **HeyOtto Tasks** og kører kun på Cloudflare: Netlify er fjernet helt fra koden.
-- **M11** (API-tokens og `/ext`) er bygget og kører i testmiljøet.
-- **M12** (adgangsvagt og Access) er bygget og deployet i testmiljøet. Venter på Access-applikationen.
+- **M10** er bygget og testet i Node på branchen `claude/m10-cloudflare` (kører på tasks.heyotto.win). Appen hedder nu **HeyOtto Tasks** og kører kun på Cloudflare: Netlify er fjernet helt fra koden.
+- **M11** (API-tokens og `/ext`) er bygget og kører på `tasks-api.heyotto.win`.
+- **M12** (adgangsvagt og Access) er bygget og deployet. Venter på Access-applikationen.
 - **M13–M15** er planlagt (2026-11-06): OS flytter til Cloudflare og får samme opsætning som HeyOtto Studio (API med tokens, MCP, UI bag Cloudflare Access) og en forbindelse til Studio. Grundlaget er Studios guide "byg et værktøj med samme opsætning som HeyOtto Studio". Den tidligere M10-plan (Studio på pc'en via tunnel med `/actions` og `/runs`) er erstattet af M15.
 
 **Krav fra Kasper (2026-11-05):** det skal være nemt at sætte kalender og Gmail op for andre konti. Derfor er intet bundet til én konto. Man kan forbinde flere Google-konti, og opsætningen står i appen med den præcise redirect-adresse. En anden person kan sætte sit eget HeyOtto OS op med samme trin. Numrene er byggerækkefølgen: hver iteration bygger kun på dem med lavere numre. Hver fil har en analyse af den nuværende kode, en anbefalet løsning, konkrete trin, åbne spørgsmål og en definition af "færdig".

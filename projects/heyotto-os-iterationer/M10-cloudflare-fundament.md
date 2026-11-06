@@ -1,6 +1,6 @@
 # M10: Cloudflare-fundament: Tasks kører på Workers
 
-**Status (2026-11-06):** bygget, deployet og røgtestet i testmiljøet på `https://heyotto-tasks-test.heyotto-tasks.workers.dev`. Netlify er fjernet helt fra projektet. Første af seks iterationer (M10–M15), der giver HeyOtto Tasks samme opsætning som HeyOtto Studio: API med tokens, MCP, UI bag Cloudflare Access og en forbindelse til Studio. Grundlaget er Studios guide "byg et værktøj med samme opsætning som HeyOtto Studio" (M38–M42 i Studio).
+**Status (2026-11-06):** bygget, deployet og røgtestet. Kører i produktion på `tasks.heyotto.win` (appen) og `tasks-api.heyotto.win` (API). Der er intet separat testmiljø (Kasper, 2026-11-06): test sker med `npm test`. Netlify er fjernet helt fra projektet. Første af seks iterationer (M10–M15), der giver HeyOtto Tasks samme opsætning som HeyOtto Studio: API med tokens, MCP, UI bag Cloudflare Access og en forbindelse til Studio. Grundlaget er Studios guide "byg et værktøj med samme opsætning som HeyOtto Studio" (M38–M42 i Studio).
 
 > "jeg synes vi skal fuldstændig væk fra netlify"
 
@@ -32,9 +32,9 @@ Valg undervejs:
 - Appen hedder nu **HeyOtto Tasks** (titel, manifest og notifikationer). Routine-teksterne ("HeyOtto OS-job", "HeyOtto OS-opgaver") er uændrede, fordi skillen og routinen genkender dem.
 - Workeren fylder 1,25 MB (226 KB gzip). Grænsen på den gratis plan er 3 MB.
 
-## Testmiljøet
+## Røgtest i Cloudflares runtime
 
-`https://heyotto-tasks-test.heyotto-tasks.workers.dev` med D1 `heyotto-tasks-test` og køen `heyotto-tasks-otto-test`. Workeren starter på 10 ms. Røgtest i Cloudflares runtime:
+Kørt i det første testmiljø (D1 `heyotto-tasks-test`, nu slettet). Workeren starter på 10 ms.
 
 | Test | Resultat |
 |---|---|
@@ -42,14 +42,13 @@ Valg undervejs:
 | Uden login / login | `401` / session-cookie |
 | Gem, konflikt og Historik | ny `rev` i D1, `409` ved gammel `rev`, versionen i Historik |
 | Push-nøgle | laves, krypteres og læses igen (`createCipheriv`, som Google-tokens bruger) |
-| Otto og Google | svarer korrekt "ikke sat op", fordi testmiljøet ikke har nøglerne |
+| Otto og Google | svarer korrekt "ikke sat op", fordi nøglerne ikke er sat endnu |
 
-`wrangler dev` kan ikke starte lokalt, fordi Microsoft Visual C++ Redistributable mangler på pc'en. Testmiljøet bruges i stedet.
+`wrangler dev` kan ikke starte lokalt, fordi Microsoft Visual C++ Redistributable mangler på pc'en.
 
 ## Trin, der mangler
 
-1. Mål CPU-tiden pr. kald i Workers-loggen (`npx wrangler tail --env test`). Grænsen på den gratis plan er 10 ms.
-2. Valgfrit i test: `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_ID` og `GOOGLE_CLIENT_SECRET` med `--env test`, og testadressens callback i Google-klienten. Så kan Otto, kalender og Indbakke prøves, før Tasks går live.
+1. Mål CPU-tiden pr. kald i Workers-loggen (`npx wrangler tail`), når appen er i brug. Grænsen på den gratis plan er 10 ms.
 
 ## Plan
 

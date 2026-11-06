@@ -4772,7 +4772,8 @@ a.btn { text-decoration: none; }
 
   function logout() {
     if (dirty && !confirm("Du har ugemte ændringer. Log ud alligevel? De ligger i kladden i denne browser til næste gang.")) return;
-    api("POST", "/api/logout").then(function () {
+    api("POST", "/api/logout").then(function (r) {
+      if (r && r.accessLogout) { dirty = false; location.href = r.accessLogout; return; }   // Cloudflare Access
       DATA = null; dirty = false;
       showLogin("");
     }).catch(function (e) { flash("Kunne ikke logge ud: " + e.message, true); });

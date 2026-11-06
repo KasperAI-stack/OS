@@ -4,7 +4,7 @@
 
 ## Mål
 
-Claude, Cursor og Studios agenter kan arbejde i Tasks via `https://tasks.heyotto.win/mcp`, og n8n kan bruge API'et direkte ud fra en OpenAPI-fil.
+Claude, Cursor og Studios agenter kan arbejde i Tasks via `https://tasks-api.heyotto.win/mcp`, og n8n kan bruge API'et direkte ud fra en OpenAPI-fil.
 
 ## MCP
 

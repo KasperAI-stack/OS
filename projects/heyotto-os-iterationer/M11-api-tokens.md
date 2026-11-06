@@ -1,6 +1,6 @@
 # M11: API-tokens og Tasks' eget API (`/ext`)
 
-**Status (2026-11-06):** bygget og deployet i testmiljøet (branchen `claude/m10-cloudflare`). 8 nye tests (i alt 28). Testet udefra: `401` uden og med forkert eller slettet token, opret, ret og kommentér, og `429` (Cloudflares Rate Limiting slog til ved kald nr. 66, fordi den tæller omtrentligt pr. datacenter; i testen i hukommelsen præcist ved nr. 61).
+**Status (2026-11-06):** bygget og deployet (branchen `claude/m10-cloudflare`). API'et ligger på `tasks-api.heyotto.win/ext`. 8 nye tests (i alt 28). Testet udefra: `401` uden og med forkert eller slettet token, opret, ret og kommentér, og `429` (Cloudflares Rate Limiting slog til ved kald nr. 66, fordi den tæller omtrentligt pr. datacenter; i testen i hukommelsen præcist ved nr. 61).
 
 Afvigelser fra planen:
 - Tokens ligger i D1-lageret som `api-tokens/<sha256>` (samme lager som resten) i stedet for en egen tabel. Opslag sker direkte på hashen.
@@ -11,7 +11,7 @@ Afvigelser fra planen:
 
 ## Mål
 
-Tasks får et rigtigt API på `https://tasks.heyotto.win/ext`, som Studio, n8n og fremtidige værktøjer bruger med hver sit token og hver sine rettigheder.
+Tasks får et rigtigt API på `https://tasks-api.heyotto.win/ext`, som Studio, n8n og fremtidige værktøjer bruger med hver sit token og hver sine rettigheder.
 
 ## Analyse af den nuværende kode
 
@@ -64,7 +64,7 @@ Fejl er JSON `{ "error": "…" }` på dansk, som i Studio.
 2. `tokenGuard` med Rate Limiting-binding og body-grænse.
 3. `/ext`-ruterne ovenpå den eksisterende fletning.
 4. Indstillinger → API-tokens i appen og flytning af Claude-nøglen.
-5. Tests i hukommelsen med `app.request("https://tasks.heyotto.win/ext/…")`.
+5. Tests i hukommelsen med `app.request("https://tasks-api.heyotto.win/ext/…")`.
 
 ## Færdig når
 

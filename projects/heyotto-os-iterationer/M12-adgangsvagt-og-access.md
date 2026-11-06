@@ -1,10 +1,10 @@
 # M12: Global adgangsvagt og UI'et bag Cloudflare Access
 
-**Status (2026-11-06):** bygget og deployet i testmiljøet. Venter på Access-applikationen (AUD-tagget), før appen kan åbnes igen.
+**Status (2026-11-06):** bygget og deployet. Venter på Access-applikationen for `tasks.heyotto.win` (AUD-tagget), før appen kan åbnes. Med Access er der ingen adgangskode: vagten giver e-mailen videre, og API'et behandler kaldet som dig. "Log ud" går til Cloudflare Access' log ud.
 
 Bygget:
 - `server/gate.mts` (vagten), `server/access.mts` (JWT med Web Crypto), `run_worker_first`, `workers_dev: false` og `preview_urls: false`.
-- Testmiljøet: `tasks-test-ui.heyotto.win` (appen) og `tasks-test.heyotto.win` (API). Produktion er sat op i `wrangler.jsonc` med `tasks-ui` og `tasks`.
+- Testmiljøet: `tasks.heyotto.win` (appen) og `tasks-api.heyotto.win` (API). Produktion er sat op i `wrangler.jsonc` med `tasks-ui` og `tasks`.
 - Appen sender `X-Tasks: 1`. Ændrende `/api`-kald uden den eller med fremmed Origin afvises.
 - 7 nye tests (i alt 35).
 - Testet udefra: API-adressen `401` uden token og `404` på `/` og `/api`. App-adressen `403` (fail closed, AUD mangler). workers.dev svarer ikke længere.
@@ -16,8 +16,8 @@ Lukket som standard. Kun tre ting kan nås udefra:
 
 | Adresse | Hvem | Hvordan |
 |---|---|---|
-| `https://tasks.heyotto.win/ext/*` og `/mcp` | Studio, n8n, Claude | API-token (M11) |
-| `https://tasks-ui.heyotto.win` | Kasper fra pc og telefon | Cloudflare Access (engangskode eller Google) + Tasks' eget JWT-tjek |
+| `https://tasks-api.heyotto.win/ext/*` og `/mcp` | Studio, n8n, Claude | API-token (M11) |
+| `https://tasks.heyotto.win` | Kasper fra pc og telefon | Cloudflare Access (engangskode eller Google) + Tasks' eget JWT-tjek |
 | Alt andet | ingen | `403` eller `404` |
 
 Tasks tjekker selv adgangen, selv om Cloudflare også gør det.
@@ -32,8 +32,8 @@ Tasks tjekker selv adgangen, selv om Cloudflare også gør det.
 
 ### Adgangsvagten (én middleware før alle ruter)
 
-- Host `tasks.heyotto.win`: kun `/ext` og `/mcp` med token (M11). Alt andet `404`.
-- Host `tasks-ui.heyotto.win`: gyldig Access-JWT, ellers `403`. Gælder også `/api/*` og de statiske filer.
+- Host `tasks-api.heyotto.win`: kun `/ext` og `/mcp` med token (M11). Alt andet `404`.
+- Host `tasks.heyotto.win`: gyldig Access-JWT, ellers `403`. Gælder også `/api/*` og de statiske filer.
 - Host `127.0.0.1`/`localhost` (`wrangler dev`): som i dag.
 - Alle andre hosts, også `*.workers.dev`: `403`. Testadressen får sin egen Access-applikation.
 - Ændrende `/api`-kald kræver headeren `X-Tasks: 1` og Tasks' egen `Origin` (mod CSRF).
@@ -58,15 +58,15 @@ Intet er bundet til Kaspers konto: e-mailen står i Access-policyen i Cloudflare
 
 1. Adgangsvagten med host-regler og `run_worker_first`.
 2. `access.ts` med Web Crypto og nøgle-cache.
-3. Tests med testnøgler (`crypto.subtle.generateKey` RSA): `403` uden JWT, med forkert `aud`, forkert `iss`, udløbet JWT og forkert signatur. `403` for ukendte hosts og `404` for `/` på `tasks.heyotto.win`.
+3. Tests med testnøgler (`crypto.subtle.generateKey` RSA): `403` uden JWT, med forkert `aud`, forkert `iss`, udløbet JWT og forkert signatur. `403` for ukendte hosts og `404` for `/` på `tasks-api.heyotto.win`.
 4. Vejledning til Access-applikationen (5 minutter, én gang).
 
 ## Kasper skal selv
 
-1. Cloudflare Zero Trust → Access → Applications → Self-hosted: `tasks-ui.heyotto.win`, policy "Allow" med kun din e-mail.
+1. Cloudflare Zero Trust → Access → Applications → Self-hosted: `tasks.heyotto.win`, policy "Allow" med kun din e-mail.
 2. Give mig applikationens AUD-tag. Det skrives i `wrangler.jsonc` (`CF_ACCESS_AUD`).
 
 ## Færdig når
 
 - Testene ovenfor er grønne, og lokalt virker alt som før
-- Udefra: `tasks.heyotto.win/` og `/api` giver `404`, `tasks-ui.heyotto.win` beder om Access-login, og efter login virker appen
+- Udefra: `tasks-api.heyotto.win/` og `/api` giver `404`, `tasks.heyotto.win` beder om Access-login, og efter login virker appen

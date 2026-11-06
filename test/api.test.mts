@@ -11,7 +11,7 @@ import { memoryD1 } from "./helpers.mts";
 const ORIGIN = "http://127.0.0.1:8799";
 const PASSWORD = "en-lang-test-adgangskode";
 
-function setup(vars: Record<string, string> = {}) {
+function setup(vars: Record<string, string> = {}, user = "") {
   const started: string[] = [];
   const waits: Promise<unknown>[] = [];
   const p: Platform = {
@@ -19,7 +19,8 @@ function setup(vars: Record<string, string> = {}) {
     env: (k) => ({ HEYOTTO_PASSWORD: PASSWORD, ...vars } as Record<string, string>)[k],
     ip: "203.0.113.7",
     waitUntil: (x) => { waits.push(x); },
-    startRun: async (id) => { started.push(id); return true; }
+    startRun: async (id) => { started.push(id); return true; },
+    user
   };
   let cookie = "";
   const call = async (method: string, path: string, body?: unknown, headers: Record<string, string> = {}) => {
@@ -97,4 +98,13 @@ test("push: VAPID-nøglen laves første gang og er stabil", async () => {
   assert.equal(a.status, 200);
   assert.match(a.body.push.publicKey, /^[A-Za-z0-9_-]{87}$/);
   assert.equal(a.body.push.publicKey, b.body.push.publicKey);
+});
+
+test("med Cloudflare Access: ingen adgangskode, ingen login, log ud via Access", async () => {
+  const { call } = setup({ HEYOTTO_PASSWORD: "" }, "kasper@example.com");
+  const d = await call("GET", "/api/data");
+  assert.equal(d.status, 200);
+  assert.equal((await call("PUT", "/api/data", { rev: "", data: d.body.data })).status, 200);
+  const out = await call("POST", "/api/logout", {});
+  assert.equal(out.body.accessLogout, "/cdn-cgi/access/logout");
 });

@@ -1,6 +1,6 @@
 # HeyOtto Tasks — appen (tidligere HeyOtto OS)
 
-Et Scrum-/projektoverblik over de store initiativer, med kapacitet på forsiden. Det er en webapp på Cloudflare Workers (fra flytningen i M13: **tasks-ui.heyotto.win**), som du bruger fra computer og telefon. Alt ligger i skyen — der er ingen filer at holde styr på.
+Et Scrum-/projektoverblik over de store initiativer, med kapacitet på forsiden. Det er en webapp på Cloudflare Workers (fra flytningen i M13: **tasks.heyotto.win**), som du bruger fra computer og telefon. Alt ligger i skyen — der er ingen filer at holde styr på.
 
 ## Sådan hænger det sammen
 
@@ -55,7 +55,7 @@ Claude kan læse og rette dine data direkte — fx lægge opgaver ind fra Asana,
 1. Åbn **Claude-adgang** nederst i sidebaren, og klik **Lav en nøgle til Claude**. Nøglen vises kun den ene gang.
 2. I Claude: miljøets indstillinger (miljø-menuen i sessionens titellinje → **Edit**):
    - tilføj miljøvariablen **`HEYOTTO_API_KEY`** med nøglen som værdi
-   - under **Network access**: vælg **Custom**, og tilføj appens adresse (fx `tasks-ui.heyotto.win`) under Allowed domains (behold standardlisten)
+   - under **Network access**: vælg **Custom**, og tilføj appens adresse (fx `tasks.heyotto.win`) under Allowed domains (behold standardlisten)
 3. Start en ny session.
 
 Claude kan ikke se din adgangskode eller lave nye nøgler. Alt, hvad Claude gemmer, står i Historik som „gemt af Claude“. **Lav en ny nøgle** udskifter nøglen (den gamle holder op med at virke med det samme), og **Fjern Claudes adgang** lukker helt. Fremgangsmåden for Claude står i `.claude/skills/heyotto-os-data/SKILL.md`.
@@ -343,7 +343,7 @@ Det gør den, der ejer HeyOtto OS-installationen. Vejledningen står også i app
 1. Lav et projekt i [Google Cloud](https://console.cloud.google.com/projectcreate), fx „HeyOtto OS“.
 2. *APIs & Services → Library*: slå **Google Calendar API** til. (Når mail kommer: også **Gmail API**.)
 3. *Google Auth Platform* (OAuth consent screen): vælg **External**, og skriv app-navn og e-mail. Tryk **Publish app**. I *Testing* udløber adgangen efter 7 dage. Til eget brug viser Google en advarsel om en „ikke verificeret app“ første gang. Klik *Avanceret → Fortsæt*.
-4. *Clients*: **Create client → Web application**. Under **Authorized redirect URIs** tilføjes `https://<din-adresse>/api/google/callback`, fx `https://tasks-ui.heyotto.win/api/google/callback`. Skal testmiljøet også kunne forbindes, tilføjes dets adresse på samme måde.
+4. *Clients*: **Create client → Web application**. Under **Authorized redirect URIs** tilføjes `https://<din-adresse>/api/google/callback`, fx `https://tasks.heyotto.win/api/google/callback`. Skal testmiljøet også kunne forbindes, tilføjes dets adresse på samme måde.
 5. Gem dem i Cloudflare: `npx wrangler secret put GOOGLE_CLIENT_ID` og `npx wrangler secret put GOOGLE_CLIENT_SECRET`.
 6. I appen: **Indstillinger → Forbindelser → Forbind Google Kalender**. Gentag for hver konto.
 

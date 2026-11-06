@@ -170,12 +170,13 @@ async function validSession(req: Request, store: Store, password: string) {
   return same(m[2], sign(await sessionKey(store, password), Number(m[1])));
 }
 
-async function caller(req: Request, store: Store, password: string): Promise<Who | null> {
+async function caller(req: Request, store: Store, password: string, viaAccess: boolean): Promise<Who | null> {
   const bearer = (req.headers.get("authorization") || "").match(/^Bearer\s+(\S+)$/i);
   if (bearer) {
     const saved = (await store.get(CLAUDE_KEY, { type: "json" })) as { hash?: string } | null;
     return saved?.hash && same(sha256(bearer[1]).toString("hex"), saved.hash) ? "Claude" : null;
   }
+  if (viaAccess) return "dig";            // Cloudflare Access har allerede logget dig ind
   return (await validSession(req, store, password)) ? "dig" : null;
 }
 
@@ -850,25 +851,29 @@ export async function handle(req: Request, p: Platform): Promise<Response> {
   const method = req.method;
   try {
     env = p.env;
-    const password = configuredPassword();
-    if (!password) {
-      return fail(503, "HeyOtto OS er ikke sat op endnu: sæt en adgangskode på mindst " + MIN_PASSWORD +
-                       " tegn som hemmeligheden HEYOTTO_PASSWORD i Cloudflare (`npx wrangler secret put HEYOTTO_PASSWORD`).");
+    // Med Cloudflare Access (p.user) er der ingen adgangskode. Uden (lokal udvikling) kræves den.
+    const viaAccess = !!p.user;
+    const password = viaAccess ? "" : configuredPassword();
+    if (!viaAccess && !password) {
+      return fail(503, "HeyOtto Tasks er ikke sat op: slå Cloudflare Access til, eller sæt en adgangskode på mindst " + MIN_PASSWORD +
+                       " tegn som hemmeligheden HEYOTTO_PASSWORD (`npx wrangler secret put HEYOTTO_PASSWORD`).");
     }
     const store = p.store;
 
     if (path === "/api/logout" && method === "POST") {
-      return json(200, { ok: true }, { "Set-Cookie": sessionCookie(req, "", 0) });
+      // Med Access logger appen ud hos Cloudflare Access (ellers er du bare logget ind igen)
+      return json(200, { ok: true, accessLogout: viaAccess ? "/cdn-cgi/access/logout" : "" }, { "Set-Cookie": sessionCookie(req, "", 0) });
     }
     if (path === "/api/login" && method === "POST") {
-      if (!fromOwnPage(req)) return fail(400, "Login skal ske fra HeyOtto OS selv.");
+      if (viaAccess) return json(200, { ok: true });
+      if (!fromOwnPage(req)) return fail(400, "Login skal ske fra HeyOtto Tasks selv.");
       return await login(req, p, store, password);
     }
     // Google sender browseren hertil fra sit eget site, så session-cookien følger ikke
     // med. Den signerede engangs-state i google.mts beviser, at du startede flowet.
     if (path === "/api/google/callback" && method === "GET") return await googleCallback(req, store);
 
-    const who = await caller(req, store, password);
+    const who = await caller(req, store, password, viaAccess);
     if (!who) return fail(401, "Ikke logget ind.");
     if (method !== "GET" && who === "dig" && !fromOwnPage(req)) return fail(400, "Ændringer skal komme fra HeyOtto OS selv.");
 

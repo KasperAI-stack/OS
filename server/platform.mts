@@ -28,4 +28,7 @@ export type Platform = {
   // Rate limit pr. nøgle (fx et API-tokens id): true = kaldet må gå igennem.
   // Workeren bruger Cloudflares Rate Limiting (60 pr. minut). Udeladt = ingen grænse.
   rateLimit?(key: string): Promise<boolean>;
+  // E-mailen fra et gyldigt Cloudflare Access-login (server/gate.mts). Sat = det er dig,
+  // uden adgangskode. Tom (fx lokal udvikling) = adgangskode og session-cookie.
+  user?: string;
 };

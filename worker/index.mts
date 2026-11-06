@@ -53,26 +53,27 @@ function startRun(env: WorkerEnv) {
   };
 }
 
-export function platform(req: Request, env: WorkerEnv, ctx: Ctx): Platform {
+export function platform(req: Request, env: WorkerEnv, ctx: Ctx, user = ""): Platform {
   return {
     store: d1Store(env.DB),
     env: envOf(env),
     ip: req.headers.get("cf-connecting-ip") || "",
     waitUntil: (p) => ctx.waitUntil(p),
     startRun: startRun(env),
+    user,
     rateLimit: async (key) => (env.EXT_LIMITER ? (await env.EXT_LIMITER.limit({ key })).success : true)
   };
 }
 
 export default {
   async fetch(req: Request, env: WorkerEnv, ctx: Ctx): Promise<Response> {
-    const stop = await gate(req, {
+    const g = await gate(req, {
       uiHost: env.UI_HOST || "", apiHost: env.API_HOST || "",
       team: env.CF_ACCESS_TEAM_DOMAIN || "", aud: env.CF_ACCESS_AUD || ""
     });
-    if (stop) return stop;
+    if (g.stop) return g.stop;
     const path = new URL(req.url).pathname;
-    if (path === "/api" || path.startsWith("/api/")) return handle(req, platform(req, env, ctx));
+    if (path === "/api" || path.startsWith("/api/")) return handle(req, platform(req, env, ctx, g.user));
     if (path === "/ext" || path.startsWith("/ext/")) return ext.fetch(req, { p: platform(req, env, ctx) });
     return env.ASSETS.fetch(req);
   },

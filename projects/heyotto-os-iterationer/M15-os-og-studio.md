@@ -7,9 +7,9 @@
 ```
    HeyOtto Tasks (Cloudflare Workers)                   HeyOtto Studio (Cloudflare Tunnel)
    ┌──────────────────────────────┐   POST /tasks    ┌──────────────────────────────┐
-   │ tasks.heyotto.win/ext   (M11)   │ ───────────────▶ │ otto.heyotto.win/ext         │
-   │ tasks.heyotto.win/mcp   (M14)   │   GET /tasks/:id │ otto.heyotto.win/mcp         │
-   │ tasks-ui.heyotto.win    (M12)   │ ◀─────────────── │ studio.heyotto.win (Access)  │
+   │ tasks-api.heyotto.win/ext   (M11)   │ ───────────────▶ │ otto.heyotto.win/ext         │
+   │ tasks-api.heyotto.win/mcp   (M14)   │   GET /tasks/:id │ otto.heyotto.win/mcp         │
+   │ tasks.heyotto.win    (M12)   │ ◀─────────────── │ studio.heyotto.win (Access)  │
    └──────────────────────────────┘  MCP list/update └──────────────────────────────┘
           hot_-token i Tasks                                   tsk_-token i Studio
 ```
@@ -47,7 +47,7 @@ To retninger, hver med sit eget token:
    "heyotto-tasks": {
      "name": "HeyOtto Tasks",
      "type": "http",
-     "url": "https://tasks.heyotto.win/mcp",
+     "url": "https://tasks-api.heyotto.win/mcp",
      "auth": { "env": "HEYOTTO_TASKS_MCP_TOKEN" },
      "tools": {
        "read": ["list_tasks", "get_task", "list_projects", "list_routines", "get_forecast"],
@@ -79,7 +79,7 @@ Studios agent hedder Otto (`otto.heyotto.win`), og Tasks' egen agent (M7) hedder
 ## Åbne spørgsmål til Kasper
 
 1. **Navnet:** skal Tasks' agent omdøbes (fx "Assistent" eller bare "Spørg Tasks"), så Otto kun er Studios agent? Anbefaling: ja, fordi Otto er Studios offentlige navn (`otto.heyotto.win`).
-2. **Adresser:** `tasks.heyotto.win` (API og MCP) og `tasks-ui.heyotto.win` (appen), eller `tasks.heyotto.win` og `tasks-ui.heyotto.win` som i guiden?
+2. **Adresser:** `tasks-api.heyotto.win` (API og MCP) og `tasks.heyotto.win` (appen), eller `tasks-api.heyotto.win` og `tasks.heyotto.win` som i guiden?
 3. Skal Tasks kunne starte gemte flows i Studio (`POST /flows/{id}/run`)? Planen venter altid på din godkendelse i Studio.
 
 ## Færdig når
