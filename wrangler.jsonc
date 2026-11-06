@@ -33,7 +33,7 @@
     "API_HOST": "tasks-api.heyotto.win",
     "CF_ACCESS_TEAM_DOMAIN": "old-dust-74a9.cloudflareaccess.com",
     // AUD-tagget fra Access-applikationen for tasks.heyotto.win. Tom = appen er lukket (fail closed)
-    "CF_ACCESS_AUD": ""
+    "CF_ACCESS_AUD": "656cd582635a7cda8beb7255d3cd9b94f40bfd763bce88a3109df57839125f36"
   },
   "d1_databases": [
     { "binding": "DB", "database_name": "heyotto-tasks", "database_id": "08e498f7-7995-49ea-b11f-7aee188e455e", "migrations_dir": "migrations" }
