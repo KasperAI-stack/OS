@@ -1,0 +1,338 @@
+[
+  {
+    "id": "duolingo",
+    "track": "design",
+    "url": "https://www.duolingo.com/",
+    "why": "Maskot, farver med betydning, legende og tydelig"
+  },
+  {
+    "id": "duolingo-brand",
+    "track": "design",
+    "url": "https://design.duolingo.com/",
+    "why": "Brandets regler for figur, farve og illustration"
+  },
+  {
+    "id": "headspace",
+    "track": "design",
+    "url": "https://www.headspace.com/",
+    "why": "Illustration og blide farver, rolig stemning"
+  },
+  {
+    "id": "monzo",
+    "track": "design",
+    "url": "https://monzo.com/",
+    "why": "Farverig bank: tal og kort"
+  },
+  {
+    "id": "spotify-webplayer",
+    "track": "design",
+    "url": "https://open.spotify.com/",
+    "why": "Spotifys rigtige app (uden login): kort, billeder, mørk app"
+  },
+  {
+    "id": "airbnb",
+    "track": "design",
+    "url": "https://www.airbnb.com/",
+    "why": "Billeder, kort, søgning"
+  },
+  {
+    "id": "slack",
+    "track": "design",
+    "url": "https://slack.com/",
+    "why": "Personlighed, avatarer"
+  },
+  {
+    "id": "slack-ai",
+    "track": "design",
+    "url": "https://slack.com/ai",
+    "why": "En agent med eget ansigt i en chat"
+  },
+  {
+    "id": "monday",
+    "track": "design",
+    "url": "https://monday.com/",
+    "why": "Farve som status, tabeller"
+  },
+  {
+    "id": "monday-wm",
+    "track": "design",
+    "url": "https://monday.com/work-management",
+    "why": "Produktbilleder af tavler og tabeller"
+  },
+  {
+    "id": "clickup",
+    "track": "design",
+    "url": "https://clickup.com/",
+    "why": "Farvede statusgrupper, mange visninger"
+  },
+  {
+    "id": "notion",
+    "track": "design",
+    "url": "https://www.notion.com/",
+    "why": "Illustrationer og ro"
+  },
+  {
+    "id": "notion-calendar",
+    "track": "design",
+    "url": "https://www.notion.com/product/calendar",
+    "why": "Kalender og opgaver sammen"
+  },
+  {
+    "id": "asana",
+    "track": "design",
+    "url": "https://asana.com/",
+    "why": "Opgavelister og farver"
+  },
+  {
+    "id": "trello",
+    "track": "design",
+    "url": "https://trello.com/",
+    "why": "Tavlen som forbillede"
+  },
+  {
+    "id": "todoist",
+    "track": "design",
+    "url": "https://www.todoist.com/",
+    "why": "Personlig opgave-app, prioritetsfarver"
+  },
+  {
+    "id": "sunsama",
+    "track": "design",
+    "url": "https://www.sunsama.com/",
+    "why": "Dagsplan for én person"
+  },
+  {
+    "id": "float",
+    "track": "design",
+    "url": "https://www.float.com/",
+    "why": "Kapacitet og ressourceplan"
+  },
+  {
+    "id": "linear",
+    "track": "haandvaerk",
+    "url": "https://linear.app/",
+    "why": "Fart, tætte lister, afstande"
+  },
+  {
+    "id": "linear-changelog",
+    "track": "haandvaerk",
+    "url": "https://linear.app/changelog",
+    "why": "Rigtige skærmbilleder af appen"
+  },
+  {
+    "id": "stripe",
+    "track": "haandvaerk",
+    "url": "https://stripe.com/",
+    "why": "Landingsside og grafik i topklasse"
+  },
+  {
+    "id": "stripe-billing",
+    "track": "haandvaerk",
+    "url": "https://stripe.com/billing",
+    "why": "Dashboard-billeder, tal"
+  },
+  {
+    "id": "stripe-docs",
+    "track": "haandvaerk",
+    "url": "https://docs.stripe.com/",
+    "why": "Dokumentation og navigation"
+  },
+  {
+    "id": "things",
+    "track": "haandvaerk",
+    "url": "https://culturedcode.com/things/",
+    "why": "Prisvindende opgave-app"
+  },
+  {
+    "id": "raycast",
+    "track": "haandvaerk",
+    "url": "https://www.raycast.com/",
+    "why": "Kommandopalet, hastighed"
+  },
+  {
+    "id": "superhuman",
+    "track": "haandvaerk",
+    "url": "https://superhuman.com/",
+    "why": "Arbejdsgang og onboarding"
+  },
+  {
+    "id": "mercury",
+    "track": "haandvaerk",
+    "url": "https://mercury.com/",
+    "why": "Finans-UI: tal og tillid"
+  },
+  {
+    "id": "ramp",
+    "track": "haandvaerk",
+    "url": "https://ramp.com/",
+    "why": "Tabeller og dashboards"
+  },
+  {
+    "id": "figma",
+    "track": "haandvaerk",
+    "url": "https://www.figma.com/",
+    "why": "Værktøjs-UI og landingsside"
+  },
+  {
+    "id": "framer",
+    "track": "haandvaerk",
+    "url": "https://www.framer.com/",
+    "why": "Landingsside, bevægelse"
+  },
+  {
+    "id": "vercel",
+    "track": "haandvaerk",
+    "url": "https://vercel.com/",
+    "why": "Præcision, typografi"
+  },
+  {
+    "id": "attio",
+    "track": "haandvaerk",
+    "url": "https://attio.com/",
+    "why": "CRM med tabeller i topklasse"
+  },
+  {
+    "id": "motion",
+    "track": "haandvaerk",
+    "url": "https://www.usemotion.com/",
+    "why": "AI-planlægning af uge og kapacitet"
+  },
+  {
+    "id": "reclaim",
+    "track": "haandvaerk",
+    "url": "https://reclaim.ai/",
+    "why": "Kalender og fokustid"
+  },
+  {
+    "id": "apple-hig",
+    "track": "regler",
+    "url": "https://developer.apple.com/design/human-interface-guidelines",
+    "why": "Apples regler"
+  },
+  {
+    "id": "material3",
+    "track": "regler",
+    "url": "https://m3.material.io/",
+    "why": "Googles system: farve, form, bevægelse"
+  },
+  {
+    "id": "atlassian",
+    "track": "regler",
+    "url": "https://atlassian.design/",
+    "why": "Jira og Trellos system"
+  },
+  {
+    "id": "primer",
+    "track": "regler",
+    "url": "https://primer.style/",
+    "why": "GitHubs system"
+  },
+  {
+    "id": "polaris",
+    "track": "regler",
+    "url": "https://polaris-react.shopify.com/",
+    "why": "Shopifys system til admin-UI"
+  },
+  {
+    "id": "fluent2",
+    "track": "regler",
+    "url": "https://fluent2.microsoft.design/",
+    "why": "Microsofts system"
+  },
+  {
+    "id": "carbon",
+    "track": "regler",
+    "url": "https://carbondesignsystem.com/",
+    "why": "IBMs system, data og tabeller"
+  },
+  {
+    "id": "vibe",
+    "track": "regler",
+    "url": "https://vibe.monday.com/",
+    "why": "monday.coms komponenter"
+  },
+  {
+    "id": "godly",
+    "track": "galleri",
+    "url": "https://godly.website/",
+    "why": "Udvalgte landingssider"
+  },
+  {
+    "id": "atlassian-lozenge",
+    "track": "regler",
+    "url": "https://atlassian.design/components/lozenge/examples",
+    "why": "Statusmærker (lozenges) med farve og tekst"
+  },
+  {
+    "id": "atlassian-color",
+    "track": "regler",
+    "url": "https://atlassian.design/foundations/color-new",
+    "why": "Farveroller og tokens"
+  },
+  {
+    "id": "atlassian-elevation",
+    "track": "regler",
+    "url": "https://atlassian.design/foundations/elevation",
+    "why": "Flader og skygger i niveauer"
+  },
+  {
+    "id": "material-color-roles",
+    "track": "regler",
+    "url": "https://m3.material.io/styles/color/roles",
+    "why": "Farveroller: surface, container, on-color"
+  },
+  {
+    "id": "material-elevation",
+    "track": "regler",
+    "url": "https://m3.material.io/styles/elevation/overview",
+    "why": "Højde og tonede flader"
+  },
+  {
+    "id": "apple-hig-layout",
+    "track": "regler",
+    "url": "https://developer.apple.com/design/human-interface-guidelines/layout",
+    "why": "Layout og hierarki"
+  },
+  {
+    "id": "apple-hig-color",
+    "track": "regler",
+    "url": "https://developer.apple.com/design/human-interface-guidelines/color",
+    "why": "Farve med betydning"
+  },
+  {
+    "id": "carbon-data-table",
+    "track": "regler",
+    "url": "https://carbondesignsystem.com/components/data-table/usage/",
+    "why": "Datatabeller: tæthed, kolonner, handlinger"
+  },
+  {
+    "id": "primer-label",
+    "track": "regler",
+    "url": "https://primer.style/components/label",
+    "why": "Mærker og etiketter"
+  },
+  {
+    "id": "notion-projects",
+    "track": "design",
+    "url": "https://www.notion.com/product/projects",
+    "why": "Projekter, tavler og tidslinjer"
+  },
+  {
+    "id": "asana-features",
+    "track": "design",
+    "url": "https://asana.com/features",
+    "why": "Lister, tavler, tidslinjer"
+  },
+  {
+    "id": "linear-features",
+    "track": "haandvaerk",
+    "url": "https://linear.app/features",
+    "why": "Funktionssider med rigtige skærmbilleder"
+  },
+  {
+    "id": "todoist-features",
+    "track": "design",
+    "url": "https://www.todoist.com/features",
+    "why": "Opgaver, prioriteter, visninger"
+  }
+]

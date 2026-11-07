@@ -1,0 +1,562 @@
+[
+  {
+    "id": "linear",
+    "track": "haandvaerk",
+    "url": "https://linear.app/",
+    "why": "Fart, tætte lister, afstande",
+    "date": "2026-11-07",
+    "title": "Linear – The system for product development",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "duolingo",
+    "track": "design",
+    "url": "https://www.duolingo.com/",
+    "why": "Maskot, farver med betydning, legende og tydelig",
+    "date": "2026-11-07",
+    "title": "Duolingo - The world’s most popular way to learn",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "duolingo-brand",
+    "track": "design",
+    "url": "https://design.duolingo.com/",
+    "why": "Brandets regler for figur, farve og illustration",
+    "date": "2026-11-07",
+    "title": "Articles about Design",
+    "height": 3221,
+    "ok": true
+  },
+  {
+    "id": "headspace",
+    "track": "design",
+    "url": "https://www.headspace.com/",
+    "why": "Illustration og blide farver, rolig stemning",
+    "date": "2026-11-07",
+    "title": "Mental Health App for Meditation & Sleep - Headspace",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "monzo",
+    "track": "design",
+    "url": "https://monzo.com/",
+    "why": "Farverig bank: tal og kort",
+    "date": "2026-11-07",
+    "title": "Monzo | Open a Free Account",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "airbnb",
+    "track": "design",
+    "url": "https://www.airbnb.com/",
+    "why": "Billeder, kort, søgning",
+    "date": "2026-11-07",
+    "title": "Airbnb | Vacation rentals, cabins, beach houses, & more",
+    "height": 1350,
+    "ok": true
+  },
+  {
+    "id": "slack",
+    "track": "design",
+    "url": "https://slack.com/",
+    "why": "Personlighed, avatarer",
+    "date": "2026-11-07",
+    "title": "Slack | AI Work Platform & Productivity Tools",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "slack-ai",
+    "track": "design",
+    "url": "https://slack.com/ai",
+    "why": "En agent med eget ansigt i en chat",
+    "date": "2026-11-07",
+    "title": "Slack AI Features & AI Assistants | Slack",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "monday",
+    "track": "design",
+    "url": "https://monday.com/",
+    "why": "Farve som status, tabeller",
+    "date": "2026-11-07",
+    "title": "The AI Workspace for People & Agents | monday.com",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "monday-wm",
+    "track": "design",
+    "url": "https://monday.com/work-management",
+    "why": "Produktbilleder af tavler og tabeller",
+    "date": "2026-11-07",
+    "title": "Free AI Project Management Software: Manage your Projects with AI | monday.com",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "clickup",
+    "track": "design",
+    "url": "https://clickup.com/",
+    "why": "Farvede statusgrupper, mange visninger",
+    "date": "2026-11-07",
+    "title": "ClickUp™ | Maximize productivity • Software, AI, and humans converge",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "notion",
+    "track": "design",
+    "url": "https://www.notion.com/",
+    "why": "Illustrationer og ro",
+    "date": "2026-11-07",
+    "title": "The AI workspace that works for you. | Notion",
+    "height": 4687,
+    "ok": true
+  },
+  {
+    "id": "notion-calendar",
+    "track": "design",
+    "url": "https://www.notion.com/product/calendar",
+    "why": "Kalender og opgaver sammen",
+    "date": "2026-11-07",
+    "title": "Notion Calendar",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "asana",
+    "track": "design",
+    "url": "https://asana.com/",
+    "why": "Opgavelister og farver",
+    "date": "2026-11-07",
+    "title": "Work & Project Management for Human-Agent Teams • Asana",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "trello",
+    "track": "design",
+    "url": "https://trello.com/",
+    "why": "Tavlen som forbillede",
+    "date": "2026-11-07",
+    "title": "Capture, organize, and tackle your to-dos from anywhere",
+    "height": 4866,
+    "ok": true
+  },
+  {
+    "id": "todoist",
+    "track": "design",
+    "url": "https://www.todoist.com/",
+    "why": "Personlig opgave-app, prioritetsfarver",
+    "date": "2026-11-07",
+    "title": "Todoist | A To-Do List to Organize Your Work & Life",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "sunsama",
+    "track": "design",
+    "url": "https://www.sunsama.com/",
+    "why": "Dagsplan for én person",
+    "date": "2026-11-07",
+    "title": "Sunsama - Make work-life balance a reality.",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "float",
+    "track": "design",
+    "url": "https://www.float.com/",
+    "why": "Kapacitet og ressourceplan",
+    "date": "2026-11-07",
+    "title": "Float.com Resource Management Software, Scheduling & Planning",
+    "height": 5824,
+    "ok": true
+  },
+  {
+    "id": "linear-changelog",
+    "track": "haandvaerk",
+    "url": "https://linear.app/changelog",
+    "why": "Rigtige skærmbilleder af appen",
+    "date": "2026-11-07",
+    "title": "Changelog – Linear",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "stripe",
+    "track": "haandvaerk",
+    "url": "https://stripe.com/",
+    "why": "Landingsside og grafik i topklasse",
+    "date": "2026-11-07",
+    "title": "Stripe | Financial Infrastructure to Grow Your Revenue",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "stripe-billing",
+    "track": "haandvaerk",
+    "url": "https://stripe.com/billing",
+    "why": "Dashboard-billeder, tal",
+    "date": "2026-11-07",
+    "title": "Stripe Billing | Recurring Payments & Subscription Solutions",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "stripe-docs",
+    "track": "haandvaerk",
+    "url": "https://docs.stripe.com/",
+    "why": "Dokumentation og navigation",
+    "date": "2026-11-07",
+    "title": "Stripe Documentation",
+    "height": 900,
+    "ok": true
+  },
+  {
+    "id": "things",
+    "track": "haandvaerk",
+    "url": "https://culturedcode.com/things/",
+    "why": "Prisvindende opgave-app",
+    "date": "2026-11-07",
+    "title": "Things - To-Do List App for Mac & iOS",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "raycast",
+    "track": "haandvaerk",
+    "url": "https://www.raycast.com/",
+    "why": "Kommandopalet, hastighed",
+    "date": "2026-11-07",
+    "title": "Raycast - Your shortcut to everything",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "superhuman",
+    "track": "haandvaerk",
+    "url": "https://superhuman.com/",
+    "why": "Arbejdsgang og onboarding",
+    "date": "2026-11-07",
+    "title": "Superhuman: Docs, Mail, and AI That Work Everywhere",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "mercury",
+    "track": "haandvaerk",
+    "url": "https://mercury.com/",
+    "why": "Finans-UI: tal og tillid",
+    "date": "2026-11-07",
+    "title": "Online Business Banking For Startups, Small Businesses & Scaling Companies",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "ramp",
+    "track": "haandvaerk",
+    "url": "https://ramp.com/",
+    "why": "Tabeller og dashboards",
+    "date": "2026-11-07",
+    "title": "Spend Management, Corporate Cards & Accounts Payable Solutions | Ramp",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "figma",
+    "track": "haandvaerk",
+    "url": "https://www.figma.com/",
+    "why": "Værktøjs-UI og landingsside",
+    "date": "2026-11-07",
+    "title": "Figma: The collaborative canvas for design, code, and AI",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "framer",
+    "track": "haandvaerk",
+    "url": "https://www.framer.com/",
+    "why": "Landingsside, bevægelse",
+    "date": "2026-11-07",
+    "title": "Framer: Free website builder and AI design agent",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "vercel",
+    "track": "haandvaerk",
+    "url": "https://vercel.com/",
+    "why": "Præcision, typografi",
+    "date": "2026-11-07",
+    "title": "Agentic Infrastructure - Vercel",
+    "height": 5930,
+    "ok": true
+  },
+  {
+    "id": "attio",
+    "track": "haandvaerk",
+    "url": "https://attio.com/",
+    "why": "CRM med tabeller i topklasse",
+    "date": "2026-11-07",
+    "title": "Attio: The CRM for agentic revenue",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "motion",
+    "track": "haandvaerk",
+    "url": "https://www.usemotion.com/",
+    "why": "AI-planlægning af uge og kapacitet",
+    "date": "2026-11-07",
+    "title": "The AI Powered SuperApp for Work | Motion",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "reclaim",
+    "track": "haandvaerk",
+    "url": "https://reclaim.ai/",
+    "why": "Kalender og fokustid",
+    "date": "2026-11-07",
+    "title": "Reclaim – AI Calendar for Work & Life",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "apple-hig",
+    "track": "regler",
+    "url": "https://developer.apple.com/design/human-interface-guidelines",
+    "why": "Apples regler",
+    "date": "2026-11-07",
+    "title": "Human Interface Guidelines | Apple Developer Documentation",
+    "height": 3760,
+    "ok": true
+  },
+  {
+    "id": "material3",
+    "track": "regler",
+    "url": "https://m3.material.io/",
+    "why": "Googles system: farve, form, bevægelse",
+    "date": "2026-11-07",
+    "title": "Material Design 3 - Google's latest open source design system",
+    "height": 900,
+    "ok": true
+  },
+  {
+    "id": "atlassian",
+    "track": "regler",
+    "url": "https://atlassian.design/",
+    "why": "Jira og Trellos system",
+    "date": "2026-11-07",
+    "title": "Atlassian Design",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "primer",
+    "track": "regler",
+    "url": "https://primer.style/",
+    "why": "GitHubs system",
+    "date": "2026-11-07",
+    "title": "Primer",
+    "height": 2367,
+    "ok": true
+  },
+  {
+    "id": "polaris",
+    "track": "regler",
+    "url": "https://polaris-react.shopify.com/",
+    "why": "Shopifys system til admin-UI",
+    "date": "2026-11-07",
+    "title": "Polaris references",
+    "height": 1915,
+    "ok": true
+  },
+  {
+    "id": "fluent2",
+    "track": "regler",
+    "url": "https://fluent2.microsoft.design/",
+    "why": "Microsofts system",
+    "date": "2026-11-07",
+    "title": "Home - Fluent 2 Design System",
+    "height": 3826,
+    "ok": true
+  },
+  {
+    "id": "carbon",
+    "track": "regler",
+    "url": "https://carbondesignsystem.com/",
+    "why": "IBMs system, data og tabeller",
+    "date": "2026-11-07",
+    "title": "Home | Carbon Design System",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "vibe",
+    "track": "regler",
+    "url": "https://vibe.monday.com/",
+    "why": "monday.coms komponenter",
+    "date": "2026-11-07",
+    "title": "Welcome - Docs ⋅ Storybook",
+    "height": 900,
+    "ok": true
+  },
+  {
+    "id": "godly",
+    "track": "galleri",
+    "url": "https://godly.website/",
+    "why": "Udvalgte landingssider",
+    "date": "2026-11-07",
+    "title": "Recent — Design Inspiration",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "spotify-webplayer",
+    "track": "design",
+    "url": "https://open.spotify.com/",
+    "why": "Spotifys rigtige app (uden login): kort, billeder, mørk app",
+    "date": "2026-11-07",
+    "title": "Spotify - Web Player: Listen to Music, Podcasts, and Audiobooks Online",
+    "height": 900,
+    "ok": true
+  },
+  {
+    "id": "atlassian-lozenge",
+    "track": "regler",
+    "url": "https://atlassian.design/components/lozenge/examples",
+    "why": "Statusmærker (lozenges) med farve og tekst",
+    "date": "2026-11-07",
+    "title": "Lozenge - Examples - Components - Atlassian Design",
+    "height": 900,
+    "ok": true
+  },
+  {
+    "id": "atlassian-color",
+    "track": "regler",
+    "url": "https://atlassian.design/foundations/color-new",
+    "why": "Farveroller og tokens",
+    "date": "2026-11-07",
+    "title": "Overview - Color - Atlassian Design",
+    "height": 900,
+    "ok": true
+  },
+  {
+    "id": "atlassian-elevation",
+    "track": "regler",
+    "url": "https://atlassian.design/foundations/elevation",
+    "why": "Flader og skygger i niveauer",
+    "date": "2026-11-07",
+    "title": "Overview - Elevation - Atlassian Design",
+    "height": 900,
+    "ok": true
+  },
+  {
+    "id": "material-color-roles",
+    "track": "regler",
+    "url": "https://m3.material.io/styles/color/roles",
+    "why": "Farveroller: surface, container, on-color",
+    "date": "2026-11-07",
+    "title": "Color roles - Material Design 3",
+    "height": 900,
+    "ok": true
+  },
+  {
+    "id": "material-elevation",
+    "track": "regler",
+    "url": "https://m3.material.io/styles/elevation/overview",
+    "why": "Højde og tonede flader",
+    "date": "2026-11-07",
+    "title": "Elevation – Material Design 3",
+    "height": 900,
+    "ok": true
+  },
+  {
+    "id": "apple-hig-layout",
+    "track": "regler",
+    "url": "https://developer.apple.com/design/human-interface-guidelines/layout",
+    "why": "Layout og hierarki",
+    "date": "2026-11-07",
+    "title": "Layout | Apple Developer Documentation",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "apple-hig-color",
+    "track": "regler",
+    "url": "https://developer.apple.com/design/human-interface-guidelines/color",
+    "why": "Farve med betydning",
+    "date": "2026-11-07",
+    "title": "Color | Apple Developer Documentation",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "carbon-data-table",
+    "track": "regler",
+    "url": "https://carbondesignsystem.com/components/data-table/usage/",
+    "why": "Datatabeller: tæthed, kolonner, handlinger",
+    "date": "2026-11-07",
+    "title": "Data table | Carbon Design System",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "primer-label",
+    "track": "regler",
+    "url": "https://primer.style/components/label",
+    "why": "Mærker og etiketter",
+    "date": "2026-11-07",
+    "title": "Label | Primer",
+    "height": 3003,
+    "ok": true
+  },
+  {
+    "id": "notion-projects",
+    "track": "design",
+    "url": "https://www.notion.com/product/projects",
+    "why": "Projekter, tavler og tidslinjer",
+    "date": "2026-11-07",
+    "title": "Your connected workspace for wiki, docs & projects | Notion",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "asana-features",
+    "track": "design",
+    "url": "https://asana.com/features",
+    "why": "Lister, tavler, tidslinjer",
+    "date": "2026-11-07",
+    "title": "Asana's Work Tracking & Project Management Features • Asana",
+    "height": 6000,
+    "ok": true
+  },
+  {
+    "id": "linear-features",
+    "track": "haandvaerk",
+    "url": "https://linear.app/features",
+    "why": "Funktionssider med rigtige skærmbilleder",
+    "date": "2026-11-07",
+    "title": "Features – Linear",
+    "height": 3640,
+    "ok": true
+  },
+  {
+    "id": "todoist-features",
+    "track": "design",
+    "url": "https://www.todoist.com/features",
+    "why": "Opgaver, prioriteter, visninger",
+    "date": "2026-11-07",
+    "title": "Features | Todoist",
+    "height": 6000,
+    "ok": true
+  }
+]
