@@ -72,6 +72,60 @@ test("login, gem, konflikt og historik", async () => {
   assert.equal((await call("PUT", "/api/data", { rev: saved.body.rev, data }, { Origin: "https://ond.example" })).status, 400);
 });
 
+test("appens gem inden for 10 minutter bliver til én version i Historik", async (t) => {
+  t.mock.timers.enable({ apis: ["Date"], now: new Date("2026-11-07T09:00:00Z") });
+  const { call } = setup();
+  await call("POST", "/api/login", { password: PASSWORD });
+  let { rev, data } = (await call("GET", "/api/data")).body;
+  const put = async (title: string, continues = true) => {
+    data.tasks = [{ id: "t1", project: "adhoc", title }];
+    const r = await call("PUT", "/api/data", { rev, data, continues });
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    rev = r.body.rev;
+  };
+  const versions = async () => (await call("GET", "/api/history")).body.versions;
+
+  await put("a", false);
+  t.mock.timers.tick(60_000);
+  await put("b");
+  t.mock.timers.tick(60_000);
+  await put("c");
+  let v = await versions();
+  assert.equal(v.length, 1);
+  assert.equal(v[0].saves, 3);
+  assert.equal(v[0].current, true);
+  assert.ok(v[0].since && v[0].since < v[0].id);   // striben begyndte ved det første gem
+
+  // Den sammenlagte version kan gendannes og indeholder det seneste
+  const first = v[0].id;
+  t.mock.timers.tick(9 * 60_000);       // 11 min efter stribens start → ny version
+  await put("d");
+  v = await versions();
+  assert.deepEqual(v.map((x: any) => x.saves), [1, 3]);
+  assert.equal(v[1].id, first);
+
+  // En gendannelse lægges aldrig sammen med noget — heller ikke det næste gem
+  const back = await call("POST", "/api/history/" + first + "/restore", {});
+  assert.equal(back.status, 200);
+  assert.equal((await call("GET", "/api/data")).body.data.tasks[0].title, "c");
+  rev = back.body.rev;
+  t.mock.timers.tick(1000);
+  await put("e");
+  v = await versions();
+  assert.equal(v.length, 4);
+  assert.ok(v[1].restoredFrom);
+  assert.equal(v[0].saves, 1);
+
+  // Flettet med en anden enheds gem (continues mangler): den andens version består
+  t.mock.timers.tick(1000);
+  await put("fra telefonen", false);
+  t.mock.timers.tick(1000);
+  await put("flettet", false);
+  v = await versions();
+  assert.equal(v.length, 6);
+  assert.deepEqual([v[0].saves, v[1].saves, v[2].saves], [1, 1, 1]);
+});
+
 test("for mange forkerte adgangskoder fra samme IP giver 429", async () => {
   const { call } = setup();
   for (let i = 0; i < 10; i++) await call("POST", "/api/login", { password: "forkert" });

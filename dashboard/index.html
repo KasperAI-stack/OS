@@ -102,6 +102,8 @@
   var ICON = {
     pencil: '<path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M13.5 8.5l2 2"/>',
     x:      '<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
+    check:  '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    cloudoff: '<path d="M7 18.5h10a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.4 9.2 4.5 4.5 0 0 0 7 18.5z"/><path d="M4 4l16 16"/>',
     alert:  '<path d="M10.3 4.6a2 2 0 0 1 3.4 0l7 12.2A2 2 0 0 1 19 19.8H5a2 2 0 0 1-1.7-3z"/><path d="M12 10v3.5"/><path d="M12 16.5h.01"/>',
     sun:    '<circle cx="12" cy="12" r="4"/><path d="M12 3v1.5M12 19.5V21M5.6 5.6l1.1 1.1M17.3 17.3l1.1 1.1M3 12h1.5M19.5 12H21M5.6 18.4l1.1-1.1M17.3 6.7l1.1-1.1"/>',
     moon:   '<path d="M19.5 14.5A7.5 7.5 0 0 1 9.5 4.5a7.5 7.5 0 1 0 10 10z"/>',
@@ -316,8 +318,7 @@
       sideSection("rutiner", "Rutiner", routines.filter(function (r) { return r.active !== false; }).length, rutHtml, active, "repeat");
     // Navigation (Historik, Claude-adgang, Google) for sig; værktøjer og Log ud for sig
     document.getElementById("sidefoot").innerHTML =
-      '<p class="sf-status">' + (dirty ? '<span class="unsaved">Ugemte ændringer</span>'
-                                       : 'Gemt i skyen<br><b class="num">' + esc(DATA.meta.updated || "—") + "</b>") + "</p>" +
+      '<p class="sf-status">' + saveStatus(true) + "</p>" +
       '<div class="sf-acts">' +
         '<a class="sf-link" href="#versioner">Historik</a>' +
         '<a class="sf-link" href="#claude">Claude-adgang</a>' +
@@ -832,52 +833,124 @@
     });
   }
 
+  /* ----- Gem af sig selv -----
+     Der er ingen Gem-knap: en ændring gemmes kort efter, du har lavet den (som i monday.com).
+     Gemmene står i kø, så to aldrig sendes samtidig, og det, du ændrer, mens et gem er
+     undervejs, gemmes lige bagefter. Uden net prøves igen af sig selv og straks, når nettet
+     er tilbage; kladden i browseren holder imens på ændringerne. Serveren lægger appens gem
+     inden for 10 minutter sammen til én version i Historik (continues, se server/api.mts). */
+
+  var SAVE_DELAY = 800;          // ms efter sidste ændring
   var SAVING = false;
-  function saveBtn() {
-    return '<button class="btn primary' + (dirty || SAVING ? "" : " ghost") + (SAVING ? " busy" : "") + '" data-act="save" type="button"' +
-      (SAVING ? ' disabled aria-busy="true"' : "") + ">" +
-      (SAVING ? "Gemmer …" : dirty ? '<span class="udot" aria-hidden="true"></span>Gem ændringer' : "Gem") + "</button>";
+  var SAVE_STATE = "saved";      // saved | offline | retry | error
+  var SAVE_ERR = "";
+  var SAVE_TIMER = null, RETRY_MS = 0;
+  var SAVE_QUEUE = Promise.resolve();
+  var OWN_REV = "";              // rev fra appens eget seneste gem: bygger det næste videre på det?
+
+  // Status i stedet for knappen. Gemt = stille; kun problemer har en knap.
+  function saveStatus(live) {
+    var st = SAVING || (dirty && SAVE_STATE === "saved") ? "saving" : SAVE_STATE;
+    var txt = {
+      saving: "Gemmer …",
+      saved: "Gemt",
+      offline: "Offline — gemmes, når nettet er tilbage",
+      retry: "Ikke gemt endnu — prøver igen",
+      error: "Ikke gemt"
+    }[st];
+    var ic = st === "saved" ? icon("check") : st === "saving" ? "" : icon(st === "offline" ? "cloudoff" : "alert");
+    return '<span class="savestate is-' + st + '" data-savestate' + (live ? ' data-live role="status"' : "") +
+      (SAVE_ERR && st !== "saved" && st !== "saving" ? ' title="' + esc(SAVE_ERR) + '"' : "") + ">" +
+      ic + '<span class="savestate-t">' + txt + "</span>" +
+      (st === "offline" || st === "retry" || st === "error"
+        ? '<button class="linkbtn" data-act="save" type="button">' + (st === "error" ? "Prøv igen" : "Prøv nu") + "</button>" : "") +
+      "</span>";
   }
+  function saveBtn() { return saveStatus(false); }
   function paintSave() {
-    Array.prototype.forEach.call(document.querySelectorAll('[data-act="save"]'), function (b) { b.outerHTML = saveBtn(); });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-savestate]"), function (el) {
+      el.outerHTML = saveStatus(el.hasAttribute("data-live"));
+    });
+    document.title = (dirty ? "● " : "") + document.title.replace(/^● /, "");
   }
+
+  // Gem nu (forbi ventetiden). Returnerer et løfte, der er indfriet, når gemmet er klaret eller fejlet.
   function save(merged, message) {
-    if (SAVING) return Promise.resolve();
+    clearTimeout(SAVE_TIMER); SAVE_TIMER = null;
+    return (SAVE_QUEUE = SAVE_QUEUE.then(function () { return doSave(merged, message); }));
+  }
+  // Gem om lidt — hver ny ændring skubber gemmet, så en stribe ændringer bliver ét gem
+  function autoSave(ms) {
+    clearTimeout(SAVE_TIMER);
+    SAVE_TIMER = setTimeout(function () { SAVE_TIMER = null; if (dirty) save(); }, ms == null ? SAVE_DELAY : ms);
+  }
+
+  function doSave(merged, message) {
+    if (!DATA) return;
+    if (!dirty && !merged && !message) return;   // allerede gemt (fx et gem, der stod i kø)
     DATA.meta.updated = TODAY_ISO;
     var sent = clone(DATA);
-    var said = message || (merged ? "Gemt — flettet med ændringer fra et andet sted." : "Gemt");
     SAVING = true; paintSave();
-    return api("PUT", "/api/data", { rev: DATA_REV, data: sent })
+    return api("PUT", "/api/data", { rev: DATA_REV, data: sent, continues: !!OWN_REV && OWN_REV === DATA_REV && !merged })
       .then(function (res) {
-        SAVING = false;
-        DATA_REV = res.rev;
+        SAVING = false; SAVE_STATE = "saved"; SAVE_ERR = ""; RETRY_MS = 0;
+        DATA_REV = OWN_REV = res.rev;
         BASE = sent;
-        dirty = false; clearDraft(); route();
-        flash(said);
-      })
-      .catch(function (e) {
-        SAVING = false; paintSave();
-        if (e.status === 401) { showLogin("Du er blevet logget ud. Log ind igen — dine ændringer ligger klar."); return; }
-        // Første gang: flet med den nye version og prøv igen. Anden gang i træk: sig det.
+        // Ændret, mens gemmet var undervejs? Så skal det også gemmes
+        dirty = !same(DATA, sent);
+        if (dirty) { saveDraft(); autoSave(); } else clearDraft();
+        if (merged) route();                       // flettet med andres ændringer: vis dem
+        else paintSave();
+        if (message) flash(message);
+      }, function (e) {
+        SAVING = false;
+        dirty = true; saveDraft();                 // det, der ikke kom op, ligger i kladden
+        if (e.status === 401) {
+          SAVE_STATE = "error"; SAVE_ERR = e.message; paintSave();
+          showLogin("Du er blevet logget ud. Log ind igen — dine ændringer ligger klar.");
+          return;
+        }
+        // Ændret et andet sted imens: flet og gem igen. Sker det to gange i træk, så sig det.
         if (e.status === 409 && !merged && BASE) return rebase();
-        flash("Kunne ikke gemme: " + e.message, true, { label: "Prøv igen", fn: function () { save(); } });
+        SAVE_ERR = e.message;
+        if (e.status === 0 || e.status >= 500) {
+          SAVE_STATE = e.status === 0 ? "offline" : "retry";
+          RETRY_MS = Math.min(RETRY_MS ? RETRY_MS * 2 : 5000, 60000);
+          autoSave(RETRY_MS);
+        } else {
+          SAVE_STATE = "error";
+          flash("Kunne ikke gemme: " + e.message, true, { label: "Prøv igen", fn: function () { save(); } });
+        }
+        paintSave();
       });
   }
 
+  // Data er gemt et andet sted, mens du arbejdede. Flet sammen uden at afbryde dig: ved et felt,
+  // der er ændret begge steder, vinder dit. Den anden version ligger i Historik.
   function rebase() {
     return api("GET", "/api/data").then(function (res) {
-      var apply = function (theirs) {
-        var m = mergeData(BASE, DATA, res.data, theirs);
-        DATA = m.data; BASE = res.data; DATA_REV = res.rev || "";
-        saveDraft();
-        return save(true);
-      };
-      var first = mergeData(BASE, DATA, res.data, false);
-      if (!first.conflicts.length) return apply(false);
-      route();
-      askConflicts(first.conflicts, apply);
-    }, function (e) { flash("Kunne ikke hente den nye version: " + e.message, true); });
+      var m = mergeData(BASE, DATA, res.data, false);
+      DATA = m.data; BASE = res.data; DATA_REV = res.rev || "";
+      saveDraft();
+      return doSave(true).then(function () {
+        if (!m.conflicts.length || dirty) return;
+        flash(plural(m.conflicts.length, "felt var", "felter var") + " ændret både her og et andet sted. " +
+              "Dine ændringer er beholdt — den anden version ligger i Historik.", false,
+              { label: "Se Historik", fn: function () { location.hash = "versioner"; } });
+      });
+    }, function (e) {
+      SAVE_STATE = e.status === 0 ? "offline" : "retry"; SAVE_ERR = e.message;
+      RETRY_MS = Math.min(RETRY_MS ? RETRY_MS * 2 : 5000, 60000);
+      autoSave(RETRY_MS); paintSave();
+    });
   }
+
+  // Nettet er tilbage: gem med det samme
+  window.addEventListener("online", function () { if (dirty && DATA) save(); });
+  // Fanen skjules eller lukkes: vent ikke på ventetiden
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden" && dirty && DATA && !SAVING) save();
+  });
 
   // act = { label, fn }: en knap i beskeden, fx "Fortryd" eller "Prøv igen".
   // En succes forsvinder efter 4 s (8 s med en knap). En fejl bliver stående, til den lukkes.
@@ -970,7 +1043,7 @@
         '<button class="btn" data-act="draftdiscard" type="button">Kassér</button></p></div>';
   }
 
-  function markDirty() { dirty = true; saveDraft(); route(); }
+  function markDirty() { dirty = true; saveDraft(); route(); autoSave(); }
 
   window.addEventListener("beforeunload", function (e) {
     if (dirty) { e.preventDefault(); e.returnValue = ""; }
@@ -1039,7 +1112,7 @@
       flash((deletedLabel || "Det") + " er slettet.", false, { label: "Fortryd", fn: function () {
         DATA = before; CURRENT = cur;
         dirty = !same(DATA, BASE);
-        if (dirty) saveDraft(); else clearDraft();
+        if (dirty) { saveDraft(); autoSave(); } else clearDraft();
         route(); flash("Fortrudt.");
       } });
     };
@@ -1258,9 +1331,13 @@
       saveView(); route(); return;
     }
     if (a === "gconnect" && dirty) {
-      // Forbindelsen sker på Googles side, så siden forlades et øjeblik
+      // Forbindelsen sker på Googles side, så siden forlades et øjeblik: gem først
       e.preventDefault();
-      flash("Gem dine ændringer først — du sendes et øjeblik over til Google for at logge ind.", true);
+      var href = el.getAttribute("href");
+      save().then(function () {
+        if (dirty) flash("Dine ændringer er ikke gemt endnu, så du bliver her. Prøv igen om lidt.", true);
+        else location.href = href;
+      });
       return;
     }
     if (a === "gconnect") return;
@@ -1339,8 +1416,8 @@
       var dr = DRAFT;
       var restore = function (theirs) {
         DATA = dr.rev !== DATA_REV && dr.base ? mergeData(dr.base, dr.data, DATA, theirs).data : dr.data;
-        DRAFT = null; dirty = true; saveDraft(); route();
-        flash("Ændringerne er gendannet — husk at trykke Gem.");
+        DRAFT = null; markDirty();
+        flash("Ændringerne er gendannet og gemmes nu.");
       };
       var pre = dr.rev !== DATA_REV && dr.base ? mergeData(dr.base, dr.data, DATA, false) : null;
       if (pre && pre.conflicts.length) askConflicts(pre.conflicts, restore);
@@ -2535,7 +2612,7 @@
   }
 
   function settingsFooter() {
-    return '<span class="hint">' + (dirty ? '<span class="unsaved">Ugemte ændringer</span>' : "Alt er gemt.") + "</span>" + saveBtn();
+    return saveStatus(false);
   }
 
   function openSettings(section) {
@@ -3897,8 +3974,13 @@
 
   function logout(sure) {
     if (dirty && !sure) {
-      askConfirm({ title: "Log ud med ugemte ændringer?", yes: "Log ud",
-                   text: ["Ændringerne ligger i kladden i denne browser til næste gang."] }, function () { logout(true); });
+      // Gem først; kun hvis det ikke lykkes (fx uden net), spørges der
+      save().then(function () {
+        if (!dirty) { logout(true); return; }
+        askConfirm({ title: "Log ud med ændringer, der ikke er gemt?", yes: "Log ud",
+                     text: ["Der er ingen forbindelse til skyen lige nu. Ændringerne ligger i kladden i denne browser til næste gang."] },
+                   function () { logout(true); });
+      });
       return;
     }
     api("POST", "/api/logout").then(function (r) {

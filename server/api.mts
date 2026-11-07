@@ -6,7 +6,8 @@
      POST   /api/login                       log ind med adgangskoden → session-cookie
      POST   /api/logout                      log ud
      GET    /api/data                        { rev, data }
-     PUT    /api/data                        { rev, data } → { rev }   (409 hvis rev er forældet)
+     PUT    /api/data                        { rev, data, continues? } → { rev }   (409 hvis rev er forældet;
+                                             continues: bygger på eget forrige gem → samme version i Historik)
      GET    /api/history                     de seneste gemte versioner
      POST   /api/history/:id/restore         gør en gammel version til den gældende
      GET    /api/studio                      { configured, online, error, app } — er Studio sat op og tændt?
@@ -60,7 +61,8 @@ import * as studio from "./studio.mts";
 type Store = DocStore;
 type Who = "dig" | "Claude";
 // by: "dig", "Claude" eller navnet på det API-token, der gemte (fx "Studio")
-type IndexEntry = { id: string; by: string; projects: number; tasks: number; restoredFrom?: string };
+// saves/since: appens automatiske gem lægges sammen i én version (se write) — saves er antallet, since det første
+type IndexEntry = { id: string; by: string; projects: number; tasks: number; restoredFrom?: string; saves?: number; since?: string };
 
 const DATA_KEY = "data";
 const INDEX_KEY = "historik-index";
@@ -68,6 +70,7 @@ const HISTORY = "historik/";
 const FAILS = "auth/fail/";
 const COOKIE = "heyotto_session";
 const KEEP = 60;                       // så mange gemte versioner beholdes
+const MERGE_MS = 10 * 60 * 1000;       // appens gem inden for 10 minutter bliver til én version
 const SESSION_DAYS = 90;
 const MIN_PASSWORD = 12;
 const MAX_FAILS = 10;                  // forkerte adgangskoder pr. IP …
@@ -244,14 +247,34 @@ async function readIndex(store: Store): Promise<IndexEntry[]> {
 const newId = () => new Date().toISOString().replace(/[:.]/g, "-") + "-" + randomBytes(2).toString("hex");
 
 // Hver gemt version lægges også i historikken — de ældste ryddes, så der højst er KEEP.
-async function write(store: Store, data: any, by: string, restoredFrom?: string) {
+// Appen gemmer af sig selv kort efter hver ændring (merge), så hvert lille ryk ville blive en
+// version, og de 60 pladser være brugt på få minutter. Derfor erstatter et gem fra appen den
+// seneste version, når appen siger, at den bygger videre på sit eget forrige gem (continues),
+// den kom fra samme person, og striben af gem begyndte for under 10 minutter siden. Versionen
+// før striben bliver liggende, så du kan gå tilbage til den. continues sendes ikke, når appen
+// har flettet med ændringer fra et andet sted (fx telefonen) — så består den andens version.
+// Ændringer via API'et (/ext, /mcp) og gendannelser lægges aldrig sammen.
+async function write(store: Store, data: any, by: string, opts: { restoredFrom?: string; app?: boolean; continues?: boolean } = {}) {
   const id = newId();
   const text = JSON.stringify(data);
   await store.set(DATA_KEY, text, { metadata: { rev: id } });
   await store.set(HISTORY + id, text);
   const entry: IndexEntry = { id, by, projects: data.projects.length, tasks: data.tasks.length };
-  if (restoredFrom) entry.restoredFrom = restoredFrom;
-  const index = [entry, ...(await readIndex(store))];
+  if (opts.restoredFrom) entry.restoredFrom = opts.restoredFrom;
+  let index = await readIndex(store);
+  if (opts.app) {
+    const prev = index[0];
+    const began = opts.continues && prev && prev.saves && prev.by === by && !prev.restoredFrom ? dateOf(prev.since || prev.id) : null;
+    if (prev && began && Date.now() - began.getTime() < MERGE_MS) {
+      entry.saves = (prev.saves || 1) + 1;
+      entry.since = prev.since || prev.id;
+      index = index.slice(1);
+      await store.delete(HISTORY + prev.id);
+    } else {
+      entry.saves = 1;
+    }
+  }
+  index = [entry, ...index];
   await store.setJSON(INDEX_KEY, index.slice(0, KEEP));
   for (const old of index.slice(KEEP)) await store.delete(HISTORY + old.id);
   return id;
@@ -291,7 +314,7 @@ async function putData(req: Request, store: Store, who: Who) {
   if (typeof body.rev !== "string") return fail(400, "rev mangler — hent data først, og send den rev, du fik med.");
   const before = await store.getWithMetadata(DATA_KEY, { type: "json" });
   if (body.rev !== revOf(before)) return fail(409, CONFLICT);
-  const rev = await write(store, body.data, who);
+  const rev = await write(store, body.data, who, { app: true, continues: body.continues === true });
   return json(200, { rev });
 }
 
@@ -308,7 +331,7 @@ async function history(store: Store) {
 async function restore(store: Store, id: string, who: Who) {
   const data = dateOf(id) ? await store.get(HISTORY + id, { type: "json" }) : null;
   if (!data) return fail(410, "Den version findes ikke længere.");
-  return json(200, { rev: await write(store, data, who, id) });
+  return json(200, { rev: await write(store, data, who, { restoredFrom: id }) });
 }
 
 /* ---------- API-tokens (M11) ----------

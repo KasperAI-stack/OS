@@ -36,6 +36,7 @@
   --fs-h2: 20px;        /* sektionstitel */
   --fs-body: 15px;      /* rækker, felter, brødtekst */
   --fs-small: 13px;     /* meta, hjælpetekst, kolonnehoveder, etiketter */
+  --fs-nav: 14px;       /* sidebarens punkter: roligt ved siden af ikonerne */
   --fs-micro: 11px;     /* kun inde i grafik: Gantt, kalenderens timer */
   --fs-field: 16px;     /* felter på berøringsskærme (iOS zoomer under 16 px) */
   /* På smalle skærme bliver display og h1 mindre (se 12); trinene er de samme */
@@ -265,7 +266,15 @@ h1:focus, h1:focus-visible { outline: none; }
                 font-size: var(--fs-small); color: var(--sidebar-muted); }
 .sf-status { margin: 0 0 var(--s-3); }
 .sf-status b { color: var(--sidebar-fg); font-weight: 500; }
-.unsaved { color: var(--accent); font-weight: 600; }
+/* Gem-status (appen gemmer af sig selv): stille, når alt er gemt; tydelig, når noget ikke er */
+.savestate { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-small); color: var(--muted); white-space: nowrap; }
+.savestate .i { width: 15px; height: 15px; flex: 0 0 15px; }
+.savestate.is-offline, .savestate.is-retry, .savestate.is-error { color: var(--danger-ink); font-weight: 600; white-space: normal; }
+.sf-status .savestate { color: var(--sidebar-muted); }
+.sf-status .savestate.is-offline, .sf-status .savestate.is-retry, .sf-status .savestate.is-error { color: var(--danger-ink); }
+.linkbtn { font: inherit; font-weight: 600; color: inherit; background: none; border: 0; padding: 2px 0; text-decoration: underline;
+           text-underline-offset: 2px; cursor: pointer; }
+.pacts .savestate { order: -1; margin-right: var(--s-2); }   /* status før sidens knap */
 .sf-acts { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
 .sf-link { font: inherit; font-size: var(--fs-small); font-weight: 500; color: var(--sidebar-fg); background: none; border: 0; padding: 4px 0;
            cursor: pointer; text-decoration: underline; text-decoration-color: var(--sidebar-line); text-underline-offset: 3px; }
@@ -367,7 +376,6 @@ footer { position: relative; margin: var(--s-6) calc(-1 * var(--gutter)) 0; padd
 .btn:disabled, .btn:disabled:hover { opacity: .45; cursor: default; transform: none; border-color: var(--control-border); }
 .btn.primary:disabled, .btn.primary:disabled:hover { border-color: var(--ink); background: var(--ink); }
 .btn.busy { opacity: .7; cursor: progress; }
-.udot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: 0 0 7px; }
 
 .icon-btn { position: relative; font: inherit; line-height: 1; background: none; border: 0; cursor: pointer;
             color: var(--muted); width: 32px; height: 32px; padding: 0; border-radius: 999px; vertical-align: middle;
@@ -1269,6 +1277,21 @@ button.stat:hover { border-color: var(--control-border); }
 .nico .dot { position: absolute; right: -3px; top: -2px; width: 8px; height: 8px; border-radius: 50%; margin: 0; box-shadow: 0 0 0 2px var(--sidebar-bg); }
 .proj .nodot { width: 22px; flex-basis: 22px; }
 .nsec-body { margin-left: 21px; }
+
+/* Afbalanceret som en app-menu: tekst i normal vægt og en tak mindre, så den vejer det samme som
+   ikonet. Det valgte punkt vises med fladen, ikke med fed. */
+.proj { font-size: var(--fs-nav); font-weight: 400; gap: 12px; min-height: 36px; padding: 7px 12px; letter-spacing: 0.005em; }
+.sidebar { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+.proj { color: #DCD7E6; }   /* lys tekst på mørkt ser federe ud: en tak dæmpet, så den vejer som ikonerne */
+.proj:hover { color: #FFFFFF; }
+.proj[aria-current="true"], .proj.sub[aria-current="true"] { font-weight: 500; }
+.proj.sub { font-size: var(--fs-nav); min-height: 32px; padding-top: 5px; padding-bottom: 5px; color: var(--sidebar-icon); }
+.proj.sub:hover, .proj.sub[aria-current="true"] { color: #FFFFFF; }
+.proj .pcount { font-size: 12px; font-weight: 400; }
+.nico { width: 20px; height: 20px; flex-basis: 20px; }
+.nico .i { width: 18px; height: 18px; stroke-width: 1.6; }
+.nico .otto-mark { width: 20px; height: 20px; }
+.proj .nodot { width: 20px; flex-basis: 20px; }
 
 /* Knap til at folde sidebaren ind */
 .brandmark { position: relative; }

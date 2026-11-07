@@ -31,9 +31,11 @@ Første gang i en browser beder appen om adgangskoden. Derefter husker browseren
 
 ## Gem, kladde og to enheder
 
-Ændringer lægger sig i hukommelsen, indtil du trykker **Gem ændringer**. At der er noget ugemt, vises tre steder: knappen skifter farve, sidebaren skriver det, og fanens titel får en prik foran.
+**Appen gemmer af sig selv** — der er ingen Gem-knap. En ændring gemmes knap et sekund efter, du har lavet den (en stribe ændringer bliver til ét gem), og med det samme, når du skifter fane, logger ud eller forbinder Google. Status står i sidebarens fod og i sidehovedet: **Gemmer …**, **✓ Gemt**, **Offline — gemmes, når nettet er tilbage** eller **Ikke gemt** (med **Prøv igen**). Uden net prøver appen selv igen (5 s, 10 s … op til hvert minut) og straks, når nettet kommer tilbage. Fanens titel har en prik foran, så længe noget ikke er gemt.
 
-**Ugemte ændringer overlever et genindlæs.** Ved hver ændring skrives en kladde til browseren. Åbner du siden igen med noget ugemt, møder du et banner med **Gendan ændringerne** eller **Kassér**. Kladden er en sikkerhedsline i den browser, du sidder ved — ikke et lager. Det, der er gemt i skyen, er sandheden.
+**Historik bliver ikke oversvømmet.** Appens gem lægges sammen: så længe du arbejder videre på dit eget seneste gem, erstatter det nye gem versionen i stedet for at lave en ny — højst 10 minutter pr. version (`saves` tæller gemmene, `since` er det første). Versionen før en stribe bliver altid liggende. Ændringer fra Claude/API'et, gendannelser og gem, der er flettet med ændringer fra et andet sted, får altid deres egen version.
+
+**Ændringer, der ikke nåede op, overlever et genindlæs.** Ved hver ændring skrives en kladde til browseren. Åbner du siden igen med noget, der ikke blev gemt (fx lukket uden net), møder du et banner med **Gendan ændringerne** (gemmes så med det samme) eller **Kassér**. Kladden er en sikkerhedsline i den browser, du sidder ved — ikke et lager. Det, der er gemt i skyen, er sandheden.
 
 **Computer, telefon og Claude på samme tid.** Siden husker, hvilken version den hentede. Er der gemt et andet sted siden — på telefonen eller af Claude — afviser serveren først. Siden henter så den nye version og fletter dine ændringer ind pr. projekt, sprint, opgave og uge:
 
@@ -41,7 +43,7 @@ Første gang i en browser beder appen om adgangskoden. Derefter husker browseren
 - ændret kun derude → den nye
 - tilføjet eller slettet ét sted → det gælder
 
-Kun hvis samme felt er ændret begge steder, bliver du spurgt: **Behold mine** eller **Brug de nye**. Begge versioner ligger bagefter i Historik.
+Er samme felt ændret begge steder, vinder dit — uden at du bliver afbrudt. En besked fortæller det, med en genvej til Historik, hvor den anden version ligger. (Kun når du gendanner en gammel kladde, bliver du spurgt: **Behold mine** eller **Brug de nye**.)
 
 Kladden husker også, hvad den byggede på. Gendanner du en kladde efter, at data er ændret i skyen, flettes den ind på samme måde i stedet for at erstatte det nye.
 
@@ -88,7 +90,7 @@ Alle svar er JSON. Fejl er `{ "error": "dansk besked" }`.
 | `POST /api/login` `{ password }` | Log ind → session-cookie |
 | `POST /api/logout` | Log ud |
 | `GET /api/data` | `{ rev, data }` |
-| `PUT /api/data` `{ rev, data }` | Gem → `{ rev }`. **409**, hvis `rev` ikke længere er den nyeste |
+| `PUT /api/data` `{ rev, data, continues? }` | Gem → `{ rev }`. **409**, hvis `rev` ikke længere er den nyeste. `continues: true` = bygger på appens eget forrige gem → samme version i Historik (højst 10 min) |
 | `GET /api/history` | `{ versions: [...] }` |
 | `POST /api/history/:id/restore` | Gør en gammel version gældende |
 | `GET /api/studio` | `{ configured, online, error, app }`: er Studio sat op og tændt? |
@@ -285,7 +287,7 @@ Et projekt hører til Projekter, Drift til Rutiner, og "Uden projekt" (kind `adh
 
 Tandhjulet i sidebarens fod (ved temaknappen) åbner **Indstillinger** som et panel fra højre (fuld skærm på mobil). Her ligger grundtallene bag kapaciteten: arbejdsuge, faste møder, mail & admin, øvrigt fravær, planlægningsloftet og ad hoc-estimatet. Når to uger er registreret i ugeloggen, låses estimatet, og bufferen måles i stedet. Du kan også åbne indstillingerne fra loft-mærket i belastningsbjælken.
 
-Ændringerne slår igennem på forsiden bag panelet, mens du taster. De gemmes med **Gem**, ligesom alt andet, enten i panelet eller i sidehovedet. Gem-knappen står kun, når der er noget at gemme, og viser "Gemmer …", mens det sker. Panelet har også genveje til Historik, Claude-adgang og Log ud.
+Ændringerne slår igennem på forsiden bag panelet, mens du taster. De gemmes af sig selv, ligesom alt andet, og panelets fod viser, om de er gemt. Panelet har også genveje til Historik, Claude-adgang og Log ud.
 
 Nye sektioner (forbindelser, alarmer, agent) føjes til `SETTINGS_SECTIONS` i `index.html`.
 
