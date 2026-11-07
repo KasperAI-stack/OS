@@ -70,7 +70,7 @@ Otto står i appen altid i en lys flise (Tåge), så han ser ens ud i begge tema
 
 ## Skrift
 
-**Geist** bruges til alt: overskrifter, brødtekst og knapper. **Fredoka** (600) bruges kun til navnet "Otto", når han taler. Begge er gratis på Google Fonts. I grænseflader bruges **Geist Mono** til små etiketter med store bogstaver (eyebrows) og koder.
+**Geist** bruges til alt: overskrifter, brødtekst og knapper. **Fredoka** (600) bruges kun til navnet "Otto", når han taler. Begge er gratis på Google Fonts. **Geist Mono** bruges til koder og tokens. På hjemmesider og i præsentationer kan den også bruges til små etiketter med store bogstaver (eyebrows). I app-grænseflader (HeyOtto Tasks) står etiketter i stedet i Geist med almindelige store og små bogstaver, i lille tekst og dæmpet farve, fordi etiketter med store bogstaver over hvert felt er svære at læse (ændret i M16, 2026-11-07).
 
 ```css
 font-family: "Geist", "Helvetica Neue", Arial, sans-serif;
@@ -84,9 +84,9 @@ font-family: "Geist Mono", ui-monospace, Menlo, Consolas, monospace;
 | Overskrift 3 | Geist 600 · 18 px · spacing −1 % |
 | Brødtekst | Geist 400 · 17 px · linje 1.6 |
 | Lille tekst | Geist 400 · 15 px · dæmpet farve |
-| Eyebrow | Geist Mono · 12 px · store bogstaver · spacing 6 % · dæmpet farve |
+| Eyebrow | Geist Mono · 12 px · store bogstaver · spacing 6 % · dæmpet farve (ikke i app-grænseflader, se ovenfor) |
 
-I tætte grænseflader som dashboardet skaleres størrelserne ned, men vægten og den stramme spatiering i overskrifterne bevares. Tal sættes med `font-variant-numeric: tabular-nums`.
+I tætte grænseflader som dashboardet skaleres størrelserne ned, men vægten og den stramme spatiering i overskrifterne bevares. HeyOtto Tasks bruger seks trin og intet imellem: 56 (kun forsidens svar), 32 (sidetitel), 20 (sektion), 15 (brødtekst), 13 (meta og etiketter) og 11 px (kun inde i grafik). Se `dashboard/app.css`. Tal sættes med `font-variant-numeric: tabular-nums`.
 
 ## Former
 

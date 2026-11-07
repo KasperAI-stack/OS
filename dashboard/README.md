@@ -10,7 +10,8 @@ Et Scrum-/projektoverblik over de store initiativer, med kapacitet på forsiden.
 | Alarmer og push-notifikationer | `server/alerts.mts` og `server/webpush.mts`, kørt hver time af Workerens cron. Service worker: `dashboard/sw.js` |
 | Assistenten, agent-kernen (Claude API + egne værktøjer) | `server/agent/` (motor, værktøjer, slags, skills, lager). Kørsler i køen (`worker/index.mts` → `queue`), planen i `server/jobs.mts` |
 | Google-forbindelsen og kalendersynken | `server/google.mts`, kørt hvert 15. minut af Workerens cron |
-| Appen (layout, logik, redigering) | `dashboard/index.html` — én HTML-fil, intet byggetrin, ingen biblioteker |
+| Appen (layout, logik, redigering) | `dashboard/index.html` og stilarket `dashboard/app.css` — intet byggetrin, ingen biblioteker |
+| Forhåndsvisning med demo-data (design, skærmbilleder) | `npm run preview` → http://127.0.0.1:8790, derefter `npm run shots` og `npm run a11y` (se "Design") |
 | Otto-illustrationerne | `dashboard/otto/` — PNG'er med gennemsigtig baggrund |
 | API'et (login, data, historik, Claudes nøgle, Claude-jobs) | `server/api.mts` (`handle(req, platform)`), kaldt af `worker/index.mts` |
 | Workeren (fetch, queue, cron) | `worker/index.mts`. Det, serveren får fra den: `server/platform.mts`. Job: `server/jobs.mts` |
@@ -154,7 +155,7 @@ fri kapacitet = (tilgængelige timer × planlægningsloft) − drift − projekt
 
 **Planlægningsloftet er ikke 100 %,** fordi det uforudsete altid kommer. Det er andelen af din tilgængelige tid, der må bookes fast.
 
-Øverst står tre tal: **fri kapacitet**, **belægning** og **næste deadline**. Den sidste er den nærmeste åbne opgave med deadline. Er noget allerede overskredet, står antallet i rødt i stedet, og et klik åbner opgaven.
+Øverst står **ugen som beholder** (M16): én sætning er svaret ("Du har 4,5 timer fri i denne uge" eller, i rødt, "Du er 2 timer over i denne uge"), og under den er bjælken selve ugen: drift, projekter, ad hoc-bufferen og det ubookede, med loftet som en lodret streg. Det, der er booket ud over loftet, er skraveret. Otto står til højre og viser stemningen. I bunden står belægningen, loftet og næste deadline (overskredne først, et klik åbner opgaven). Ved første indlæsning fyldes bjælken fra venstre én gang, ikke ved reduceret bevægelse. Bufferen og formlen står nederst under "Sådan er ugen regnet".
 
 ## Kalenderoverblikket
 
@@ -270,21 +271,21 @@ Kørsler, hvis startsignal går tabt, startes igen af Workerens cron (`server/jo
 
 ## Tasks, Projekter og Rutiner
 
-Sidebaren har tre enheder under Kapacitet, Spørg assistenten og Indbakke. Hver har sin egen landingsside, og listen under folder sig selv ud, mens du er i enheden. Der er ingen pile at trykke på.
+Sidebaren har Kapacitet, Kalender, Assistenten og Indbakke øverst og tre enheder under. En prik betyder kun sundhed (Kapacitet og projekterne), og tal står højrestillet: røde alarmer ved Kapacitet, nye forslag ved Indbakke og åbne opgaver ved resten. Under 1024 px bliver sidebaren en skuffe, og en fanebjælke i bunden har Kapacitet, Opgaver, Kalender, Assistent og Mere (åbner skuffen). Hver har sin egen landingsside, og listen under folder sig selv ud, mens du er i enheden. Der er ingen pile at trykke på.
 
 | Enhed | Landingsside | Liste i sidebaren |
 |---|---|---|
-| **Tasks** | `#tasks`: nøgletal (åbne, over deadline, denne uge, uden projekt), hurtig tilføjelse og alle åbne tasks grupperet efter deadline | Alle tasks · Denne uge · Uden projekt · Fra rutiner |
-| **Projekter** | `#projekter`: nøgletal og et kort pr. projekt med fremdrift, åbne tasks, timer pr. uge, sprint og mål, næste deadline og antal i risiko | Projekterne + Nyt projekt |
+| **Opgaver** | `#tasks`: nøgletal (åbne, over deadline, denne uge, uden projekt), hurtig tilføjelse og alle åbne opgaver grupperet efter deadline | Alle opgaver · Denne uge · Uden projekt · Fra rutiner |
+| **Projekter** | `#projekter`: nøgletal og en række pr. projekt med fremdrift, åbne tasks, timer pr. uge, sprint og mål, næste deadline og antal i risiko | Projekterne + Nyt projekt |
 | **Rutiner** | `#rutiner`: nøgletal (aktive, fast tid pr. uge, kommende, ikke gjort), kommende tasks fra rutiner og dine rutiner | Rutinerne, Drift og Ny rutine |
 
-Et projekt hører til Projekter, Drift til Rutiner, og "Uden projekt" (kind `adhoc`) til Tasks.
+Et projekt hører til Projekter, Drift til Rutiner, og "Uden projekt" (kind `adhoc`) til Opgaver. Kalenderen har også sin egen side, `#kalender`, med samme visning som Liste/Kalender på forsiden.
 
 ## Indstillinger
 
-Tandhjulet øverst til højre på alle sider åbner **Indstillinger**. Her ligger grundtallene bag kapaciteten: arbejdsuge, faste møder, mail & admin, øvrigt fravær, planlægningsloftet og ad hoc-estimatet. Når to uger er registreret i ugeloggen, låses estimatet, og bufferen måles i stedet. Du kan også åbne indstillingerne fra loft-mærket i belastningsbjælken.
+Tandhjulet i sidebarens fod (ved temaknappen) åbner **Indstillinger** som et panel fra højre (fuld skærm på mobil). Her ligger grundtallene bag kapaciteten: arbejdsuge, faste møder, mail & admin, øvrigt fravær, planlægningsloftet og ad hoc-estimatet. Når to uger er registreret i ugeloggen, låses estimatet, og bufferen måles i stedet. Du kan også åbne indstillingerne fra loft-mærket i belastningsbjælken.
 
-Ændringerne slår igennem på forsiden bag panelet, mens du taster. De gemmes med **Gem**, ligesom alt andet, enten i panelet eller i sidehovedet. Panelet har også genveje til Historik, Claude-adgang og Log ud.
+Ændringerne slår igennem på forsiden bag panelet, mens du taster. De gemmes med **Gem**, ligesom alt andet, enten i panelet eller i sidehovedet. Gem-knappen står kun, når der er noget at gemme, og viser "Gemmer …", mens det sker. Panelet har også genveje til Historik, Claude-adgang og Log ud.
 
 Nye sektioner (forbindelser, alarmer, agent) føjes til `SETTINGS_SECTIONS` i `index.html`.
 
@@ -418,15 +419,17 @@ Kan data slet ikke tegnes eller hentes, vises fejlen i stedet for en hvid skærm
 
 ## Design
 
-Farver, skrift og former følger Hey Otto-designsystemet — se [`brand/hey-otto/guidelines.md`](../brand/hey-otto/guidelines.md). Alle farver ligger som CSS-variabler øverst i `<style>`, så et farveskift er ét sted.
+Farver, skrift og former følger Hey Otto-designsystemet — se [`brand/hey-otto/guidelines.md`](../brand/hey-otto/guidelines.md). Alle farver, skriftstørrelser og afstande ligger som CSS-variabler øverst i `dashboard/app.css`, så et skift er ét sted. Stilarket er ordnet pr. komponent.
 
-- **Skrift:** Geist til alt, også de små etiketter. Geist Mono bruges kun til kode og nøgler. Begge hentes fra Google Fonts; uden net falder siden tilbage til Helvetica Neue / Arial, og intet layout afhænger af en bestemt fonts mål.
-- **Farver:** sort, grå og hvid. Der er ingen gradienter og ingen lilla flader i appen. Den primære farve er blæk (Onyx i lyst tema, Tåge i mørkt), og knapper, valgte faner, kurver og „i dag“-linjen står i den. Lilla findes kun i assistenten selv. Fokusringen ved tastaturnavigation står i blæk (2 px), ligesom resten af grænsefladen.
+- **Skrift:** Geist til alt, også de små etiketter, som står i almindelige store og små bogstaver. Geist Mono bruges kun til kode og nøgler. Typeskalaen har seks trin (`--fs-display` 56, `--fs-h1` 32, `--fs-h2` 20, `--fs-body` 15, `--fs-small` 13, `--fs-micro` 11 kun i grafik), afstandsskalaen `--s-1`…`--s-6` = 4, 8, 12, 16, 24, 40 px. Begge hentes fra Google Fonts; uden net falder siden tilbage til Helvetica Neue / Arial, og intet layout afhænger af en bestemt fonts mål.
+- **Farver:** sort, grå og hvid. Der er ingen gradienter og ingen lilla flader i appen. Den primære farve er blæk (Onyx i lyst tema, Tåge i mørkt), og knapper, valgte faner, kurver og „i dag“-linjen står i den. Lilla findes kun i Otto selv og i fokusringen ved tastaturnavigation (`--focus`: violet i lyst tema, rosé i mørkt og i sidebaren, 2 px).
 - **Signalfarve:** én rød (`#B42318`, `#F97066` i mørkt tema) bruges kun til blokeret, overskredet deadline og overbooket. Den findes ikke i brandet, men appen er et arbejdsredskab, og de tre ting skal kunne ses med det samme.
 - **Statusfarver:** Ikke startet = lysegrå, I gang = blæk, Blokeret = rød med skravering, Færdig = mellemgrå, Droppet = stiplet. Skraveringen gør, at Blokeret kan skelnes i sort/hvid-print og af en farveblind læser.
-- **Former:** knapper og chips er helt runde og i tekstfarven, kort har 22 px hjørner, felter 10 px med 1,5 px kant, alt er 1 px-linjer uden skygger. Knapper løfter sig 1 px ved hover, og bevægelse slås fra ved `prefers-reduced-motion`. Hovedkolonnen står mellem tynde lodrette linjer med plus-mærker, hvor de møder de vandrette.
+- **Former og struktur:** knapper og chips er helt runde og i tekstfarven. Siden står i et grid af tynde linjer: hovedkolonnen mellem to lodrette linjer, og hver sektion (`.card`) er en vandret linje i fuld bredde med plus-mærker, hvor linjerne mødes, ikke en kasse. Hver side har højst ét afrundet panel (`.panel`, 22 px, Tåge-flade): ugen på forsiden, sprinten på et projekt, spørgefeltet hos assistenten og på Omplanlæg. Felter har 10 px hjørner og en kant på mindst 3:1 (`--control-border`). Knapper svarer på et tryk (`:active`), ikke på hover, og bevægelse slås fra ved `prefers-reduced-motion`.
+- **Berøring og tilgængelighed:** på berøringsskærme (`pointer: coarse`) er trykområder mindst 44 px og felter 16 px. `<html lang="da">`, alt med `data-act` kan bruges med Enter og mellemrum, fokus flyttes til sidens titel ved sideskift, og beskeder læses op (`role="status"`). Sletning af opgaver, projekter, sprints og rutiner sker med det samme med "Fortryd" i beskeden; kun det, der ikke kan fortrydes (tilbagekald token, afbryd Google, kassér kladde, gå tilbage i historikken, log ud med ugemte ændringer), spørger først, i appens egen dialog.
+- **Kontrol:** `npm run preview` starter appen lokalt med opdigtede demo-data (`scripts/preview-data.mts`; `-- --empty` uden data, `-- --over` overbooket) gennem det rigtige API (`handle()`) og en database i hukommelsen, uden wrangler og Cloudflare. `npm run shots` tager skærmbilleder af alle visninger i lyst, mørkt og 390 px til `shots/` (ikke i git), og `npm run a11y` kører axe-core og et tastaturtjek på alle visninger. Begge bruger den installerede Chrome eller Edge.
 - **Assistenten:** maskotten ligger som PNG'er med gennemsigtig baggrund i `dashboard/otto/` (udskåret fra Kaspers illustrationer). Han står altid i en lys flise (`--otto-tile`), så han ser ens ud i begge temaer: med tommel op på login, tænkende i tomme tilstande, ved computeren mens Claude arbejder, jublende når et udkast er klar, og på kapacitetssiden efter stemningen — kaffe ved plads tilbage, løb ved på kanten, hårdt arbejde ved overbooket. Hans hoved er fane-ikon og står ved ordmærket i sidebaren. `laeser.png` og `praesenterer.png` ligger klar, men er ikke i brug endnu.
 
 Tidslinjen er CSS Grid, ikke SVG: en Gantt er i praksis en tabel, og grid giver sticky navnekolonne, tooltips og korrekt zoom uden koordinatmatematik.
 
-Lyst og mørkt tema følger systemet, med en knap der overstyrer begge veje. Der er print-styles, så tidslinjen kan tages med til et møde på papir.
+Lyst og mørkt tema følger systemet, med en knap i sidebarens fod, der overstyrer begge veje og huskes i browseren. Der er print-styles, så tidslinjen kan tages med til et møde på papir.
