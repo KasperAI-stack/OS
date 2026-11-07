@@ -30,6 +30,9 @@ Kasper pegede på monday.com (tabeller), Slack (agent i chat), ClickUp (Box-visn
 
 ## Det, han ikke vil have
 
+- Farvede kanter eller indre skygger som markering af det valgte punkt ("det er AI slop", 2026-11-07). Brug en rolig flade i stedet.
+- Mættet lilla på store flader. Sidebaren skal være en dæmpet lilla-grå (`#1D1A26`), ikke en klar blomme.
+
 - Alt hvidt, kun linjer, ingen flader.
 - Sort-hvid minimalisme som "modgift" mod AI.
 - At ting fjernes uden at blive erstattet af noget bedre.

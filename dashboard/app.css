@@ -79,12 +79,13 @@
   --danger-ink: #B42318;
   --on-danger: #FFFFFF;
   --otto-tile: #F4F2F8;
-  --sidebar-bg: #0F0E13;
+  --sidebar-bg: #1D1A26;
   --sidebar-fg: #F4F2F8;
-  --sidebar-muted: #A7A3B2;
-  --sidebar-line: #2B2932;
+  --sidebar-muted: #ABA5BC;
+  --sidebar-line: #2E2A3A;
   --sidebar-hover: rgba(244,242,248,0.06);
-  --sidebar-active: rgba(244,242,248,0.11);
+  --sidebar-active: rgba(214,206,236,0.13);
+  --sidebar-icon: #C9C3D8;
   --st-ikke-startet: #B9B4C6;
   --st-i-gang: #7C3AED;
   --st-blokeret: #B42318;
@@ -127,7 +128,7 @@
     --accent: #F4F2F8; --accent-soft: rgba(244,242,248,0.05); --on-accent: #0F0E13;
     --danger-ink: #F97066; --on-danger: #0F0E13;
     --otto-tile: #1E1C24;
-    --sidebar-bg: #16151B; --sidebar-line: #2B2932;
+    --sidebar-bg: #18161F; --sidebar-line: #2B2834;
     --st-ikke-startet: #5E5A6B; --st-i-gang: #A78BFA; --st-blokeret: #F97066; --st-faerdig: #4ADE80;
     --st-droppet: #6B6778; --st-ukendt-edge: #F4F2F8;
     --c-drift: #F4F2F8; --c-projekt: #A78BFA; --c-adhoc: #F472B6;
@@ -153,7 +154,7 @@
   --accent: #F4F2F8; --accent-soft: rgba(244,242,248,0.05); --on-accent: #0F0E13;
   --danger-ink: #F97066; --on-danger: #0F0E13;
   --otto-tile: #1E1C24;
-  --sidebar-bg: #16151B; --sidebar-line: #2B2932;
+  --sidebar-bg: #18161F; --sidebar-line: #2B2834;
   --st-ikke-startet: #5E5A6B; --st-i-gang: #A78BFA; --st-blokeret: #F97066; --st-faerdig: #4ADE80;
   --st-droppet: #6B6778; --st-ukendt-edge: #F4F2F8;
   --c-drift: #F4F2F8; --c-projekt: #A78BFA; --c-adhoc: #F472B6;
@@ -214,7 +215,7 @@ h1:focus, h1:focus-visible { outline: none; }
 
 /* Sidebaren er en mørk flade: mørk-flade-tonerne gælder herinde, også i lyst tema */
 .sidebar {
-  --accent: #F4F2F8; --focus: #F472B6;
+  --accent: #F4F2F8; --sunken: rgba(244,242,248,0.06); --focus: #F472B6;
   --st-i-gang: #F4F2F8; --st-faerdig: #8E8A9B; --st-ikke-startet: #4A4656; --st-droppet: #6B6778;
   --st-blokeret: #F97066; --danger-ink: #F97066;
   width: 240px; flex: 0 0 240px; align-self: stretch;
@@ -1252,3 +1253,60 @@ button.stat:hover { border-color: var(--control-border); }
   .mcards { grid-template-columns: minmax(0, 1fr); }
   .oempty { flex-direction: column; align-items: flex-start; }
 }
+
+/* ======================= 15 Sidebar: farve, ikoner, foldet ind, rullebjælker ======================= */
+
+/* Dæmpet lilla-grå (Kaspers valg): valgt punkt er en rolig, lys flade uden farvet kant */
+.sidebar { transition: width .22s cubic-bezier(.2,.7,.2,1), flex-basis .22s cubic-bezier(.2,.7,.2,1); overflow-x: hidden; }
+.proj[aria-current="true"] { background: var(--sidebar-active); color: #FFFFFF; }
+.nsec.open > .nsec-main { color: #FFFFFF; }
+
+/* Ikoner ved hovedpunkterne */
+.nico { position: relative; display: grid; place-items: center; width: 22px; height: 22px; flex: 0 0 22px; color: var(--sidebar-icon); }
+.nico .i { width: 19px; height: 19px; vertical-align: 0; }
+.nico .otto-mark { width: 22px; height: 22px; margin: 0; }
+.proj[aria-current="true"] .nico, .nsec.open > .nsec-main .nico { color: #FFFFFF; }
+.nico .dot { position: absolute; right: -3px; top: -2px; width: 8px; height: 8px; border-radius: 50%; margin: 0; box-shadow: 0 0 0 2px var(--sidebar-bg); }
+.proj .nodot { width: 22px; flex-basis: 22px; }
+.nsec-body { margin-left: 21px; }
+
+/* Knap til at folde sidebaren ind */
+.brandmark { position: relative; }
+.side-toggle { position: absolute; right: 12px; top: 2px; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px;
+               background: none; border: 0; color: var(--sidebar-muted); cursor: pointer; }
+.side-toggle:hover { background: var(--sidebar-hover); color: var(--sidebar-fg); }
+.side-toggle .i { width: 18px; height: 18px; vertical-align: 0; transition: transform .22s; }
+.sf-tool .lbl { white-space: nowrap; }
+@media (max-width: 1023px) { .side-toggle { display: none !important; } }
+
+@media (min-width: 1024px) {
+  .nav-mini .sidebar { width: 76px; flex-basis: 76px; }
+  .nav-mini .brandmark { padding: 0 0 var(--s-5); display: grid; justify-items: center; gap: 10px; }
+  .nav-mini .bm-word, .nav-mini .brandmark > span { display: none; }
+  .nav-mini .side-toggle { position: static; }
+  .nav-mini .side-toggle .i { transform: scaleX(-1); }
+  .nav-mini .proj { width: 52px; margin: 2px 12px; padding: 0; min-height: 44px; justify-content: center; gap: 0; position: relative; }
+  .nav-mini .proj .pname { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .nav-mini .proj .pcount { position: absolute; right: 3px; top: 3px; margin: 0; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+                            display: grid; place-items: center; font-size: var(--fs-micro); font-weight: 700; background: #D6CEEC; color: #1D1A26; }
+  .nav-mini .proj .pcount.alert { background: var(--st-blokeret); color: #FFFFFF; }
+  .nav-mini .nsec-body { display: none; }
+  .nav-mini #navtop { margin-bottom: var(--s-3); }
+  .nav-mini .sidebar-foot { padding: var(--s-3) 0 0; display: grid; justify-items: center; }
+  .nav-mini .sf-status, .nav-mini .sf-acts { display: none; }
+  .nav-mini .sf-tools { flex-direction: column; border: 0; margin: 0; padding: 0; gap: 8px; }
+  .nav-mini .sf-tool { width: 40px; height: 40px; padding: 0; justify-content: center; }
+  .nav-mini .sf-tool .lbl { display: none; }
+  .nav-mini .sf-out { margin: 0; }
+}
+
+/* Rullebjælker: tynde og afrundede. Lyse i sidebaren, tonede på siden */
+* { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+.sidebar { scrollbar-color: rgba(214,206,236,0.24) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; border: 3px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background-color: var(--control-border); }
+.sidebar::-webkit-scrollbar-thumb { background-color: rgba(214,206,236,0.24); }
+.sidebar::-webkit-scrollbar-thumb:hover { background-color: rgba(214,206,236,0.40); }
+::-webkit-scrollbar-corner { background: transparent; }

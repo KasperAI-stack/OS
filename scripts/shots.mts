@@ -23,7 +23,7 @@ const BROWSERS = [
   "/usr/bin/google-chrome", "/usr/bin/chromium"
 ].filter(Boolean) as string[];
 
-const VIEWS = ["kapacitet", "tasks", "tasks/uge", "projekter", "nyt-website", "rutiner", "otto", "indbakke", "omplan", "versioner", "claude", "kalender", "indstillinger", "menu"];
+const VIEWS = ["kapacitet", "tasks", "tasks/uge", "projekter", "nyt-website", "rutiner", "otto", "indbakke", "omplan", "versioner", "claude", "kalender", "indstillinger", "menu", "mini"];
 const SIZES = [
   { name: "lys-1440", w: 1440, h: 1000, dark: false, mobile: false },
   { name: "moerk-1440", w: 1440, h: 1000, dark: true, mobile: false },
@@ -68,23 +68,25 @@ for (const s of SIZES) {
   await cdp("Emulation.setTouchEmulationEnabled", { enabled: s.mobile });
   await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: s.dark ? "dark" : "light" }, { name: "prefers-reduced-motion", value: "reduce" }] });
   for (const v of views) {
-    const hash = v === "indstillinger" || v === "menu" ? "kapacitet" : v;
+    const hash = v === "indstillinger" || v === "menu" || v === "mini" ? "kapacitet" : v;
     await cdp("Page.navigate", { url: BASE + "#" + hash });
     await sleep(300);
     await cdp("Page.reload", { ignoreCache: true });
     for (let i = 0; i < 40; i++) { if (await evaluate("!!document.querySelector('#main h1')")) break; await sleep(150); }
+    if (v === "mini") { if (s.mobile) continue; await evaluate("document.querySelector('.side-toggle').click()"); await sleep(400); }
     if (v === "menu") { if (!s.mobile) continue; await evaluate("document.querySelector('[data-act=navopen]').click()"); }
     if (v === "indstillinger") await evaluate("(document.querySelector('[data-act=settings]')||{click(){}}).click()");
     await evaluate("document.fonts && document.fonts.ready.then(()=>1)");
     await sleep(700);
     // Hele siden på skrivebordet (højst 4000 px); på mobil kun det første skærmbillede
-    const full = !s.mobile && v !== "indstillinger" && v !== "menu";
+    const full = !s.mobile && v !== "indstillinger" && v !== "menu" && v !== "mini";
     const h = full ? Math.min(4000, Math.max(s.h, await evaluate("document.documentElement.scrollHeight"))) : s.h;
     if (full) await cdp("Emulation.setDeviceMetricsOverride", { width: s.w, height: h, deviceScaleFactor: 1, mobile: false });
     const shot = await cdp("Page.captureScreenshot", { format: "png" });
     if (full) await cdp("Emulation.setDeviceMetricsOverride", { width: s.w, height: s.h, deviceScaleFactor: 1, mobile: false });
     const file = join(OUT, v.replace(/\//g, "-") + "-" + s.name + ".png");
     writeFileSync(file, Buffer.from(shot.data, "base64"));
+    if (v === "mini") await evaluate("document.querySelector('.side-toggle').click()");
     console.log(file);
   }
 }
