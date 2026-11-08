@@ -33,6 +33,7 @@ Status (2026-11-06):
 | [M13](M13-flytning-til-cloudflare.md) | Gå live: domæne, Google og push. Ingen data flyttes, det gamle site slettes | 7 | S | M10–M12 | Vælge flyttedag, rette Google-redirect, slå push til igen |
 | [M14](M14-mcp-og-dokumentation.md) | MCP-endpoint og API-dokumentation (OpenAPI) | 7 | M | M11, M12 | — |
 | [M15](M15-os-og-studio.md) | OS og Studio taler sammen (begge veje) | 7 | M | M11–M14 | Tokens i Studio og OS, MCP-opsætning i Studio |
+| [M18](M18-rutiner-og-studio-flows.md) | Rutiner forbundet med flows i Studio: `studio_flow_id`, standardværdier og "Kør i Studio" (Studios M49). **Bygget og testet lokalt 2026-11-08, ikke udrullet** | 7 | M | M15 | Give Studio-tokenet `flows`, udrulle, lave rutinerne SEO-uge og Black Friday |
 | [M16](M16-design.md) | Designløft: typeskala, blueprint-grid, ugen som beholder på forsiden, mobilnavigation. **Bygget og testet lokalt 2026-11-07, ikke udrullet** | — | L | — | Se forhåndsvisningen, godkend svarene på de tre åbne spørgsmål, udrul |
 
 ## Ønsker til senere

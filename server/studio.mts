@@ -191,6 +191,71 @@ export async function health(env: Env, f: Fetcher = fetch) {
   return { configured: true, online: res.status === 200, error: res.status === 200 ? "" : refusal(res.status, res.body), app: STUDIO_APP };
 }
 
+/* ---------- Rutiner forbundet med flows i Studio (M18) ----------
+   Tasks ejer rutinen (hvad og hvornår), Studio ejer flowet (hvordan). En rutine gemmer kun
+   flowets id og sine standardværdier: studio_flow_id, studio_inputs og studio_toggles.
+     GET  /flows             → [{ id, name, description, inputs, fields, toggles }]
+     POST /flows/{id}/run    { inputs, toggles, routine } → 201 { id, planId }
+   Kørslen er kun et forslag: den venter på Kaspers godkendelse i Studio (startkortet).
+   Tokenet skal have rettigheden flows. */
+
+export type StudioFlow = {
+  id: string; name: string; description: string;
+  fields: Array<{ key: string; label: string; required: boolean; default?: string }>;
+  toggles: Array<{ key: string; label: string; default: boolean }>;
+};
+
+const NOT_CONNECTED = "Studio er ikke forbundet. Læg Studios token i Cloudflare som hemmeligheden HEYOTTO_TOKEN.";
+
+function unreachable(r: Reply) {
+  return r.kind === "timeout" ? "Studio svarede ikke i tide. Se efter i Studio, før du prøver igen." : "Studio er offline. Tænd pc'en med Studio, og prøv igen.";
+}
+
+export async function flows(env: Env, f: Fetcher = fetch): Promise<StudioFlow[]> {
+  const cfg = config(env);
+  if (!cfg) throw new StudioError(400, NOT_CONNECTED);
+  const res = await call(cfg, "GET", "/flows", undefined, f);
+  if (res.kind !== "ok") throw new StudioError(503, unreachable(res));
+  if (res.status !== 200 || !Array.isArray(res.body)) throw new StudioError(502, refusal(res.status, res.body));
+  return res.body.map((x: any) => ({
+    id: String(x.id), name: String(x.name || x.id), description: String(x.description || ""),
+    // fields kom i Studios M49; ældre Studio sender kun inputs som navne.
+    fields: Array.isArray(x.fields) ? x.fields : (Array.isArray(x.inputs) ? x.inputs : []).map((k: string) => ({ key: k, label: k, required: true })),
+    toggles: Array.isArray(x.toggles) ? x.toggles : []
+  }));
+}
+
+/** Kun tekst-værdier og ja/nej, med navne som Studios flows bruger. */
+export function cleanValues(v: unknown, kind: "string" | "boolean") {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return {};
+  const out: Record<string, string | boolean> = {};
+  for (const [k, x] of Object.entries(v as Record<string, unknown>)) {
+    if (!/^[\p{L}\p{N}_-]{1,64}$/u.test(k) || typeof x !== kind) continue;
+    out[k] = kind === "string" ? String(x).slice(0, 2000) : x as boolean;
+  }
+  return out;
+}
+
+export type RoutineRun = { taskId: string; planId: string; url: string };
+
+export async function runRoutine(env: Env, r: any, projectName: string, f: Fetcher = fetch): Promise<RoutineRun> {
+  const cfg = config(env);
+  if (!cfg) throw new StudioError(400, NOT_CONNECTED);
+  const flowId = typeof r?.studio_flow_id === "string" ? r.studio_flow_id.trim() : "";
+  if (!flowId) throw new StudioError(400, "Rutinen er ikke forbundet med et flow i Studio.");
+  const res = await call(cfg, "POST", "/flows/" + encodeURIComponent(flowId) + "/run", {
+    inputs: cleanValues(r.studio_inputs, "string"),
+    toggles: cleanValues(r.studio_toggles, "boolean"),
+    routine: { id: String(r.id), name: String(r.name || r.id), project: String(r.project || ""), projectName }
+  }, f);
+  if (res.kind !== "ok") throw new StudioError(503, unreachable(res));
+  if (res.status === 403) throw new StudioError(403, "Tokenet mangler rettigheden flows i Studio. Giv HEYOTTO_TOKEN adgangen flows under Adgang udefra.");
+  if (res.status !== 201 && res.status !== 200) throw new StudioError(res.status === 404 ? 404 : 502, refusal(res.status, res.body));
+  const taskId = String(res.body?.id || "");
+  if (!taskId) throw new StudioError(502, "Studio svarede uden et opgave-id.");
+  return { taskId, planId: String(res.body?.planId || ""), url: STUDIO_APP + "/chat/" + encodeURIComponent(taskId) };
+}
+
 // Glem en afsluttet Studio-opgave (fx før en ny sendes). En opgave, Studio arbejder på, bliver.
 export async function forget(store: DocStore, taskId: string) {
   const r = await read(store, taskId);

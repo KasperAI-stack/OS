@@ -3746,11 +3746,14 @@
       var paused = r.active === false;
       return '<li class="rrow' + (paused ? " paused" : "") + '"><span class="rico" aria-hidden="true">' + icon("cal") + "</span>" +
         '<div class="vtxt"><b>' + esc(r.name) + "</b>" +
-        '<span class="vmeta">' + esc(FC.EVERY && FC.EVERY[r.every] || "") + (proj ? ", " + esc(proj.name) : "") + "</span></div>" +
+        '<span class="vmeta">' + esc(FC.EVERY && FC.EVERY[r.every] || "") + (proj ? ", " + esc(proj.name) : "") +
+          (r.studio_flow_id ? " · flow i Studio: " + esc(studioFlowName(r.studio_flow_id)) : "") + "</span></div>" +
         '<span class="rnum num">' + (perWeek ? fmt(perWeek) + " t/uge" : "—") + "</span>" +
         '<span class="rnext num">' + (nxt && !paused ? "Næste " + FC.shortDate(nxt) : "") + "</span>" +
         (paused ? '<span class="spill s-droppet">Pause</span>' : '<span class="spill s-faerdig">Aktiv</span>') +
-        '<button class="btn" data-act="routine" data-id="' + esc(r.id) + '" type="button">Rediger</button></li>';
+        '<span class="racts">' +
+          (r.studio_flow_id ? '<button class="btn" data-act="routinestudio" data-id="' + esc(r.id) + '" type="button">Kør i Studio</button>' : "") +
+          '<button class="btn" data-act="routine" data-id="' + esc(r.id) + '" type="button">Rediger</button></span></li>';
     }).join("");
     var drift = DATA.projects.filter(function (p) { return p.kind === "drift"; })[0];
     var driftTasks = drift ? tasksOf(drift.id).filter(isLive) : [];
@@ -3807,12 +3810,18 @@
       "</div>" +
       field("Projekt", '<select id="r-project">' + opts(projOpts, r.project || "") + "</select>", "valgfrit — ellers ligger opgaverne under „Uden projekt“") +
       field("Note", '<textarea id="r-note" rows="2" maxlength="400">' + esc(r.note || "") + "</textarea>", "følger med hver opgave") +
+      field("Flow i Studio", '<select id="r-flow"></select>', "Studio ejer trinene, rutinen ejer hvornår. Studio starter flowet på rutinens dage og venter på din godkendelse.") +
+      '<div class="rflow" id="r-flowfields"></div>' +
       '<label class="gcal mt-2"><input type="checkbox" id="r-active"' + (r.active !== false ? " checked" : "") + "><span>Aktiv (sæt på pause ved at fjerne fluebenet)</span></label>",
       function () {
         var name = val("r-name");
         if (!name) return ["r-name", "Rutinen skal have et navn."];
+        var link = readRoutineFlow();
+        if (link.error) return link.error;
         var o = isNew ? {} : r;
         if (!isNew) resetRoutineTasks(o);
+        if (link.id) { o.studio_flow_id = link.id; o.studio_inputs = link.inputs; o.studio_toggles = link.toggles; }
+        else { delete o.studio_flow_id; delete o.studio_inputs; delete o.studio_toggles; }
         o.name = name; o.every = val("r-every"); o.hours = Math.max(0, num(val("r-hours")));
         o.weekday = Number(val("r-weekday")) || 5; o.monthday = Number(val("r-monthday")) || 0;
         o.project = val("r-project"); o.note = val("r-note");
@@ -3831,6 +3840,106 @@
         DATA.rutiner = DATA.rutiner.filter(function (x) { return x.id !== r.id; });
         return null;
       }, "Rutinen „" + r.name + "“ (opgaverne, den har lavet, bliver liggende)");
+    routineFlowForm(r);
+  }
+
+  /* ----- Rutiner forbundet med flows i Studio (M18) -----
+     Rutinen gemmer kun flowets id og sine standardværdier (studio_flow_id, studio_inputs,
+     studio_toggles). Flowene hentes fra Studio, når dialogen åbnes. Er Studio slukket, kan
+     det valgte flow stadig beholdes; felterne vises så ud fra det, rutinen allerede har. */
+  var STUDIO_FLOWS = null, STUDIO_FLOWS_ERR = "";
+  function studioFlowName(id) {
+    var f = (STUDIO_FLOWS || []).filter(function (x) { return x.id === id; })[0];
+    return f ? f.name : id;
+  }
+  function routineFlowForm(r) {
+    var sel = dlg.querySelector("#r-flow");
+    if (!sel) return;
+    var cur = r.studio_flow_id || "";
+    var vals = { inputs: Object.assign({}, r.studio_inputs || {}), toggles: Object.assign({}, r.studio_toggles || {}) };
+    var fill = function () {
+      var list = STUDIO_FLOWS || [];
+      var o = [{ v: "", t: STUDIO_FLOWS ? "Intet flow" : (STUDIO_FLOWS_ERR ? "Intet flow (" + STUDIO_FLOWS_ERR + ")" : "Henter Studios flows …") }]
+        .concat(list.map(function (f) { return { v: f.id, t: f.name }; }));
+      if (cur && !list.some(function (f) { return f.id === cur; })) o.push({ v: cur, t: cur + (STUDIO_FLOWS ? " (findes ikke i Studio)" : "") });
+      sel.innerHTML = opts(o, cur);
+      renderRoutineFlowFields(cur, vals);
+    };
+    sel.onchange = function () {
+      // Værdierne for det forrige flow huskes, så et skift frem og tilbage ikke sletter dem.
+      var now = readRoutineFlow();
+      Object.assign(vals.inputs, now.inputs || {}); Object.assign(vals.toggles, now.toggles || {});
+      cur = sel.value;
+      renderRoutineFlowFields(cur, vals);
+    };
+    fill();
+    if (STUDIO_FLOWS) return;
+    api("GET", "/api/studio/flows").then(function (res) {
+      STUDIO_FLOWS = res.flows || []; STUDIO_FLOWS_ERR = "";
+      if (dlg.open && dlg.querySelector("#r-flow") === sel) fill();
+    }, function (e) {
+      STUDIO_FLOWS_ERR = e.status === 400 ? "Studio er ikke forbundet" : "Studio kan ikke nås";
+      if (dlg.open && dlg.querySelector("#r-flow") === sel) fill();
+    });
+  }
+  function renderRoutineFlowFields(id, vals) {
+    var box = dlg.querySelector("#r-flowfields");
+    if (!box) return;
+    var f = id && (STUDIO_FLOWS || []).filter(function (x) { return x.id === id; })[0];
+    if (!id) { box.innerHTML = ""; return; }
+    // Uden Studio: vis de værdier, rutinen har, så de kan rettes og beholdes.
+    var fields = f ? f.fields : Object.keys(vals.inputs).map(function (k) { return { key: k, label: k, required: false }; });
+    var toggles = f ? f.toggles : Object.keys(vals.toggles).map(function (k) { return { key: k, label: k, default: true }; });
+    box.innerHTML =
+      (f && f.description ? '<p class="hint">' + esc(f.description) + "</p>" : "") +
+      fields.map(function (i) {
+        var v = vals.inputs[i.key] != null ? vals.inputs[i.key] : "";
+        return field(esc(i.label) + (i.required && !i.default ? " *" : ""),
+          '<input type="text" maxlength="2000" data-input="' + esc(i.key) + '" id="r-in-' + esc(i.key) + '" value="' + esc(v) + '"' +
+          (i.default ? ' placeholder="' + esc(i.default) + '"' : "") + ">");
+      }).join("") +
+      toggles.map(function (t) {
+        var on = vals.toggles[t.key] != null ? vals.toggles[t.key] : t.default !== false;
+        return '<label class="gcal"><input type="checkbox" data-toggle="' + esc(t.key) + '"' + (on ? " checked" : "") + "><span>" + esc(t.label) + "</span></label>";
+      }).join("") +
+      (!fields.length && !toggles.length ? '<p class="hint">Flowet har hverken input eller noget at slå til og fra.</p>' : "");
+  }
+  // Læser dialogens flowvalg. Påkrævede input uden standardværdi skal udfyldes.
+  function readRoutineFlow() {
+    var sel = dlg.querySelector("#r-flow");
+    var id = sel ? sel.value : "";
+    var inputs = {}, toggles = {}, missing = null;
+    var f = id && (STUDIO_FLOWS || []).filter(function (x) { return x.id === id; })[0];
+    Array.prototype.forEach.call(dlg.querySelectorAll("[data-input]"), function (el) {
+      var k = el.getAttribute("data-input"), v = el.value.trim();
+      if (v) inputs[k] = v;
+      var def = f && f.fields.filter(function (i) { return i.key === k; })[0];
+      if (!v && def && def.required && !def.default && !missing) missing = ["r-in-" + k, "Flowet skal have „" + def.label + "“."];
+    });
+    Array.prototype.forEach.call(dlg.querySelectorAll("[data-toggle]"), function (el) { toggles[el.getAttribute("data-toggle")] = !!el.checked; });
+    return { id: id, inputs: inputs, toggles: toggles, error: id ? missing : null };
+  }
+
+  // "Kør i Studio": Studio laver en kørsel af flowet med rutinens værdier og viser startkortet.
+  // Vinduet åbnes med det samme (ellers blokerer browseren det) og sendes til chatten bagefter.
+  function runRoutineInStudio(id, btn) {
+    var r = routineById(id);
+    if (!r) return;
+    if (dirty) { flash("Gem først, så Studio får rutinens nyeste værdier.", true); return; }
+    var w = window.open("", "_blank");
+    btn.disabled = true;
+    api("POST", "/api/studio/routines/" + encodeURIComponent(id) + "/run", {})
+      .then(function (res) {
+        btn.disabled = false;
+        if (w) w.location.href = res.run.url; else window.location.href = res.run.url;
+        flash("„" + r.name + "“ venter på din godkendelse i Studio.");
+      })
+      .catch(function (e) {
+        btn.disabled = false;
+        if (w) w.close();
+        if (e.status === 401) { showLogin("Du er blevet logget ud. Log ind igen."); return; }
+        flash(e.message, true);
+      });
   }
 
   // En fast drift-opgave (timer pr. uge) bliver til en ugentlig rutine. Den gamle sættes til Droppet.
@@ -3855,6 +3964,7 @@
     if (a === "tasknew") { editTask(null, { project: generalProjectId(), start: TODAY_ISO.slice(0, 7) }); return true; }
     if (a === "routine") { editRoutine(el.getAttribute("data-id")); return true; }
     if (a === "newroutine") { editRoutine(null); return true; }
+    if (a === "routinestudio") { runRoutineInStudio(el.getAttribute("data-id"), el); return true; }
     if (a === "drift2routine") { driftToRoutine(el.getAttribute("data-id")); return true; }
     return false;
   }

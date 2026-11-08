@@ -17,7 +17,7 @@ import { Hono, type Context, type MiddlewareHandler } from "hono";
 import { HttpError, readData, saveData } from "./api.mts";
 import { readSnapshot } from "./google.mts";
 import { readSettings } from "./agent/store.mts";
-import { alerts as computeAlerts, forecast, localIso } from "../dashboard/lib/forecast.mjs";
+import { addDays, alerts as computeAlerts, forecast, localIso, occurrences } from "../dashboard/lib/forecast.mjs";
 import { wall, zonedSnapshot } from "./zone.mts";
 import { scrub, verifyToken, type ApiToken, type Scope } from "./tokens.mts";
 import type { Platform } from "./platform.mts";
@@ -232,11 +232,22 @@ export async function listProjects(store: Store) {
   });
 }
 
-export async function listRoutines(store: Store) {
+// Rutiner med deres datoer de seneste 7 og næste 14 dage, regnet i brugerens tidszone (samme regler som
+// appen). Studio (M49) bruger occurrences og studio_* til at starte flowet, når en dato er nået.
+export async function listRoutines(store: Store, now = new Date()) {
   const data = await readData(store);
+  const tz = (await readSettings(store as any)).tz;
+  const today = wall(now, tz);
+  const from = localIso(addDays(today, -7)), to = localIso(addDays(today, 14));
+  const obj = (v: any, kind: string) =>
+    v && typeof v === "object" && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).filter(([, x]) => typeof x === kind)) : {};
+  const names = new Map((data.projects || []).map((p: any) => [p.id, p.name]));
   return (Array.isArray(data.rutiner) ? data.rutiner : []).map((r: any) => ({
     id: r.id, name: r.name, every: r.every, weekday: r.weekday ?? null, monthday: r.monthday ?? null,
-    hours: Number(r.hours) || 0, project: r.project || "", active: r.active !== false, last: r.last || ""
+    hours: Number(r.hours) || 0, project: r.project || "", projectName: names.get(r.project) || "", active: r.active !== false, last: r.last || "",
+    studio_flow_id: typeof r.studio_flow_id === "string" ? r.studio_flow_id : "",
+    studio_inputs: obj(r.studio_inputs, "string"), studio_toggles: obj(r.studio_toggles, "boolean"),
+    occurrences: r.active === false ? [] : occurrences(r, from, to)
   }));
 }
 

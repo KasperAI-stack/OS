@@ -44,7 +44,7 @@ Til HeyOtto Studio, n8n, Claude, Cursor og andre værktøjer. Begge dele ligger 
 | `PATCH /ext/tasks/{id}` | `write` | Ret felter (ikke `project`). `{ task }` |
 | `POST /ext/tasks/{id}/comments` | `write` | `{ text }` (højst 4.000 tegn). `201` med `{ comment }` |
 | `GET /ext/projects` | `read` | `{ projects }` med antal åbne og færdige tasks |
-| `GET /ext/routines` | `read` | `{ routines }` |
+| `GET /ext/routines` | `read` | `{ routines }`: hyppighed, timer, `project` og `projectName`, `occurrences` (datoerne de seneste 7 og næste 14 dage i brugerens tidszone; tom for en rutine på pause) og flowet i HeyOtto Studio: `studio_flow_id`, `studio_inputs`, `studio_toggles` (M18) |
 | `GET /ext/sprints?project=` | `read` | `{ sprints }`: `project`, `month`, `goal` |
 | `POST /ext/sprints` | `write` | `{ project, month: "ÅÅÅÅ-MM", goal }`. `409`, hvis projektet har en sprint den måned. `201` med `{ sprint }` |
 | `GET /ext/calendar` | `read` | `{ snapshot }`: møder fra de forbundne Google-konti, `null` uden |

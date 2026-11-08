@@ -14,6 +14,8 @@
      GET    /api/studio/tasks                { tasks } — opgaver sendt til Studio, med status (spørger Studio om nyt)
      POST   /api/studio/tasks                { taskId, title, text } → send opgaven til Studio (kun Kasper)
      DELETE /api/studio/tasks/:taskId        glem en afsluttet Studio-opgave
+     GET    /api/studio/flows                { flows } — Studios flows med input og toggles (til rutinens formular, kun Kasper)
+     POST   /api/studio/routines/:id/run     → { run: { taskId, planId, url } } — "Kør i Studio" på en rutine (kun Kasper)
      GET    /api/google                      { configured, missing, redirectUri, accounts } — forbindelsens status
      GET    /api/google/connect?scopes=…     send browseren til Google for at forbinde en konto
      GET    /api/google/callback             Google sender browseren tilbage hertil (ingen cookie, signeret state)
@@ -384,6 +386,15 @@ async function studioRoutes(req: Request, store: Store, who: Who, path: string) 
       return json(200, { configured: !!studio.config(env), tasks: await studio.readAll(store) });
     }
     if (who !== "dig") return fail(401, "Kun du kan sende opgaver til Studio.");
+    if (path === "/api/studio/flows" && req.method === "GET") return json(200, { flows: await studio.flows(env) });
+    const run = path.match(/^\/api\/studio\/routines\/([^/]+)\/run$/);
+    if (run && req.method === "POST") {
+      const data = await readData(store);
+      const r = (Array.isArray(data.rutiner) ? data.rutiner : []).find((x: any) => x?.id === decodeURIComponent(run[1]));
+      if (!r) return fail(404, "Rutinen findes ikke.");
+      const p = data.projects.find((x: any) => x?.id === r.project);
+      return json(200, { run: await studio.runRoutine(env, r, p?.name || "") });
+    }
     if (path === "/api/studio/tasks" && req.method === "POST") {
       const body = await readJson(req);
       const taskId = typeof body?.taskId === "string" ? body.taskId.trim().slice(0, 80) : "";

@@ -85,7 +85,8 @@ export const TOOLS: Tool[] = [
   },
   {
     name: "list_routines", title: "List rutiner", scope: "read", annotations: { title: "List rutiner", ...read },
-    description: "Rutiner (tilbagevendende opgaver) med hyppighed og timer. Kan kun ændres i appen.",
+    description: "Rutiner (tilbagevendende opgaver) med hyppighed, timer, projekt og datoerne de seneste 7 og næste 14 dage (occurrences). " +
+      "studio_flow_id er det flow i HeyOtto Studio, rutinen kører, med studio_inputs og studio_toggles som standardværdier. Kan kun ændres i appen.",
     inputSchema: obj(),
     run: async (_a, { store }) => ({ routines: await listRoutines(store) })
   },

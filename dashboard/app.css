@@ -1226,6 +1226,9 @@ button.stat:hover { border-color: var(--control-border); }
 .rico { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: var(--s-gang-bg); color: var(--s-gang-fg); }
 .rrow.paused .rico { background: var(--sunken); color: var(--muted); }
 .rnum, .rnext { font-size: var(--fs-small); color: var(--ink-2); text-align: right; }
+.rrow .racts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.rflow { display: grid; gap: 8px; margin-top: 4px; padding: 12px 14px; border-radius: 12px; background: var(--sunken); }
+.rflow:empty { display: none; }
 
 /* Assistenten: samtale med ansigt */
 .ochat { padding: 24px; }
@@ -1257,7 +1260,7 @@ button.stat:hover { border-color: var(--control-border); }
 @media (max-width: 760px) {
   .rrow { grid-template-columns: 36px minmax(0, 1fr) auto; }
   .rrow .rnum, .rrow .rnext { display: none; }
-  .rrow .btn { grid-column: 2 / -1; justify-self: start; }
+  .rrow .racts { grid-column: 2 / -1; justify-content: flex-start; }
   .mcards { grid-template-columns: minmax(0, 1fr); }
   .oempty { flex-direction: column; align-items: flex-start; }
 }
