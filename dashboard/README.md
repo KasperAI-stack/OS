@@ -124,7 +124,7 @@ Du er logget ind med enten session-cookien eller `Authorization: Bearer <nøgle>
 
 **Test rører aldrig rigtige data.** Miljøet `test` i `wrangler.jsonc` har sin egen D1-database og sin egen kø. `npm test` kører API'et, Workeren og prognosen i Node uden Cloudflare.
 
-**Udrulning.** `npm run cf:deploy:test` til testmiljøet, `npx wrangler deploy --env=""` til produktion.
+**Udrulning.** Produktion udrulles automatisk: hvert push til `main` kører `.github/workflows/deploy.yml` (tests → D1-migreringer → `wrangler deploy`). Se [Automatisk deploy](#automatisk-deploy). Testmiljøet udrulles med `npm run cf:deploy:test`. `npx wrangler deploy --env=""` virker stadig som nødudgang til produktion.
 
 ## API'et /ext (til andre værktøjer)
 
@@ -407,6 +407,16 @@ HeyOtto Tasks kører kun på Cloudflare (planen: `projects/heyotto-os-iteratione
 
 - Prognose og alarmer regnes på serveren i brugerens tidszone med `server/zone.mts` (Workers kører altid i UTC, og `process.env.TZ` virker ikke der).
 - Push sendes med Web Crypto (`server/webpush.mts`).
+
+### Automatisk deploy
+
+Hvert push til `main` testes og udrulles af GitHub Actions (`.github/workflows/deploy.yml`). Fejler testene, bliver intet udrullet. Arbejde på andre branches går live, når det merges til `main`. Workflowet kan også startes i hånden under **Actions → Deploy HeyOtto Tasks → Run workflow**.
+
+Opsætning, én gang pr. installation:
+
+1. Cloudflare → **My Profile → API Tokens → Create Token** → skabelonen **Edit Cloudflare Workers**. Tilføj under *Permissions* også **Account · D1 · Edit** og **Account · Queues · Edit**. Vælg din konto under *Account Resources* og dit domæne under *Zone Resources*.
+2. Læg tokenet i GitHub som hemmelighed: `gh secret set CLOUDFLARE_API_TOKEN` (indsæt tokenet, når der spørges).
+3. Læg konto-id'et i GitHub: `gh secret set CLOUDFLARE_ACCOUNT_ID` (id'et står i `npx wrangler whoami`).
 
 ## Valideringen
 
